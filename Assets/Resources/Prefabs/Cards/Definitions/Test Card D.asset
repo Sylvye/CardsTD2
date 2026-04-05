@@ -14,12 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardDef
   id: D
   displayName: Pot of Greed
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: 1128286531543930043, guid: 614eb695ec64a0f458c3fdbcde292037, type: 3}
   type: 2
-  description: Lorem ipsum dolor sit amet
-  baseManaCost: 4
+  description: Draws extra cards over your hand limit
+  baseManaCost: 3
   baseTier: 1
-  baseAugmentSlots: 0
+  baseugmentSlots: 0
+  spawnableObject: {fileID: 0}
   effects:
   - effectType: 1
     amount: 2

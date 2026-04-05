@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Combat;
 
 namespace Cards
 {
@@ -21,6 +22,9 @@ namespace Cards
         public int baseTier = 1;
         public int baseAugmentSlots = 0;
 
+        [Header("World Use")]
+        public SpawnableObjectDef spawnableObject;
+        
         [Header("Effects")]
         public List<CardEffectData> effects = new();
     }

@@ -1,6 +1,6 @@
 ﻿using System;
-using UnityEngine;
 using Combat;
+using UnityEngine;
 
 namespace Cards
 {
@@ -31,9 +31,6 @@ namespace Cards
 
             for (int i = 0; i < amount; i++)
             {
-                if (cardState.Hand.Count >= maxHandSize)
-                    break;
-
                 CardInstance drawn = cardState.DrawOne();
                 if (drawn == null)
                     break;
@@ -57,7 +54,7 @@ namespace Cards
             return card.CurrentManaCost <= playerState.CurrentMana;
         }
 
-        public bool PlayCard(CardInstance card, PlayerState playerState)
+        public bool PlayCard(CardInstance card, PlayerState playerState, CardPlayContext playContext)
         {
             if (!CanPlay(card, playerState))
                 return false;
@@ -69,10 +66,46 @@ namespace Cards
 
             Debug.Log($"Played card: {card}");
 
-            effectResolver?.ResolveOnPlay(card, playerState);
+            effectResolver?.ResolveOnPlay(card, playerState, playContext);
 
             cardState.DiscardPile.Add(card);
 
+            OnHandChanged?.Invoke();
+            return true;
+        }
+
+        public bool CanManuallyDraw(PlayerState playerState, int drawCost)
+        {
+            if (playerState == null)
+                return false;
+
+            if (cardState.Hand.Count >= maxHandSize)
+                return false;
+
+            bool hasDrawableCards = cardState.DrawPile.Count > 0 || cardState.DiscardPile.Count > 0;
+            if (!hasDrawableCards)
+                return false;
+
+            return playerState.CurrentMana >= drawCost;
+        }
+
+        public bool TryManualDraw(PlayerState playerState, int drawCost)
+        {
+            if (!CanManuallyDraw(playerState, drawCost))
+                return false;
+
+            if (!playerState.SpendMana(drawCost))
+                return false;
+
+            CardInstance drawn = cardState.DrawOne();
+
+            if (drawn == null)
+            {
+                Debug.LogWarning("Manual draw failed: no card could be drawn.");
+                return false;
+            }
+
+            Debug.Log($"Manually drew card: {drawn} for {drawCost} mana.");
             OnHandChanged?.Invoke();
             return true;
         }

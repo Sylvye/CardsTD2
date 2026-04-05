@@ -14,12 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardDef
   id: E
   displayName: Quick Thinking
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: -3437571281421271367, guid: 29ed526108f46b04a814065f2d0330f5, type: 3}
   type: 2
-  description: Lorem ipsum dolor sit amet
+  description: Draws a new card and gains mana
   baseManaCost: 0
   baseTier: 1
-  baseAugmentSlots: 0
+  baseugmentSlots: 0
+  spawnableObject: {fileID: 0}
   effects:
   - effectType: 1
     amount: 1

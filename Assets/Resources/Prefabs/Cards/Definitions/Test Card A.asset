@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardDef
   id: A
   displayName: Basic Turret
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
   type: 0
-  description: Lorem ipsum dolor sit amet
+  description: A simple turret. Can be placed.
   baseManaCost: 4
   baseTier: 1
-  baseAugmentSlots: 0
+  baseugmentSlots: 0
+  spawnableObject: {fileID: 0}
+  effects: []

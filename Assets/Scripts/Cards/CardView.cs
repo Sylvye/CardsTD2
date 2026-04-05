@@ -10,6 +10,7 @@ namespace Cards
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text manaCostText;
         [SerializeField] private TMP_Text descriptionText;
+        [SerializeField] private Image iconImage;
         [SerializeField] private Button playButton;
 
         private CardInstance boundCard;
@@ -23,7 +24,7 @@ namespace Cards
             onClicked = clickCallback;
             Refresh();
 
-            if (playButton != null)
+            if (playButton is not null)
             {
                 playButton.onClick.RemoveAllListeners();
                 playButton.onClick.AddListener(HandleClicked);
@@ -34,27 +35,30 @@ namespace Cards
         {
             if (boundCard == null)
             {
-                if (nameText != null) nameText.text = "NULL";
-                if (manaCostText != null) manaCostText.text = "-";
-                if (descriptionText != null) descriptionText.text = "";
+                if (nameText is not null) nameText.text = "NULL";
+                if (manaCostText is not null) manaCostText.text = "-";
+                if (descriptionText is not null) descriptionText.text = "";
                 return;
             }
 
-            if (nameText != null)
+            if (nameText is not null)
                 nameText.text = boundCard.DisplayName;
 
-            if (manaCostText != null)
+            if (manaCostText is not null)
                 manaCostText.text = boundCard.CurrentManaCost.ToString();
 
-            if (descriptionText != null)
+            if (descriptionText is not null)
                 descriptionText.text = boundCard.Description;
+            
+            if  (iconImage is not null)
+                iconImage.sprite = boundCard.Icon;
         }
 
         private void HandleClicked()
         {
             if (boundCard == null)
                 return;
-
+            
             onClicked?.Invoke(boundCard);
         }
     }

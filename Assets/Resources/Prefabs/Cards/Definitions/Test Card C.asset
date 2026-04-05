@@ -14,12 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardDef
   id: C
   displayName: Manachism
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: -3377119286475678003, guid: 768c0987d6d066649adbb22de4f68bf2, type: 3}
   type: 2
-  description: Lorem ipsum dolor sit amet
+  description: Provides a surge of mana
   baseManaCost: 0
   baseTier: 1
-  baseAugmentSlots: 0
+  baseugmentSlots: 0
+  spawnableObject: {fileID: 0}
   effects:
   - effectType: 2
     amount: 6

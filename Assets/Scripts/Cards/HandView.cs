@@ -58,6 +58,7 @@ namespace Cards
 
             if (card.CurrentManaCost <= mana)
             {
+                Debug.Log($"Playing card: {card.DisplayName}");
                 onPlayRequested?.Invoke(card);
             }
             else

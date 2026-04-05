@@ -269,7 +269,7 @@ GameObject:
   - component: {fileID: 8499853705310937506}
   - component: {fileID: 3790681230553549226}
   m_Layer: 5
-  m_Name: Image
+  m_Name: IconImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -388,6 +388,7 @@ MonoBehaviour:
   nameText: {fileID: 1313611639585517616}
   manaCostText: {fileID: 7015734584051144814}
   descriptionText: {fileID: 804911828476073628}
+  iconImage: {fileID: 3790681230553549226}
   playButton: {fileID: 198304793261325859}
 --- !u!1 &7830766309854922857
 GameObject:
