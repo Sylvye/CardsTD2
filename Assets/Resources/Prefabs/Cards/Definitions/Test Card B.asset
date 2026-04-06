@@ -19,6 +19,6 @@ MonoBehaviour:
   description: Smites an area with firey wrath
   baseManaCost: 10
   baseTier: 1
-  baseugmentSlots: 0
-  spawnableObject: {fileID: 0}
+  baseAugmentSlots: 0
+  spawnableObject: {fileID: 11400000, guid: 6420f38b1d42f7646bd1ffbc6514d3dd, type: 2}
   effects: []

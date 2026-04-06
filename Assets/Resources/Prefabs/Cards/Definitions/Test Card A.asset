@@ -19,6 +19,6 @@ MonoBehaviour:
   description: A simple turret. Can be placed.
   baseManaCost: 4
   baseTier: 1
-  baseugmentSlots: 0
-  spawnableObject: {fileID: 0}
+  baseAugmentSlots: 0
+  spawnableObject: {fileID: 11400000, guid: 7aa380c4db0a72042b624eeb96bf5295, type: 2}
   effects: []

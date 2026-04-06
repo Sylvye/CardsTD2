@@ -7,6 +7,8 @@ namespace Cards
     {
         [SerializeField] private GameObject primaryRadiusVisual;
         [SerializeField] private GameObject secondaryRadiusVisual;
+        [SerializeField] private Color invalidColor;
+        [SerializeField] private Color validColor;
 
         private SelectedCardController selectedCardController;
         private PlayFieldRaycaster playFieldRaycaster;
@@ -21,19 +23,21 @@ namespace Cards
             playFieldRaycaster = raycaster;
             validator = placementValidator;
 
-            selectedCardController.OnSelectedCardChanged += HandleSelectedCardChanged;
+            if (selectedCardController is not null)
+                selectedCardController.OnSelectedCardChanged += HandleSelectedCardChanged;
+
             HideAll();
         }
 
         private void OnDestroy()
         {
-            if (selectedCardController != null)
+            if (selectedCardController is not null)
                 selectedCardController.OnSelectedCardChanged -= HandleSelectedCardChanged;
         }
 
         private void Update()
         {
-            if (selectedCardController == null || !selectedCardController.HasSelection)
+            if (selectedCardController is null || !selectedCardController.HasSelection)
             {
                 HideAll();
                 return;
@@ -53,13 +57,13 @@ namespace Cards
 
         private void HandleSelectedCardChanged(CardInstance selectedCard)
         {
-            if (selectedCard == null)
+            if (selectedCard is null)
                 HideAll();
         }
 
         private void UpdatePreview(CardInstance card, Vector3 point, bool isValid)
         {
-            if (card == null || card.Definition == null)
+            if (card is null || card.Definition is null)
             {
                 HideAll();
                 return;
@@ -72,55 +76,54 @@ namespace Cards
             }
 
             SpawnableObjectDef spawnable = card.Definition.spawnableObject;
-            if (spawnable == null)
+            if (spawnable is null)
             {
                 HideAll();
                 return;
             }
 
-            Color color = isValid ? Color.green : Color.red;
+            Color color = isValid ? validColor : invalidColor;
 
             if (card.Type == CardType.Spell)
             {
-                ShowRing(primaryRadiusVisual, point, spawnable.effectRadius, color);
-                HideRing(secondaryRadiusVisual);
+                ShowCircle(secondaryRadiusVisual, point, spawnable.effectRadius, color);
                 return;
             }
 
             if (card.Type == CardType.Tower)
             {
-                ShowRing(primaryRadiusVisual, point, spawnable.placementRadius, color);
-                ShowRing(secondaryRadiusVisual, point, spawnable.effectRadius, color);
+                ShowCircle(primaryRadiusVisual, point, spawnable.placementRadius, color);
+                ShowCircle(secondaryRadiusVisual, point, spawnable.effectRadius, color);
                 return;
             }
 
             HideAll();
         }
 
-        private void ShowRing(GameObject ring, Vector3 point, float radius, Color color)
+        private void ShowCircle(GameObject circle, Vector3 point, float radius, Color color)
         {
-            if (ring is null)
+            if (circle is null)
                 return;
 
-            ring.SetActive(true);
-            ring.transform.position = point;
-            ring.transform.localScale = new Vector3(radius * 2f, 1f, radius * 2f);
+            circle.SetActive(true);
+            circle.transform.position = new Vector3(point.x, point.y, circle.transform.position.z);
+            circle.transform.localScale = new Vector3(radius * 2f, radius * 2f, 1f);
 
-            Renderer renderer = ring.GetComponent<Renderer>();
-            if (renderer is not null && renderer.material is not null)
-                renderer.material.color = color;
+            SpriteRenderer spriteRenderer = circle.GetComponent<SpriteRenderer>();
+            if (spriteRenderer is not null)
+                spriteRenderer.color = color;
         }
 
-        private void HideRing(GameObject ring)
+        private void HideCircle(GameObject circle)
         {
-            if (ring is not null)
-                ring.SetActive(false);
+            if (circle is not null)
+                circle.SetActive(false);
         }
 
         private void HideAll()
         {
-            HideRing(primaryRadiusVisual);
-            HideRing(secondaryRadiusVisual);
+            HideCircle(primaryRadiusVisual);
+            HideCircle(secondaryRadiusVisual);
         }
     }
 }

@@ -13,18 +13,21 @@ namespace Towers
 
         public bool CanPlaceTower(CardDef cardDef, Vector3 position)
         {
-            SpawnableObjectDef spawnable = cardDef.spawnableObject;
-            
-            if (spawnable.prefab is null)
+            if (cardDef is null || cardDef.spawnableObject is null || cardDef.spawnableObject.prefab is null)
                 return false;
+
+            float newRadius = cardDef.spawnableObject.placementRadius;
+            Vector2 newPos = position;
 
             foreach (TowerInstance tower in towers)
             {
                 if (tower is null)
                     continue;
-                
-                float combinedRadius = spawnable.placementRadius + tower.PlacementRadius;
-                if (Vector3.Distance(position, tower.transform.position) < combinedRadius)
+
+                float combinedRadius = newRadius + tower.PlacementRadius;
+                Vector2 towerPos = tower.transform.position;
+
+                if (Vector2.Distance(newPos, towerPos) < combinedRadius)
                     return false;
             }
 
@@ -33,10 +36,10 @@ namespace Towers
 
         public TowerInstance PlaceTower(CardDef cardDef, Vector3 position)
         {
-            SpawnableObjectDef spawnable = cardDef.spawnableObject;
-            
-            if (spawnable.prefab is null)
+            if (cardDef is null || cardDef.spawnableObject is null || cardDef.spawnableObject.prefab is null)
                 return null;
+
+            SpawnableObjectDef spawnable = cardDef.spawnableObject;
 
             GameObject spawned = Instantiate(
                 spawnable.prefab,
