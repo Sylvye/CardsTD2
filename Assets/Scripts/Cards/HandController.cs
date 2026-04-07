@@ -35,7 +35,7 @@ namespace Cards
                 if (drawn == null)
                     break;
 
-                Debug.Log($"Drew card: {drawn}");
+                // Debug.Log($"Drew card: {drawn}");
                 changed = true;
             }
 
@@ -64,7 +64,7 @@ namespace Cards
 
             cardState.Hand.Remove(card);
 
-            Debug.Log($"Played card: {card}");
+            // Debug.Log($"Played card: {card}");
 
             effectResolver?.ResolveOnPlay(card, playerState, playContext);
 
@@ -105,7 +105,7 @@ namespace Cards
                 return false;
             }
 
-            Debug.Log($"Manually drew card: {drawn} for {drawCost} mana.");
+            // Debug.Log($"Manually drew card: {drawn} for {drawCost} mana.");
             OnHandChanged?.Invoke();
             return true;
         }

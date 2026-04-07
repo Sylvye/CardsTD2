@@ -1,5 +1,4 @@
 ﻿using System;
-using Combat;
 using UnityEngine;
 
 namespace Cards
@@ -11,33 +10,41 @@ namespace Cards
 
         private CombatCardState cardState;
         private HandController handController;
-        private Func<int> getCurrentMana;
-        private Action<CardInstance> onPlayRequested;
+        private SelectedCardController selectedCardController;
+        private Action<CardInstance> onCardClicked;
 
         public void Initialize(
             CombatCardState combatCardState,
             HandController controller,
-            Func<int> manaGetter,
-            Action<CardInstance> playRequestedCallback)
+            SelectedCardController selectedController,
+            Action<CardInstance> cardClickedCallback)
         {
             cardState = combatCardState;
             handController = controller;
-            getCurrentMana = manaGetter;
-            onPlayRequested = playRequestedCallback;
+            selectedCardController = selectedController;
+            onCardClicked = cardClickedCallback;
 
-            handController.OnHandChanged += Rebuild;
+            if (handController is not null)
+                handController.OnHandChanged += Rebuild;
+
+            if (selectedCardController is not null)
+                selectedCardController.OnSelectedCardChanged += HandleSelectedCardChanged;
+
             Rebuild();
         }
 
         private void OnDestroy()
         {
-            if (handController != null)
+            if (handController is not null)
                 handController.OnHandChanged -= Rebuild;
+
+            if (selectedCardController is not null)
+                selectedCardController.OnSelectedCardChanged -= HandleSelectedCardChanged;
         }
 
         public void Rebuild()
         {
-            if (cardContainer == null || cardViewPrefab == null || cardState == null || handController == null)
+            if (cardContainer is null || cardViewPrefab is null || cardState is null)
                 return;
 
             ClearExistingViews();
@@ -46,24 +53,38 @@ namespace Cards
             {
                 CardView view = Instantiate(cardViewPrefab, cardContainer, false);
                 view.Bind(card, HandleCardClicked);
+
+                bool isSelected = selectedCardController is not null &&
+                                  selectedCardController.HasSelection &&
+                                  selectedCardController.SelectedCard == card;
+
+                view.SetSelected(isSelected);
             }
         }
 
         private void HandleCardClicked(CardInstance card)
         {
-            if (card == null || handController == null || getCurrentMana == null)
+            if (card is null)
                 return;
 
-            int mana = getCurrentMana();
+            onCardClicked?.Invoke(card);
+        }
 
-            if (card.CurrentManaCost <= mana)
+        private void HandleSelectedCardChanged(CardInstance selectedCard)
+        {
+            UpdateSelectionVisuals(selectedCard);
+        }
+
+        private void UpdateSelectionVisuals(CardInstance selectedCard)
+        {
+            for (int i = 0; i < cardContainer.childCount; i++)
             {
-                Debug.Log($"Playing card: {card.DisplayName}");
-                onPlayRequested?.Invoke(card);
-            }
-            else
-            {
-                Debug.Log($"Cannot play {card.DisplayName}. Not enough mana.");
+                CardView view = cardContainer.GetChild(i).GetComponent<CardView>();
+                if (view is null)
+                    continue;
+
+                bool isSelected = selectedCard is not null && view.BoundCard == selectedCard;
+                view.SetSelected(isSelected);
             }
         }
 

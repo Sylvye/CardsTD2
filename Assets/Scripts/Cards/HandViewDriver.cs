@@ -60,7 +60,7 @@ namespace Cards
                 handView.Initialize(
                     combatCardState,
                     handController,
-                    () => playerState.CurrentMana,
+                    selectedCardController,
                     OnCardClicked
                 );
             }
@@ -107,7 +107,7 @@ namespace Cards
 
             battleFlowController.StartBattle(openingHandSize);
 
-            Debug.Log($"Starting mana: {playerState.CurrentMana}");
+            // Debug.Log($"Starting mana: {playerState.CurrentMana}");
         }
 
         private void Update()
@@ -134,8 +134,8 @@ namespace Cards
 
             bool drew = handController.TryManualDraw(playerState, manualDrawCost);
 
-            if (drew)
-                Debug.Log($"Mana after manual draw: {playerState.CurrentMana}");
+            // if (drew)
+            //     Debug.Log($"Mana after manual draw: {playerState.CurrentMana}");
         }
         
         public void OnCardClicked(CardInstance card)

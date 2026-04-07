@@ -51,11 +51,7 @@ namespace Cards
 
                 case CardEffectType.GainMana:
                     playerState.GainBurstMana(effect.amount);
-                    Debug.Log($"Resolved GainMana: +{effect.amount}");
-                    break;
-
-                default:
-                    Debug.LogWarning($"Unhandled effect type: {effect.effectType}");
+                    // Debug.Log($"Resolved GainMana: +{effect.amount}");
                     break;
             }
         }
@@ -87,14 +83,14 @@ namespace Cards
         private void ResolveTower(CardInstance card, Vector3 worldPosition)
         {
             towerManager.PlaceTower(card.Definition, worldPosition);
-            Debug.Log($"Placed tower {card.DisplayName} at {worldPosition}");
+            // Debug.Log($"Placed tower {card.DisplayName} at {worldPosition}");
         }
 
         private void ResolveSpell(CardInstance card, Vector3 worldPosition)
         {
             if (card.Definition.spawnableObject == null || card.Definition.spawnableObject.prefab == null)
             {
-                Debug.Log($"Spell {card.DisplayName} used at {worldPosition} (no spawnable prefab assigned).");
+                // Debug.Log($"Spell {card.DisplayName} used at {worldPosition} (no spawnable prefab assigned).");
                 return;
             }
 
@@ -104,7 +100,7 @@ namespace Cards
                 Quaternion.identity
             );
 
-            Debug.Log($"Cast spell {card.DisplayName} at {worldPosition}");
+            // Debug.Log($"Cast spell {card.DisplayName} at {worldPosition}");
         }
     }
 }
