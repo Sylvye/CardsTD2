@@ -52,7 +52,6 @@ namespace Cards
             }
 
             bool isValid = validator.IsValid(card, point);
-            print("[Update] valid: " + isValid);
             UpdatePreview(card, point, isValid);
         }
 

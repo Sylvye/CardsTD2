@@ -151,5 +151,14 @@ namespace Cards
             
             selectedCardController.Select(card);
         }
+        
+        public void LoseLives(int amount)
+        {
+            if (playerState == null || amount <= 0)
+                return;
+
+            playerState.LoseLives(amount);
+            Debug.Log($"Player lost {amount} lives. Remaining: {playerState.Lives}");
+        }
     }
 }

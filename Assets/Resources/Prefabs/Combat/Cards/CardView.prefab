@@ -391,7 +391,7 @@ MonoBehaviour:
   iconImage: {fileID: 3790681230553549226}
   playButton: {fileID: 198304793261325859}
   vertOffset: 100
-  hoverRaiseAmount: 30
+  hoverRaiseAmount: 50
   moveSpeed: 12
 --- !u!1 &7830766309854922857
 GameObject:
