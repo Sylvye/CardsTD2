@@ -9,16 +9,10 @@ namespace Cards
     {
         [Header("Deck Setup")]
         [SerializeField] private List<CardDef> startingDeck = new();
-        [SerializeField] private int openingHandSize = 5;
         [SerializeField] private int manualDrawCost = 2;
 
-        [Header("Player Setup")]
-        [SerializeField] private int startingMana = 0;
-        [SerializeField] private int maxMana = 20;
-        [SerializeField] private float manaRegenPerSecond = 1f;
-        [SerializeField] private int startingLives = 20;
-        
         [Header("Combat Setup")]
+        [SerializeField] private CombatSessionDriver combatSessionDriver;
         [SerializeField] private TowerManager towerManager;
         [SerializeField] private PlayFieldRaycaster playFieldRaycaster;
         [SerializeField] private CardPreviewController cardPreviewController;
@@ -33,25 +27,19 @@ namespace Cards
         private CombatCardState combatCardState;
         private HandController handController;
         private CardEffectResolver effectResolver;
-        private PlayerState playerState;
-        private BattleFlowController battleFlowController;
         private SelectedCardController selectedCardController;
         private CardPlacementValidator cardPlacementValidator;
-
-        public int CurrentMana => playerState != null ? playerState.CurrentMana : 0;
 
         private void Start()
         {
             combatCardState = new CombatCardState();
             combatCardState.BuildDrawPileFromDefs(startingDeck);
 
-            playerState = new PlayerState(startingMana, maxMana, manaRegenPerSecond, startingLives);
-
             handController = new HandController(combatCardState, 5);
             effectResolver = new CardEffectResolver(combatCardState, handController, towerManager);
             handController.SetEffectResolver(effectResolver);
+            combatSessionDriver?.InitializeSession(handController);
 
-            battleFlowController = new BattleFlowController(playerState, handController);
             selectedCardController = new SelectedCardController();
             cardPlacementValidator = new CardPlacementValidator(towerManager);
 
@@ -71,7 +59,7 @@ namespace Cards
                     combatCardState,
                     handController,
                     () => manualDrawCost,
-                    () => handController.CanManuallyDraw(playerState, manualDrawCost),
+                    () => combatSessionDriver != null && combatSessionDriver.CanManuallyDraw(handController, manualDrawCost),
                     TryManualDraw
                 );
             }
@@ -83,7 +71,7 @@ namespace Cards
 
             if (battleHUD != null)
             {
-                battleHUD.Initialize(playerState);
+                battleHUD.Initialize(combatSessionDriver != null ? combatSessionDriver.PlayerState : null);
             }
             
             if (cardPreviewController != null)
@@ -100,42 +88,18 @@ namespace Cards
                 fieldCardUseController.Initialize(
                     selectedCardController,
                     handController,
-                    playerState,
+                    combatSessionDriver != null ? combatSessionDriver.PlayerState : null,
                     cardPlacementValidator
                 );
             }
-
-            battleFlowController.StartBattle(openingHandSize);
-
-            // Debug.Log($"Starting mana: {playerState.CurrentMana}");
-        }
-
-        private void Update()
-        {
-            battleFlowController?.Update(Time.deltaTime);
         }
         
-        // OUTDATED, COULD POSSIBLY BE USED FOR NON-TARGETED CARDS THOUGH
-        // public void TryPlayCard(CardInstance card)
-        // {
-        //     if (card == null || playerState == null)
-        //         return;
-        //
-        //     bool played = handController.PlayCard(card, playerState);
-        //
-        //     if (played)
-        //         Debug.Log($"Mana after play: {playerState.CurrentMana}");
-        // }
-
         public void TryManualDraw()
         {
-            if (playerState == null)
+            if (combatSessionDriver == null)
                 return;
 
-            bool drew = handController.TryManualDraw(playerState, manualDrawCost);
-
-            // if (drew)
-            //     Debug.Log($"Mana after manual draw: {playerState.CurrentMana}");
+            combatSessionDriver.TryManualDraw(handController, manualDrawCost);
         }
         
         public void OnCardClicked(CardInstance card)
@@ -152,22 +116,5 @@ namespace Cards
             selectedCardController.Select(card);
         }
         
-        public void LoseLives(int amount)
-        {
-            if (playerState == null || amount <= 0)
-                return;
-
-            playerState.LoseLives(amount);
-            Debug.Log($"Player lost {amount} lives. Remaining: {playerState.Lives}");
-        }
-        
-        public void GainMana(int amount)
-        {
-            if (playerState == null || amount <= 0)
-                return;
-
-            playerState.GainBurstMana(amount);
-            Debug.Log($"Player gained {amount} mana. Current mana: {playerState.CurrentMana}");
-        }
     }
 }

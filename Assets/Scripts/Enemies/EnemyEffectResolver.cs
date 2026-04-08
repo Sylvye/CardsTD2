@@ -45,10 +45,10 @@ namespace Enemies
 
         private void ResolveGainMana(EnemyTriggeredEffect effect, EnemyEffectContext context)
         {
-            if (context?.HandViewDriver == null)
+            if (context?.CombatSessionDriver == null)
                 return;
 
-            context.HandViewDriver.GainMana(effect.amount);
+            context.CombatSessionDriver.GainMana(effect.amount);
         }
 
         private void ResolveSpawnEnemy(EnemyTriggeredEffect effect, EnemyEffectContext context)

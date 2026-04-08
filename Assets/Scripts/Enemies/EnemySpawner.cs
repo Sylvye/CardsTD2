@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
+using Combat;
 using UnityEngine;
-using Cards;
 
 namespace Enemies
 {
@@ -9,7 +9,7 @@ namespace Enemies
         [Header("References")]
         [SerializeField] private EnemyManager enemyManager;
         [SerializeField] private EnemyPath enemyPath;
-        [SerializeField] private HandViewDriver handViewDriver;
+        [SerializeField] private CombatSessionDriver combatSessionDriver;
 
         [Header("Wave Data")]
         [SerializeField] private List<SpawnBatch> spawnQueue = new();
@@ -153,7 +153,7 @@ namespace Enemies
                 Quaternion.identity
             );
 
-            enemy.Initialize(enemyManager, this, handViewDriver, enemyPath, enemyDef, trackDistance);
+            enemy.Initialize(enemyManager, this, combatSessionDriver, enemyPath, enemyDef, trackDistance);
         }
     }
 }

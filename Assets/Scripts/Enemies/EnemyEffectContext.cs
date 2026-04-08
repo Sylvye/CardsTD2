@@ -1,6 +1,5 @@
-﻿using UnityEngine;
-using Combat;
-using Cards;
+﻿using Combat;
+using UnityEngine;
 
 namespace Enemies
 {
@@ -9,7 +8,7 @@ namespace Enemies
         public EnemyAgent SourceEnemy { get; }
         public EnemyManager EnemyManager { get; }
         public EnemySpawner EnemySpawner { get; }
-        public HandViewDriver HandViewDriver { get; }
+        public CombatSessionDriver CombatSessionDriver { get; }
         public Vector3 WorldPosition { get; }
         public float TrackDistance { get; }
 
@@ -17,14 +16,14 @@ namespace Enemies
             EnemyAgent sourceEnemy,
             EnemyManager enemyManager,
             EnemySpawner enemySpawner,
-            HandViewDriver handViewDriver,
+            CombatSessionDriver combatSessionDriver,
             Vector3 worldPosition,
             float trackDistance)
         {
             SourceEnemy = sourceEnemy;
             EnemyManager = enemyManager;
             EnemySpawner = enemySpawner;
-            HandViewDriver = handViewDriver;
+            CombatSessionDriver = combatSessionDriver;
             WorldPosition = worldPosition;
             TrackDistance = trackDistance;
         }
