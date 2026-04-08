@@ -9,7 +9,7 @@ namespace Enemies
         private PathFollower pathFollower;
         private EnemyManager enemyManager;
         private EnemySpawner enemySpawner;
-        private CombatSessionDriver combatSessionDriver;
+        private IPlayerEffects playerEffects;
         private EnemyDef enemyDef;
         private EnemyEffectResolver effectResolver;
 
@@ -36,14 +36,14 @@ namespace Enemies
         public void Initialize(
             EnemyManager manager,
             EnemySpawner spawner,
-            CombatSessionDriver driver,
+            IPlayerEffects effects,
             EnemyPath path,
             EnemyDef def,
             float startingTrackDistance = 0f)
         {
             enemyManager = manager;
             enemySpawner = spawner;
-            combatSessionDriver = driver;
+            playerEffects = effects;
             enemyDef = def;
 
             isDeadOrEscaped = false;
@@ -124,7 +124,7 @@ namespace Enemies
                 this,
                 enemyManager,
                 enemySpawner,
-                combatSessionDriver,
+                playerEffects,
                 transform.position,
                 TrackDistance
             );

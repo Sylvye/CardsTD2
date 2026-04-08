@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Combat
 {
-    public class CombatSessionDriver : MonoBehaviour
+    public class CombatSessionDriver : MonoBehaviour, IPlayerEffects
     {
         [Header("Player Setup")]
         [SerializeField] private int startingMana = 0;
