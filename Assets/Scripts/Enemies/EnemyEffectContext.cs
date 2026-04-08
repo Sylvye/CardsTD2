@@ -8,7 +8,7 @@ namespace Enemies
         public EnemyAgent SourceEnemy { get; }
         public EnemyManager EnemyManager { get; }
         public EnemySpawner EnemySpawner { get; }
-        public CombatSessionDriver CombatSessionDriver { get; }
+        public IPlayerEffects PlayerEffects { get; }
         public Vector3 WorldPosition { get; }
         public float TrackDistance { get; }
 
@@ -16,14 +16,14 @@ namespace Enemies
             EnemyAgent sourceEnemy,
             EnemyManager enemyManager,
             EnemySpawner enemySpawner,
-            CombatSessionDriver combatSessionDriver,
+            IPlayerEffects playerEffects,
             Vector3 worldPosition,
             float trackDistance)
         {
             SourceEnemy = sourceEnemy;
             EnemyManager = enemyManager;
             EnemySpawner = enemySpawner;
-            CombatSessionDriver = combatSessionDriver;
+            PlayerEffects = playerEffects;
             WorldPosition = worldPosition;
             TrackDistance = trackDistance;
         }

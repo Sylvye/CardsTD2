@@ -9,7 +9,7 @@ namespace Enemies
         [Header("References")]
         [SerializeField] private EnemyManager enemyManager;
         [SerializeField] private EnemyPath enemyPath;
-        [SerializeField] private CombatSessionDriver combatSessionDriver;
+        [SerializeField] private MonoBehaviour playerEffectsSource;
 
         [Header("Wave Data")]
         [SerializeField] private List<SpawnBatch> spawnQueue = new();
@@ -23,12 +23,20 @@ namespace Enemies
         private float waitTimer = 0f;
         private bool isWaitingBetweenBatches = false;
         private bool isRunning = false;
+        private IPlayerEffects playerEffects;
 
         public bool IsRunning => isRunning;
         public bool IsFinished => isRunning && currentBatchIndex >= spawnQueue.Count;
 
         private void Start()
         {
+            playerEffects = playerEffectsSource as IPlayerEffects;
+
+            if (playerEffectsSource != null && playerEffects == null)
+            {
+                Debug.LogError($"{nameof(EnemySpawner)} requires {nameof(playerEffectsSource)} to implement {nameof(IPlayerEffects)}.");
+            }
+
             if (startOnPlay)
             {
                 Begin();
@@ -153,7 +161,7 @@ namespace Enemies
                 Quaternion.identity
             );
 
-            enemy.Initialize(enemyManager, this, combatSessionDriver, enemyPath, enemyDef, trackDistance);
+            enemy.Initialize(enemyManager, this, playerEffects, enemyPath, enemyDef, trackDistance);
         }
     }
 }

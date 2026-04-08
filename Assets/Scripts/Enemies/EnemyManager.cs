@@ -6,11 +6,22 @@ namespace Enemies
 {
     public class EnemyManager : MonoBehaviour
     {
-        [SerializeField] private CombatSessionDriver combatSessionDriver;
+        [SerializeField] private MonoBehaviour playerEffectsSource;
 
         private readonly List<EnemyAgent> activeEnemies = new();
+        private IPlayerEffects playerEffects;
 
         public IReadOnlyList<EnemyAgent> ActiveEnemies => activeEnemies;
+
+        private void Awake()
+        {
+            playerEffects = playerEffectsSource as IPlayerEffects;
+
+            if (playerEffectsSource != null && playerEffects == null)
+            {
+                Debug.LogError($"{nameof(EnemyManager)} requires {nameof(playerEffectsSource)} to implement {nameof(IPlayerEffects)}.");
+            }
+        }
 
         public void RegisterEnemy(EnemyAgent enemy)
         {
@@ -33,10 +44,7 @@ namespace Enemies
             if (enemy is null)
                 return;
 
-            if (combatSessionDriver is not null)
-            {
-                combatSessionDriver.LoseLives(enemy.LifeDamage);
-            }
+            playerEffects?.LoseLives(enemy.LifeDamage);
         }
     }
 }
