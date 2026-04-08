@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Combat;
 using Towers;
 
 namespace Cards
@@ -11,24 +10,17 @@ namespace Cards
         [SerializeField] private List<CardDef> startingDeck = new();
         [SerializeField] private int manualDrawCost = 2;
 
-        [Header("Combat Setup")]
-        [SerializeField] private CombatSessionDriver combatSessionDriver;
+        [Header("Gameplay")]
         [SerializeField] private TowerManager towerManager;
-        [SerializeField] private PlayFieldRaycaster playFieldRaycaster;
-        [SerializeField] private CardPreviewController cardPreviewController;
-        [SerializeField] private FieldCardUseController fieldCardUseController;
+        [SerializeField] private HandGameplayDriver handGameplayDriver;
 
         [Header("UI")]
         [SerializeField] private HandView handView;
-        [SerializeField] private DrawPileView drawPileView;
-        [SerializeField] private DiscardPileView discardPileView;
-        [SerializeField] private BattleHUD battleHUD;
 
         private CombatCardState combatCardState;
         private HandController handController;
         private CardEffectResolver effectResolver;
-        private SelectedCardController selectedCardController;
-        private CardPlacementValidator cardPlacementValidator;
+        private HandCardsPresenter handCardsPresenter;
 
         private void Start()
         {
@@ -38,83 +30,16 @@ namespace Cards
             handController = new HandController(combatCardState, 5);
             effectResolver = new CardEffectResolver(combatCardState, handController, towerManager);
             handController.SetEffectResolver(effectResolver);
-            combatSessionDriver?.InitializeSession(handController);
 
-            selectedCardController = new SelectedCardController();
-            cardPlacementValidator = new CardPlacementValidator(towerManager);
+            handCardsPresenter = new HandCardsPresenter(handView);
+            handCardsPresenter.Initialize(combatCardState, handController);
 
-            if (handView != null)
-            {
-                handView.Initialize(
-                    combatCardState,
-                    handController,
-                    selectedCardController,
-                    OnCardClicked
-                );
-            }
-
-            if (drawPileView != null)
-            {
-                drawPileView.Initialize(
-                    combatCardState,
-                    handController,
-                    () => manualDrawCost,
-                    () => combatSessionDriver != null && combatSessionDriver.CanManuallyDraw(handController, manualDrawCost),
-                    TryManualDraw
-                );
-            }
-
-            if (discardPileView != null)
-            {
-                discardPileView.Initialize(combatCardState, handController);
-            }
-
-            if (battleHUD != null)
-            {
-                battleHUD.Initialize(combatSessionDriver != null ? combatSessionDriver.PlayerState : null);
-            }
-            
-            if (cardPreviewController != null)
-            {
-                cardPreviewController.Initialize(
-                    selectedCardController,
-                    playFieldRaycaster,
-                    cardPlacementValidator
-                );
-            }
-            
-            if (fieldCardUseController != null)
-            {
-                fieldCardUseController.Initialize(
-                    selectedCardController,
-                    handController,
-                    combatSessionDriver != null ? combatSessionDriver.PlayerState : null,
-                    cardPlacementValidator
-                );
-            }
+            handGameplayDriver?.Initialize(
+                combatCardState,
+                handController,
+                handCardsPresenter.SelectedCardController,
+                manualDrawCost
+            );
         }
-        
-        public void TryManualDraw()
-        {
-            if (combatSessionDriver == null)
-                return;
-
-            combatSessionDriver.TryManualDraw(handController, manualDrawCost);
-        }
-        
-        public void OnCardClicked(CardInstance card)
-        {
-            if (card == null)
-                return;
-
-            if (selectedCardController.HasSelection && selectedCardController.SelectedCard == card)
-            {
-                selectedCardController.Deselect();
-                return;
-            }
-            
-            selectedCardController.Select(card);
-        }
-        
     }
 }
