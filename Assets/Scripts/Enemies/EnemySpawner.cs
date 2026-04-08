@@ -1,58 +1,159 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
+using Cards;
 
 namespace Enemies
 {
     public class EnemySpawner : MonoBehaviour
     {
+        [Header("References")]
         [SerializeField] private EnemyManager enemyManager;
         [SerializeField] private EnemyPath enemyPath;
-        [SerializeField] private EnemyAgent enemyPrefab;
-        [SerializeField] private float spawnInterval = 1.5f;
-        [SerializeField] private float enemySpeed = 2f;
-        [SerializeField] private int spawnCount = 5;
-        [SerializeField] private bool spawnOnStart = true;
+        [SerializeField] private HandViewDriver handViewDriver;
 
-        private int spawned;
-        private float timer;
+        [Header("Wave Data")]
+        [SerializeField] private List<SpawnBatch> spawnQueue = new();
+
+        [Header("Runtime")]
+        [SerializeField] private bool startOnPlay = true;
+
+        private int currentBatchIndex = -1;
+        private int spawnedInCurrentBatch = 0;
+        private float spawnTimer = 0f;
+        private float waitTimer = 0f;
+        private bool isWaitingBetweenBatches = false;
+        private bool isRunning = false;
+
+        public bool IsRunning => isRunning;
+        public bool IsFinished => isRunning && currentBatchIndex >= spawnQueue.Count;
 
         private void Start()
         {
-            if (spawnOnStart)
+            if (startOnPlay)
             {
-                timer = spawnInterval;
+                Begin();
             }
         }
 
         private void Update()
         {
-            if (!spawnOnStart)
+            if (!isRunning)
                 return;
 
-            if (spawned >= spawnCount)
+            if (currentBatchIndex >= spawnQueue.Count)
                 return;
 
-            timer += Time.deltaTime;
-
-            if (timer >= spawnInterval)
+            if (isWaitingBetweenBatches)
             {
-                timer = 0f;
-                SpawnEnemy();
+                waitTimer -= Time.deltaTime;
+
+                if (waitTimer <= 0f)
+                {
+                    AdvanceToNextBatch();
+                }
+
+                return;
+            }
+
+            SpawnBatch currentBatch = spawnQueue[currentBatchIndex];
+
+            if (currentBatch == null || currentBatch.enemyDef == null || currentBatch.enemyDef.prefab == null)
+            {
+                Debug.LogWarning($"EnemySpawner: invalid batch at index {currentBatchIndex}, skipping.");
+                FinishCurrentBatchAndWait(0f);
+                return;
+            }
+
+            spawnTimer -= Time.deltaTime;
+
+            if (spawnedInCurrentBatch < currentBatch.spawnCount && spawnTimer <= 0f)
+            {
+                SpawnEnemy(currentBatch.enemyDef);
+                spawnedInCurrentBatch++;
+
+                if (spawnedInCurrentBatch >= currentBatch.spawnCount)
+                {
+                    FinishCurrentBatchAndWait(currentBatch.waitTime);
+                }
+                else
+                {
+                    spawnTimer = currentBatch.spawnInterval;
+                }
             }
         }
 
-        public void SpawnEnemy()
+        public void Begin()
         {
-            if (enemyPrefab is null || enemyPath is null || enemyManager is null)
+            if (spawnQueue.Count == 0)
+            {
+                Debug.LogWarning("EnemySpawner: spawn queue is empty.");
+                return;
+            }
+
+            isRunning = true;
+            currentBatchIndex = 0;
+            StartBatch(currentBatchIndex);
+        }
+
+        public void Stop()
+        {
+            isRunning = false;
+        }
+
+        public void ResetSpawner()
+        {
+            isRunning = false;
+            currentBatchIndex = -1;
+            spawnedInCurrentBatch = 0;
+            spawnTimer = 0f;
+            waitTimer = 0f;
+            isWaitingBetweenBatches = false;
+        }
+
+        private void StartBatch(int batchIndex)
+        {
+            if (batchIndex < 0 || batchIndex >= spawnQueue.Count)
+                return;
+
+            spawnedInCurrentBatch = 0;
+            spawnTimer = 0f;
+            waitTimer = 0f;
+            isWaitingBetweenBatches = false;
+        }
+
+        private void FinishCurrentBatchAndWait(float waitTime)
+        {
+            isWaitingBetweenBatches = true;
+            waitTimer = waitTime;
+        }
+
+        private void AdvanceToNextBatch()
+        {
+            currentBatchIndex++;
+
+            if (currentBatchIndex >= spawnQueue.Count)
+                return;
+
+            StartBatch(currentBatchIndex);
+        }
+
+        private void SpawnEnemy(EnemyDef enemyDef)
+        {
+            SpawnEnemyNow(enemyDef, 0f);
+        }
+
+        public void SpawnEnemyNow(EnemyDef enemyDef, float trackDistance)
+        {
+            if (enemyDef == null || enemyDef.prefab == null || enemyPath == null || enemyManager == null)
                 return;
 
             EnemyAgent enemy = Instantiate(
-                enemyPrefab,
+                enemyDef.prefab,
                 transform.position,
                 Quaternion.identity
             );
 
-            enemy.Initialize(enemyManager, enemyPath, enemySpeed);
-            spawned++;
+            enemy.Initialize(enemyManager, this, handViewDriver, enemyPath, enemyDef, trackDistance);
         }
     }
 }

@@ -22,7 +22,7 @@ namespace Cards
 
         public void ResolveOnPlay(CardInstance card, PlayerState playerState, CardPlayContext playContext)
         {
-            if (card == null || card.Definition == null)
+            if (card == null || card.Definition is null)
             {
                 Debug.LogWarning("Tried to resolve effects for a null card.");
                 return;
@@ -58,7 +58,7 @@ namespace Cards
 
         private void ResolveWorldUse(CardInstance card, CardPlayContext playContext)
         {
-            if (card == null || card.Definition == null || playContext == null)
+            if (card == null || card.Definition is null || playContext == null)
                 return;
 
             if (!playContext.HasWorldPosition)
@@ -88,7 +88,7 @@ namespace Cards
 
         private void ResolveSpell(CardInstance card, Vector3 worldPosition)
         {
-            if (card.Definition.spawnableObject == null || card.Definition.spawnableObject.prefab == null)
+            if (card.Definition.spawnableObject is null || card.Definition.spawnableObject.prefab is null)
             {
                 // Debug.Log($"Spell {card.DisplayName} used at {worldPosition} (no spawnable prefab assigned).");
                 return;

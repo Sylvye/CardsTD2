@@ -615,11 +615,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemySpawner
   enemyManager: {fileID: 751640687}
   enemyPath: {fileID: 1054821330}
-  enemyPrefab: {fileID: 2232636580848620905, guid: 674143ff06aa1b945ae3142edff0730b, type: 3}
-  spawnInterval: 1.5
-  enemySpeed: 2
-  spawnCount: 5
-  spawnOnStart: 1
+  handViewDriver: {fileID: 465495816}
+  spawnQueue:
+  - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
+    spawnCount: 6
+    spawnInterval: 0.5
+    waitTime: 2
+  - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
+    spawnCount: 2
+    spawnInterval: 0.125
+    waitTime: 2
+  - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
+    spawnCount: 6
+    spawnInterval: 0.5
+    waitTime: 2
+  startOnPlay: 1
 --- !u!1 &424905218
 GameObject:
   m_ObjectHideFlags: 0
@@ -897,7 +907,7 @@ MonoBehaviour:
   manualDrawCost: 10
   startingMana: 20
   maxMana: 20
-  manaRegenPerSecond: 20
+  manaRegenPerSecond: 1
   startingLives: 100
   towerManager: {fileID: 284558777}
   playFieldRaycaster: {fileID: 1246878588}

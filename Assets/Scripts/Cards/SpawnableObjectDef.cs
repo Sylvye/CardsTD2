@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Combat
+namespace Cards
 {
     [CreateAssetMenu(menuName = "Cards/Spawnable Object Definition", fileName = "New Spawnable Object")]
     public class SpawnableObjectDef : ScriptableObject

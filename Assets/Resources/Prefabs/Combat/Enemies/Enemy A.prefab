@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2624089908086698507}
   - component: {fileID: 2232636580848620905}
   m_Layer: 0
-  m_Name: Enemy
+  m_Name: Enemy A
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -28,7 +28,7 @@ Transform:
   m_GameObject: {fileID: 1309571596318279916}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.33788, y: 1.56438, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -106,7 +106,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.PathFollower
   path: {fileID: 0}
-  speed: 2
+  speed: 0
   startingDistance: 0
   faceMovementDirection: 1
 --- !u!114 &2232636580848620905
@@ -121,5 +121,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b2d086fbfec4e078c6abce430a4e262, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyAgent
-  maxHealth: 10
-  lifeDamage: 1

@@ -160,5 +160,14 @@ namespace Cards
             playerState.LoseLives(amount);
             Debug.Log($"Player lost {amount} lives. Remaining: {playerState.Lives}");
         }
+        
+        public void GainMana(int amount)
+        {
+            if (playerState == null || amount <= 0)
+                return;
+
+            playerState.GainBurstMana(amount);
+            Debug.Log($"Player gained {amount} mana. Current mana: {playerState.CurrentMana}");
+        }
     }
 }

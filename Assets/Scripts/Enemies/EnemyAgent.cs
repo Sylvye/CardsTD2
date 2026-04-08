@@ -1,16 +1,23 @@
-﻿using UnityEngine;
+﻿using Combat;
+using Cards;
+using UnityEngine;
 
 namespace Enemies
 {
     [RequireComponent(typeof(PathFollower))]
     public class EnemyAgent : MonoBehaviour
     {
-        [SerializeField] private float maxHealth = 10f;
-        [SerializeField] private int lifeDamage = 1;
-        
         private PathFollower pathFollower;
         private EnemyManager enemyManager;
+        private EnemySpawner enemySpawner;
+        private HandViewDriver handViewDriver;
+        private EnemyDef enemyDef;
+        private EnemyEffectResolver effectResolver;
+
+        private float maxHealth;
         private float currentHealth;
+        private int lifeDamage;
+
         private bool isInitialized;
         private bool isDeadOrEscaped;
 
@@ -18,27 +25,44 @@ namespace Enemies
         public float MaxHealth => maxHealth;
         public int LifeDamage => lifeDamage;
         public bool IsDeadOrEscaped => isDeadOrEscaped;
+        public EnemyDef Definition => enemyDef;
+        public float TrackDistance => pathFollower != null ? pathFollower.DistanceTravelled : 0f;
 
         private void Awake()
         {
             pathFollower = GetComponent<PathFollower>();
-            currentHealth = maxHealth;
+            effectResolver = new EnemyEffectResolver();
         }
 
-        public void Initialize(EnemyManager manager, EnemyPath path, float speed)
+        public void Initialize(
+            EnemyManager manager,
+            EnemySpawner spawner,
+            HandViewDriver driver,
+            EnemyPath path,
+            EnemyDef def,
+            float startingTrackDistance = 0f)
         {
             enemyManager = manager;
-            currentHealth = maxHealth;
+            enemySpawner = spawner;
+            handViewDriver = driver;
+            enemyDef = def;
+
             isDeadOrEscaped = false;
             isInitialized = true;
+
+            maxHealth = def.maxHealth;
+            currentHealth = maxHealth;
+            lifeDamage = def.lifeDamage;
 
             if (pathFollower == null)
                 pathFollower = GetComponent<PathFollower>();
 
-            pathFollower.SetPath(path, 0f);
-            pathFollower.SetSpeed(speed);
+            pathFollower.SetPath(path, startingTrackDistance);
+            pathFollower.SetSpeed(def.moveSpeed);
 
             enemyManager?.RegisterEnemy(this);
+
+            FireTrigger(EnemyTriggerType.OnSpawn);
         }
 
         private void Update()
@@ -59,6 +83,8 @@ namespace Enemies
 
             currentHealth -= amount;
 
+            FireTrigger(EnemyTriggerType.OnHit);
+
             if (currentHealth <= 0f)
             {
                 Die();
@@ -70,6 +96,8 @@ namespace Enemies
             if (isDeadOrEscaped)
                 return;
 
+            FireTrigger(EnemyTriggerType.OnDeath);
+
             isDeadOrEscaped = true;
             enemyManager?.UnregisterEnemy(this);
             Destroy(gameObject);
@@ -80,22 +108,29 @@ namespace Enemies
             if (isDeadOrEscaped)
                 return;
 
+            FireTrigger(EnemyTriggerType.OnExit);
+
             isDeadOrEscaped = true;
             enemyManager?.HandleEnemyEscaped(this);
             enemyManager?.UnregisterEnemy(this);
             Destroy(gameObject);
         }
 
-        private void SetSpeed(float speed)
+        private void FireTrigger(EnemyTriggerType trigger)
         {
-            var follower = GetComponent<PathFollower>();
-            if (follower != null)
-            {
-                // temporary until PathFollower exposes a setter
-                typeof(PathFollower)
-                    .GetField("speed", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    ?.SetValue(follower, speed);
-            }
+            if (enemyDef == null || effectResolver == null)
+                return;
+
+            EnemyEffectContext context = new(
+                this,
+                enemyManager,
+                enemySpawner,
+                handViewDriver,
+                transform.position,
+                TrackDistance
+            );
+
+            effectResolver.ResolveEffectsForTrigger(enemyDef, trigger, context);
         }
     }
 }

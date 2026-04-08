@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e7e99368baf4b3bb40e1750a05d04cf, type: 3}
+  m_Name: Enemy A
+  m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyDef
+  prefab: {fileID: 2232636580848620905, guid: 674143ff06aa1b945ae3142edff0730b, type: 3}
+  maxHealth: 10
+  moveSpeed: 2
+  lifeDamage: 1
+  triggeredEffects: []
