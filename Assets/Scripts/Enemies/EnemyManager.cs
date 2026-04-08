@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
-using Cards;
+using Combat;
 using UnityEngine;
 
 namespace Enemies
 {
     public class EnemyManager : MonoBehaviour
     {
-        [SerializeField] private HandViewDriver handViewDriver;
+        [SerializeField] private CombatSessionDriver combatSessionDriver;
 
         private readonly List<EnemyAgent> activeEnemies = new();
 
@@ -33,9 +33,9 @@ namespace Enemies
             if (enemy is null)
                 return;
 
-            if (handViewDriver is not null)
+            if (combatSessionDriver is not null)
             {
-                handViewDriver.LoseLives(enemy.LifeDamage);
+                combatSessionDriver.LoseLives(enemy.LifeDamage);
             }
         }
     }

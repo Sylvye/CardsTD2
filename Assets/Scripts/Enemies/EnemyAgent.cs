@@ -1,5 +1,4 @@
 ﻿using Combat;
-using Cards;
 using UnityEngine;
 
 namespace Enemies
@@ -10,7 +9,7 @@ namespace Enemies
         private PathFollower pathFollower;
         private EnemyManager enemyManager;
         private EnemySpawner enemySpawner;
-        private HandViewDriver handViewDriver;
+        private CombatSessionDriver combatSessionDriver;
         private EnemyDef enemyDef;
         private EnemyEffectResolver effectResolver;
 
@@ -37,14 +36,14 @@ namespace Enemies
         public void Initialize(
             EnemyManager manager,
             EnemySpawner spawner,
-            HandViewDriver driver,
+            CombatSessionDriver driver,
             EnemyPath path,
             EnemyDef def,
             float startingTrackDistance = 0f)
         {
             enemyManager = manager;
             enemySpawner = spawner;
-            handViewDriver = driver;
+            combatSessionDriver = driver;
             enemyDef = def;
 
             isDeadOrEscaped = false;
@@ -125,7 +124,7 @@ namespace Enemies
                 this,
                 enemyManager,
                 enemySpawner,
-                handViewDriver,
+                combatSessionDriver,
                 transform.position,
                 TrackDistance
             );
