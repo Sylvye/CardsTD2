@@ -54,10 +54,10 @@ namespace Towers
             if (cardDef == null)
                 return null;
 
-            if (cardDef.TowerDefinition != null)
-                return PlaceTower(cardDef.TowerDefinition, position);
-
             SpawnableObjectDef spawnable = cardDef.spawnableObject;
+            if (spawnable is TowerDef towerDef)
+                return PlaceTower(towerDef, position);
+
             if (spawnable == null || spawnable.prefab == null)
                 return null;
 
