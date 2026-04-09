@@ -76,13 +76,21 @@ namespace Cards
 
         private void ResolveTower(CardInstance card, Vector3 worldPosition)
         {
-            if (card.Definition.TowerDefinition == null &&
-                (card.Definition.spawnableObject == null || card.Definition.spawnableObject.prefab == null))
+            SpawnableObjectDef spawnable = card.Definition.spawnableObject;
+            if (spawnable is TowerDef towerDef)
             {
+                towerManager.PlaceTower(towerDef, worldPosition);
                 return;
             }
 
-            towerManager.PlaceTower(card.Definition, worldPosition);
+            if (spawnable == null || spawnable.prefab == null)
+                return;
+
+            Object.Instantiate(
+                spawnable.prefab,
+                worldPosition,
+                Quaternion.identity
+            );
         }
 
         private void ResolveSpell(CardInstance card, Vector3 worldPosition)
