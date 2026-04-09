@@ -83,12 +83,16 @@ namespace Towers
             if (towerDef == null || towerDef.prefab == null)
                 return null;
 
-            TowerAgent tower = Instantiate(
+            GameObject spawned = Instantiate(
                 towerDef.prefab,
                 position,
                 Quaternion.identity,
                 towerParent
             );
+
+            TowerAgent tower = spawned.GetComponent<TowerAgent>();
+            if (tower == null)
+                return null;
 
             tower.Initialize(towerDef, BuildRuntimeContext());
             RegisterTower(tower);

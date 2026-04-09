@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Cards;
 using UnityEngine;
 
 namespace Towers
@@ -51,15 +52,11 @@ namespace Towers
     }
 
     [CreateAssetMenu(menuName = "Towers/Tower Definition", fileName = "New Tower Definition")]
-    public class TowerDef : ScriptableObject
+    public class TowerDef : SpawnableObjectDef
     {
         [Header("Identity")]
         public string id;
         public string displayName;
-
-        [Header("Spawn")]
-        public TowerAgent prefab;
-        [Min(0f)] public float placementRadius = 0.5f;
 
         [Header("Stats")]
         public TowerBaseStats baseStats = new()
