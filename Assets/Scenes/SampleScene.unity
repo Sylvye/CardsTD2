@@ -554,6 +554,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerManager
   towerParent: {fileID: 284558778}
+  enemyManager: {fileID: 0}
 --- !u!4 &284558778
 Transform:
   m_ObjectHideFlags: 0
@@ -615,7 +616,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemySpawner
   enemyManager: {fileID: 751640687}
   enemyPath: {fileID: 1054821330}
-  handViewDriver: {fileID: 465495816}
+  playerEffectsSource: {fileID: 962809201}
   spawnQueue:
   - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
     spawnCount: 6
@@ -903,20 +904,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cfb67d3bb856a1444a1a5241d773589b, type: 2}
   - {fileID: 11400000, guid: f3cd7e76dccab714aafe89d7edafd689, type: 2}
   - {fileID: 11400000, guid: 7616c717da96d44498a586eaeaa0de0c, type: 2}
-  openingHandSize: 5
-  manualDrawCost: 10
-  startingMana: 20
-  maxMana: 20
-  manaRegenPerSecond: 1
-  startingLives: 100
+  manualDrawCost: 5
   towerManager: {fileID: 284558777}
-  playFieldRaycaster: {fileID: 1246878588}
-  cardPreviewController: {fileID: 1929474959}
-  fieldCardUseController: {fileID: 1498133145}
+  handGameplayDriver: {fileID: 652010304}
   handView: {fileID: 522036608}
-  drawPileView: {fileID: 869737984}
-  discardPileView: {fileID: 1179536387}
-  battleHUD: {fileID: 1847772220}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -1147,6 +1138,58 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.HandView
   cardContainer: {fileID: 955293320}
   cardViewPrefab: {fileID: 2171489743889666963, guid: 8e4d980f0cd605447baa573d1974d172, type: 3}
+--- !u!1 &652010303
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 652010305}
+  - component: {fileID: 652010304}
+  m_Layer: 0
+  m_Name: Hand Gameplay Driver
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &652010304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 652010303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4caad6f85a24467d931dd5ee9413a916, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Cards.HandGameplayDriver
+  combatSessionDriver: {fileID: 962809201}
+  towerManager: {fileID: 284558777}
+  playFieldRaycaster: {fileID: 1246878588}
+  cardPreviewController: {fileID: 1929474959}
+  fieldCardUseController: {fileID: 1498133145}
+  drawPileView: {fileID: 869737984}
+  discardPileView: {fileID: 1179536387}
+  battleHUD: {fileID: 1847772220}
+--- !u!4 &652010305
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 652010303}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.67285, y: 2.57992, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &744045054
 GameObject:
   m_ObjectHideFlags: 0
@@ -1296,7 +1339,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7055b5955d734cf7b0176f17287fb142, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyManager
-  handViewDriver: {fileID: 465495816}
+  playerEffectsSource: {fileID: 962809201}
 --- !u!4 &751640688
 Transform:
   m_ObjectHideFlags: 0
@@ -1444,6 +1487,55 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &962809200
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 962809202}
+  - component: {fileID: 962809201}
+  m_Layer: 0
+  m_Name: CombatSessionDriver
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &962809201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 962809200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f0a8b4f7cc14f2a9d2f3e4b8a9c1d55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.CombatSessionDriver
+  startingMana: 10
+  maxMana: 20
+  manaRegenPerSecond: 1
+  startingLives: 100
+  openingHandSize: 5
+--- !u!4 &962809202
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 962809200}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.67285, y: 2.57992, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &999030581
 GameObject:
   m_ObjectHideFlags: 0
@@ -2518,8 +2610,10 @@ SceneRoots:
   - {fileID: 465495815}
   - {fileID: 284558778}
   - {fileID: 1246878589}
+  - {fileID: 652010305}
   - {fileID: 1929474960}
   - {fileID: 1498133146}
+  - {fileID: 962809202}
   - {fileID: 751640688}
   - {fileID: 1640716598}
   - {fileID: 259795089}

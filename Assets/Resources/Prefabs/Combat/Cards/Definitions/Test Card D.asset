@@ -17,9 +17,9 @@ MonoBehaviour:
   icon: {fileID: 1128286531543930043, guid: 614eb695ec64a0f458c3fdbcde292037, type: 3}
   type: 2
   description: Draws extra cards over your hand limit
-  baseManaCost: 3
+  baseManaCost: 4
   baseTier: 1
-  baseugmentSlots: 0
+  baseAugmentSlots: 0
   spawnableObject: {fileID: 0}
   effects:
   - effectType: 1

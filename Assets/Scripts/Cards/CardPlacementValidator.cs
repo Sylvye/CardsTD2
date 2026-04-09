@@ -1,4 +1,4 @@
-﻿using Towers;
+using Towers;
 using UnityEngine;
 
 namespace Cards
@@ -26,7 +26,7 @@ namespace Cards
                     return true;
 
                 case CardType.Tower:
-                    return towerManager.CanPlaceTower(card.Definition, position);
+                    return towerManager != null && towerManager.CanPlaceTower(card.Definition, position);
 
                 default:
                     return false;

@@ -1,5 +1,5 @@
-﻿using UnityEngine;
 using Combat;
+using UnityEngine;
 
 namespace Cards
 {
@@ -75,25 +75,32 @@ namespace Cards
                 return;
             }
 
-            SpawnableObjectDef spawnable = card.Definition.spawnableObject;
-            if (spawnable is null)
-            {
-                HideAll();
-                return;
-            }
-
             Color color = isValid ? validColor : invalidColor;
+            float placementRadius = card.Definition.GetPlacementRadius();
+            float effectRadius = card.Definition.GetEffectRadius();
 
             if (card.Type == CardType.Spell)
             {
-                ShowCircle(secondaryRadiusVisual, point, spawnable.effectRadius, color);
+                if (card.Definition.spawnableObject == null)
+                {
+                    HideAll();
+                    return;
+                }
+
+                ShowCircle(secondaryRadiusVisual, point, effectRadius, color);
                 return;
             }
 
             if (card.Type == CardType.Tower)
             {
-                ShowCircle(primaryRadiusVisual, point, spawnable.placementRadius, color);
-                ShowCircle(secondaryRadiusVisual, point, spawnable.effectRadius, color);
+                if (placementRadius < 0f)
+                {
+                    HideAll();
+                    return;
+                }
+
+                ShowCircle(primaryRadiusVisual, point, placementRadius, color);
+                ShowCircle(secondaryRadiusVisual, point, effectRadius, color);
                 return;
             }
 

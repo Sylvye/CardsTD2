@@ -1,27 +1,42 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+using System.Collections.Generic;
 using Cards;
-using Combat;
+using Enemies;
+using UnityEngine;
 
 namespace Towers
 {
     public class TowerManager : MonoBehaviour
     {
         [SerializeField] private Transform towerParent;
+        [SerializeField] private EnemyManager enemyManager;
 
-        private readonly List<TowerInstance> towers = new();
+        private readonly List<TowerAgent> towers = new();
+
+        public IReadOnlyList<TowerAgent> ActiveTowers => towers;
+
+        private void Awake()
+        {
+            if (towerParent == null)
+                towerParent = transform;
+
+            if (enemyManager == null)
+                enemyManager = FindAnyObjectByType<EnemyManager>();
+        }
 
         public bool CanPlaceTower(CardDef cardDef, Vector3 position)
         {
-            if (cardDef is null || cardDef.spawnableObject is null || cardDef.spawnableObject.prefab is null)
+            if (cardDef == null)
                 return false;
 
-            float newRadius = cardDef.spawnableObject.placementRadius;
+            float newRadius = cardDef.GetPlacementRadius();
+            if (newRadius < 0f)
+                return false;
+
             Vector2 newPos = position;
 
-            foreach (TowerInstance tower in towers)
+            foreach (TowerAgent tower in towers)
             {
-                if (tower is null)
+                if (tower == null)
                     continue;
 
                 float combinedRadius = newRadius + tower.PlacementRadius;
@@ -34,12 +49,17 @@ namespace Towers
             return true;
         }
 
-        public TowerInstance PlaceTower(CardDef cardDef, Vector3 position)
+        public TowerAgent PlaceTower(CardDef cardDef, Vector3 position)
         {
-            if (cardDef is null || cardDef.spawnableObject is null || cardDef.spawnableObject.prefab is null)
+            if (cardDef == null)
                 return null;
 
+            if (cardDef.TowerDefinition != null)
+                return PlaceTower(cardDef.TowerDefinition, position);
+
             SpawnableObjectDef spawnable = cardDef.spawnableObject;
+            if (spawnable == null || spawnable.prefab == null)
+                return null;
 
             GameObject spawned = Instantiate(
                 spawnable.prefab,
@@ -48,14 +68,52 @@ namespace Towers
                 towerParent
             );
 
-            TowerInstance tower = spawned.GetComponent<TowerInstance>();
-            if (tower is not null)
+            TowerAgent tower = spawned.GetComponent<TowerAgent>();
+            if (tower != null)
             {
-                tower.Initialize(spawnable.placementRadius, spawnable.effectRadius);
-                towers.Add(tower);
+                tower.Initialize(spawnable.placementRadius, spawnable.effectRadius, BuildRuntimeContext());
+                RegisterTower(tower);
             }
 
             return tower;
+        }
+
+        public TowerAgent PlaceTower(TowerDef towerDef, Vector3 position)
+        {
+            if (towerDef == null || towerDef.prefab == null)
+                return null;
+
+            TowerAgent tower = Instantiate(
+                towerDef.prefab,
+                position,
+                Quaternion.identity,
+                towerParent
+            );
+
+            tower.Initialize(towerDef, BuildRuntimeContext());
+            RegisterTower(tower);
+            return tower;
+        }
+
+        public void RegisterTower(TowerAgent tower)
+        {
+            if (tower == null || towers.Contains(tower))
+                return;
+
+            towers.Add(tower);
+        }
+
+        public void UnregisterTower(TowerAgent tower)
+        {
+            if (tower == null)
+                return;
+
+            towers.Remove(tower);
+        }
+
+        private TowerRuntimeContext BuildRuntimeContext()
+        {
+            return new TowerRuntimeContext(this, enemyManager);
         }
     }
 }

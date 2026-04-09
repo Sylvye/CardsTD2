@@ -1,0 +1,53 @@
+using Enemies;
+using UnityEngine;
+
+namespace Towers
+{
+    public class TowerProjectile : MonoBehaviour
+    {
+        private EnemyAgent target;
+        private Vector3 targetPosition;
+        private float damage;
+        private float speed;
+        private float hitRadius;
+        private float lifetimeRemaining;
+        private bool isInitialized;
+
+        public void Initialize(EnemyAgent targetEnemy, float projectileDamage, float projectileSpeed, float projectileHitRadius, float lifetime)
+        {
+            target = targetEnemy;
+            targetPosition = targetEnemy != null ? targetEnemy.transform.position : transform.position;
+            damage = projectileDamage;
+            speed = Mathf.Max(0.01f, projectileSpeed);
+            hitRadius = Mathf.Max(0.01f, projectileHitRadius);
+            lifetimeRemaining = Mathf.Max(0.01f, lifetime);
+            isInitialized = true;
+        }
+
+        private void Update()
+        {
+            if (!isInitialized)
+                return;
+
+            lifetimeRemaining -= Time.deltaTime;
+            if (lifetimeRemaining <= 0f)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            if (target != null && !target.IsDeadOrEscaped)
+                targetPosition = target.transform.position;
+
+            transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
+
+            if (Vector2.Distance(transform.position, targetPosition) > hitRadius)
+                return;
+
+            if (target != null && !target.IsDeadOrEscaped && Vector2.Distance(transform.position, target.transform.position) <= hitRadius)
+                target.TakeDamage(damage);
+
+            Destroy(gameObject);
+        }
+    }
+}

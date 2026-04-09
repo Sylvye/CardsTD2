@@ -1,6 +1,7 @@
 using System.Collections.Generic;
-using UnityEngine;
 using Combat;
+using Towers;
+using UnityEngine;
 
 namespace Cards
 {
@@ -23,9 +24,28 @@ namespace Cards
         public int baseAugmentSlots = 0;
 
         [Header("World Use")]
+        public TowerDef towerDefinition;
         public SpawnableObjectDef spawnableObject;
-        
+
         [Header("Effects")]
         public List<CardEffectData> effects = new();
+
+        public TowerDef TowerDefinition => towerDefinition;
+
+        public float GetPlacementRadius()
+        {
+            if (type == CardType.Tower && towerDefinition != null)
+                return towerDefinition.placementRadius;
+
+            return spawnableObject != null ? spawnableObject.placementRadius : -1f;
+        }
+
+        public float GetEffectRadius()
+        {
+            if (type == CardType.Tower && towerDefinition != null)
+                return towerDefinition.baseStats.range;
+
+            return spawnableObject != null ? spawnableObject.effectRadius : 0f;
+        }
     }
 }

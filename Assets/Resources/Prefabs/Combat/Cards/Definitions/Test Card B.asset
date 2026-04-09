@@ -17,7 +17,7 @@ MonoBehaviour:
   icon: {fileID: 1178460889840726108, guid: 96989d419b98bf94c93e1c46dfe974d4, type: 3}
   type: 1
   description: Smites an area with firey wrath
-  baseManaCost: 10
+  baseManaCost: 8
   baseTier: 1
   baseAugmentSlots: 0
   spawnableObject: {fileID: 11400000, guid: 6420f38b1d42f7646bd1ffbc6514d3dd, type: 2}

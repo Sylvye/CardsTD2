@@ -1,4 +1,4 @@
-﻿using Combat;
+using Combat;
 using Towers;
 using UnityEngine;
 
@@ -28,13 +28,9 @@ namespace Cards
                 return;
             }
 
-            // First: resolve generic card effects from the effect list
             foreach (CardEffectData effect in card.Definition.effects)
-            {
                 ResolveEffect(effect, playerState);
-            }
 
-            // Then: resolve world interaction for field cards
             ResolveWorldUse(card, playContext);
         }
 
@@ -51,7 +47,6 @@ namespace Cards
 
                 case CardEffectType.GainMana:
                     playerState.GainBurstMana(effect.amount);
-                    // Debug.Log($"Resolved GainMana: +{effect.amount}");
                     break;
             }
         }
@@ -67,7 +62,6 @@ namespace Cards
             switch (card.Type)
             {
                 case CardType.Mod:
-                    // No spawned object by default
                     break;
 
                 case CardType.Spell:
@@ -82,25 +76,25 @@ namespace Cards
 
         private void ResolveTower(CardInstance card, Vector3 worldPosition)
         {
+            if (card.Definition.TowerDefinition == null &&
+                (card.Definition.spawnableObject == null || card.Definition.spawnableObject.prefab == null))
+            {
+                return;
+            }
+
             towerManager.PlaceTower(card.Definition, worldPosition);
-            // Debug.Log($"Placed tower {card.DisplayName} at {worldPosition}");
         }
 
         private void ResolveSpell(CardInstance card, Vector3 worldPosition)
         {
             if (card.Definition.spawnableObject is null || card.Definition.spawnableObject.prefab is null)
-            {
-                // Debug.Log($"Spell {card.DisplayName} used at {worldPosition} (no spawnable prefab assigned).");
                 return;
-            }
 
             Object.Instantiate(
                 card.Definition.spawnableObject.prefab,
                 worldPosition,
                 Quaternion.identity
             );
-
-            // Debug.Log($"Cast spell {card.DisplayName} at {worldPosition}");
         }
     }
 }
