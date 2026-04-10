@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0df909a08d6dffd43a93319658870f0b, type: 3}
+  m_Name: BombSummonDef
+  m_EditorClassIdentifier: Assembly-CSharp::Towers.SummonTowerAttackDef
+  targetFilters: []
+  summonPrefab: {fileID: 7518214647196708801, guid: ac9d892811a11314080410b9599e5695, type: 3}
+  maxActiveSummons: 6
+  spawnRadius: 2
+  summonLifetime: 4
+  summonRange: 5
+  summonDamage: 8
+  summonFireInterval: 1

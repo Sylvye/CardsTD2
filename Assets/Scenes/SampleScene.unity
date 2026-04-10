@@ -554,7 +554,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerManager
   towerParent: {fileID: 284558778}
-  enemyManager: {fileID: 0}
+  enemyManager: {fileID: 751640687}
 --- !u!4 &284558778
 Transform:
   m_ObjectHideFlags: 0
@@ -895,15 +895,15 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
   - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
   - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
-  - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
-  - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
-  - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
   - {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
   - {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
   - {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
   - {fileID: 11400000, guid: cfb67d3bb856a1444a1a5241d773589b, type: 2}
   - {fileID: 11400000, guid: f3cd7e76dccab714aafe89d7edafd689, type: 2}
   - {fileID: 11400000, guid: 7616c717da96d44498a586eaeaa0de0c, type: 2}
+  - {fileID: 11400000, guid: 941482cdfeb3f21408567eb408f47c4d, type: 2}
+  - {fileID: 11400000, guid: 62273b063f6d8f44a9822839ae214bfc, type: 2}
+  - {fileID: 11400000, guid: d5f9933d13facd74da7a14618c88b329, type: 2}
   manualDrawCost: 5
   towerManager: {fileID: 284558777}
   handGameplayDriver: {fileID: 652010304}

@@ -5,52 +5,6 @@ using UnityEngine;
 
 namespace Towers
 {
-    public enum TargetPriority
-    {
-        First,
-        Last,
-        Strong
-    }
-
-    [Serializable]
-    public struct TowerBaseStats
-    {
-        [Min(1f)] public float maxHealth;
-        [Min(0f)] public float range;
-        [Min(0.01f)] public float fireInterval;
-        [Min(0f)] public float damage;
-
-        public TowerResolvedStats ToResolvedStats()
-        {
-            return new TowerResolvedStats(maxHealth, range, fireInterval, damage);
-        }
-    }
-
-    [Serializable]
-    public struct TowerResolvedStats
-    {
-        public float MaxHealth;
-        public float Range;
-        public float FireInterval;
-        public float Damage;
-
-        public TowerResolvedStats(float maxHealth, float range, float fireInterval, float damage)
-        {
-            MaxHealth = Mathf.Max(1f, maxHealth);
-            Range = Mathf.Max(0f, range);
-            FireInterval = Mathf.Max(0.01f, fireInterval);
-            Damage = Mathf.Max(0f, damage);
-        }
-
-        public void Clamp()
-        {
-            MaxHealth = Mathf.Max(1f, MaxHealth);
-            Range = Mathf.Max(0f, Range);
-            FireInterval = Mathf.Max(0.01f, FireInterval);
-            Damage = Mathf.Max(0f, Damage);
-        }
-    }
-
     [CreateAssetMenu(menuName = "Towers/Tower Definition", fileName = "New Tower Definition")]
     public class TowerDef : SpawnableObjectDef
     {

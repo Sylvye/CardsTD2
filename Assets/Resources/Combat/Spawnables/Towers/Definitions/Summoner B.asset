@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5161b0368f8d87418fd372260815a17, type: 3}
+  m_Name: Summoner B
+  m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerDef
+  prefab: {fileID: 77660494436261291, guid: 78ed6e5773af3404bb18bfbb95961284, type: 3}
+  placementRadius: 0.5
+  effectRadius: 2
+  id: summoner_b
+  displayName: Summoner B
+  baseStats:
+    maxHealth: 8
+    range: 2
+    fireInterval: 1
+    damage: 1
+  defaultTargetPriority: 0
+  tags: []
+  defaultModifiers: []
+  attacks:
+  - {fileID: 11400000, guid: 3cec67bb2c650b244b49472ebe8b99f4, type: 2}
