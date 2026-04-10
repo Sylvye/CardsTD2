@@ -85,7 +85,7 @@ namespace Towers
 
             TowerProjectile projectile = CreateProjectile();
             projectile.transform.position = tower.transform.position + attackDef.fireOffset;
-            projectile.Initialize(target, damage, attackDef.projectileSpeed, attackDef.hitRadius, attackDef.projectileLifetime);
+            projectile.Initialize(target, damage, attackDef.projectileSpeed, attackDef.hitRadius, attackDef.projectileLifetime, attackDef.followTarget);
         }
 
         public void Shutdown()

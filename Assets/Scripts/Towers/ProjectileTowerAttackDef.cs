@@ -11,6 +11,7 @@ namespace Towers
         [Min(0.01f)] public float hitRadius = 0.2f;
         [Min(0.01f)] public float projectileLifetime = 4f;
         public Vector3 fireOffset;
+        public bool followTarget = false;
 
         public override IAttackExecution CreateExecution(TowerAgent tower)
         {
