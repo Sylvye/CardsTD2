@@ -105,7 +105,15 @@ namespace Towers
                 float projectileAngle = normalizedIndex * spreadDegrees * 0.5f;
                 float laneOffset = Mathf.Tan(projectileAngle * Mathf.Deg2Rad) * targetDistance;
                 projectile.transform.position = firePosition + (perpendicular * laneOffset);
-                projectile.Initialize(target, damage, attackDef.projectileSpeed, attackDef.hitRadius, attackDef.projectileLifetime, attackDef.followTarget);
+                projectile.Initialize(
+                    tower,
+                    target,
+                    damage,
+                    attackDef.projectileSpeed,
+                    attackDef.hitRadius,
+                    attackDef.projectileLifetime,
+                    attackDef.followTarget
+                );
             }
         }
 
@@ -154,7 +162,11 @@ namespace Towers
 
             TowerResolvedStats stats = tower.GetResolvedStats();
             float damage = (stats.Damage * attackDef.damageMultiplier) + attackDef.flatDamageBonus;
+            bool wasAliveBeforeHit = !currentTarget.IsDeadOrEscaped;
             currentTarget.TakeDamage(damage);
+            tower.ReportHit(currentTarget, damage, currentTarget.transform.position);
+            if (wasAliveBeforeHit && currentTarget.IsDeadOrEscaped)
+                tower.ReportKill(currentTarget, damage, currentTarget.transform.position);
             tickTimer = Mathf.Max(0.01f, attackDef.tickInterval);
         }
 
