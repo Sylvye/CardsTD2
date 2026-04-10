@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 771747293598083057}
   - component: {fileID: 4335316524726403174}
   - component: {fileID: -9218701126070841125}
-  - component: {fileID: 8250644798899622891}
+  - component: {fileID: -7173112402947520753}
   m_Layer: 0
   m_Name: Turret Summon
   m_TagString: Untagged
@@ -29,8 +29,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 2.38798, y: 2.4791, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.6, y: 0.6, z: 0.6}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -146,7 +146,7 @@ PolygonCollider2D:
       - {x: 0.5, y: 0}
       - {x: 0.25, y: 0.43359375}
   m_UseDelaunayMesh: 1
---- !u!114 &8250644798899622891
+--- !u!114 &-7173112402947520753
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -155,6 +155,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 1681551792164848958}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c4e64848e9f856643a5d6411ea9fdef0, type: 3}
+  m_Script: {fileID: 11500000, guid: 44b492adb63caf647a9924909114a8e8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerSummonedUnit
+  m_EditorClassIdentifier: Assembly-CSharp::Towers.SummonedTowerAgent
+  fallbackPlacementRadius: 0.3
+  fallbackStats:
+    maxHealth: 10
+    range: 2
+    fireInterval: 1
+    damage: 1

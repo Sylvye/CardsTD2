@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1203313479278394962}
   - component: {fileID: 7114758294352385991}
   - component: {fileID: 1558528698124753951}
-  - component: {fileID: 7518214647196708801}
+  - component: {fileID: -3717483433957097331}
   m_Layer: 0
   m_Name: Explosive Triangle
   m_TagString: Untagged
@@ -143,7 +143,7 @@ PolygonCollider2D:
       - {x: -0.5, y: -0.28866667}
       - {x: 0.5, y: -0.28866667}
   m_UseDelaunayMesh: 1
---- !u!114 &7518214647196708801
+--- !u!114 &-3717483433957097331
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -152,10 +152,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 7524935161099553248}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c4e64848e9f856643a5d6411ea9fdef0, type: 3}
+  m_Script: {fileID: 11500000, guid: 44b492adb63caf647a9924909114a8e8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerSummonedUnit
-  baseRange: 2.5
-  baseDamage: 1
-  baseFireInterval: 0.75
-  inheritedDamageMultiplier: 1
+  m_EditorClassIdentifier: Assembly-CSharp::Towers.SummonedTowerAgent
+  fallbackPlacementRadius: 0.2
+  fallbackStats:
+    maxHealth: 10
+    range: 2
+    fireInterval: 1
+    damage: 1

@@ -618,17 +618,9 @@ MonoBehaviour:
   enemyPath: {fileID: 1054821330}
   playerEffectsSource: {fileID: 962809201}
   spawnQueue:
-  - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
-    spawnCount: 6
-    spawnInterval: 0.5
-    waitTime: 2
   - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
-    spawnCount: 2
-    spawnInterval: 0.125
-    waitTime: 1
-  - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
-    spawnCount: 6
-    spawnInterval: 0.5
+    spawnCount: 8
+    spawnInterval: 1
     waitTime: 2
   startOnPlay: 1
 --- !u!1 &424905218

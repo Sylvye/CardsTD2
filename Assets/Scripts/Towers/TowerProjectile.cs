@@ -103,7 +103,7 @@ namespace Towers
                 return;
             if (enemy == null || enemy.IsDeadOrEscaped)
                 return;
-            if (!hitEnemyInstanceIds.Add(enemy.GetInstanceID()))
+            if (!hitEnemyInstanceIds.Add(enemy.GetEntityId()))
                 return;
 
             bool wasAliveBeforeHit = !enemy.IsDeadOrEscaped;

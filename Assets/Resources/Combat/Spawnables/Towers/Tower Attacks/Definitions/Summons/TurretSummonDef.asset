@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: TurretSummonDef
   m_EditorClassIdentifier: Assembly-CSharp::Towers.SummonTowerAttackDef
   targetFilters: []
-  summonPrefab: {fileID: 8250644798899622891, guid: 4f8a6ba641013c049b3317e8120fe323, type: 3}
-  maxActiveSummons: 3
+  summonPrefab: {fileID: -7173112402947520753, guid: 4f8a6ba641013c049b3317e8120fe323, type: 3}
+  maxActiveSummons: 4
   spawnRadius: 3
-  summonLifetime: 12
-  summonRange: 3
-  summonDamage: 1
-  summonFireInterval: 3
+  summonLifetime: 8
+  summonTowerDef: {fileID: 11400000, guid: f77360c9e22582c40b4cdff64e9e93ff, type: 2}
+  summonAttacks:
+  - {fileID: 11400000, guid: 1b7610861bd8d594b942262adec518fc, type: 2}
