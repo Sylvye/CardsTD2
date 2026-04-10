@@ -8,6 +8,7 @@ namespace Towers
         private TowerAgent ownerTower;
         private EnemyAgent target;
         private Vector3 targetPosition;
+        private Vector3 travelDirection;
         private float damage;
         private float speed;
         private float hitRadius;
@@ -18,6 +19,7 @@ namespace Towers
         public void Initialize(
             TowerAgent sourceTower,
             EnemyAgent targetEnemy,
+            Vector3 initialTravelDirection,
             float projectileDamage,
             float projectileSpeed,
             float projectileHitRadius,
@@ -27,6 +29,9 @@ namespace Towers
             ownerTower = sourceTower;
             target = targetEnemy;
             targetPosition = targetEnemy != null ? targetEnemy.transform.position : transform.position;
+            travelDirection = initialTravelDirection.sqrMagnitude > 0.0001f
+                ? initialTravelDirection.normalized
+                : Vector3.right;
             damage = projectileDamage;
             speed = Mathf.Max(0.01f, projectileSpeed);
             hitRadius = Mathf.Max(0.01f, projectileHitRadius);
@@ -48,9 +53,21 @@ namespace Towers
             }
 
             if (followTarget && target != null && !target.IsDeadOrEscaped)
+            {
                 targetPosition = target.transform.position;
+                Vector3 updatedDirection = targetPosition - transform.position;
+                if (updatedDirection.sqrMagnitude > 0.0001f)
+                    travelDirection = updatedDirection.normalized;
+            }
 
-            transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
+            if (followTarget)
+            {
+                transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
+            }
+            else
+            {
+                transform.position += travelDirection * (speed * Time.deltaTime);
+            }
 
             if (Vector2.Distance(transform.position, targetPosition) > hitRadius)
                 return;
