@@ -300,7 +300,7 @@ namespace Towers
     {
         private readonly TowerAgent tower;
         private readonly SummonTowerAttackDef attackDef;
-        private readonly List<TowerSummonedUnit> activeSummons = new();
+        private readonly List<ITowerSummon> activeSummons = new();
 
         private float cooldownRemaining;
 
@@ -328,16 +328,19 @@ namespace Towers
             TowerResolvedStats towerStats = tower.GetResolvedStats();
             cooldownRemaining = towerStats.FireInterval;
 
-            TowerSummonedUnit summon = CreateSummon();
+            ITowerSummon summon = CreateSummon();
+            MonoBehaviour summonBehaviour = summon as MonoBehaviour;
+            if (summonBehaviour == null)
+                return;
+
             Vector2 offset = Random.insideUnitCircle * attackDef.spawnRadius;
-            summon.transform.position = tower.transform.position + new Vector3(offset.x, offset.y, 0f);
-            summon.Initialize(
-                tower.RuntimeContext.EnemyManager,
-                attackDef.summonLifetime,
-                attackDef.summonRange,
-                attackDef.summonDamage + towerStats.Damage,
-                attackDef.summonFireInterval
-            );
+            summonBehaviour.transform.position = tower.transform.position + new Vector3(offset.x, offset.y, 0f);
+            summon.Initialize(new TowerSummonContext(
+                tower,
+                tower.RuntimeContext,
+                towerStats,
+                attackDef.summonLifetime
+            ));
 
             activeSummons.Add(summon);
         }
@@ -356,10 +359,17 @@ namespace Towers
             }
         }
 
-        private TowerSummonedUnit CreateSummon()
+        private ITowerSummon CreateSummon()
         {
             if (attackDef.summonPrefab != null)
-                return Object.Instantiate(attackDef.summonPrefab);
+            {
+                MonoBehaviour summonPrefabInstance = Object.Instantiate(attackDef.summonPrefab);
+                ITowerSummon typedSummon = summonPrefabInstance as ITowerSummon;
+                if (typedSummon != null)
+                    return typedSummon;
+
+                Object.Destroy(summonPrefabInstance.gameObject);
+            }
 
             GameObject fallback = new("TowerSummon");
             return fallback.AddComponent<TowerSummonedUnit>();
