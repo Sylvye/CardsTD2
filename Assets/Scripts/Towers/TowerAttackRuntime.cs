@@ -135,8 +135,11 @@ namespace Towers
     {
         private readonly TowerAgent tower;
         private readonly BeamTowerAttackDef attackDef;
+        private readonly ITargetingStrategy targetingStrategy = new PriorityTargetingStrategy();
 
-        private EnemyAgent currentTarget;
+        private readonly List<EnemyAgent> currentTargets = new();
+        private readonly List<EnemyAgent> candidateTargets = new();
+        private readonly List<LineRenderer> beamRendererInstances = new();
         private float tickTimer;
 
         public BeamAttackExecution(TowerAgent tower, BeamTowerAttackDef attackDef)
@@ -147,14 +150,15 @@ namespace Towers
 
         public void Tick(float deltaTime)
         {
-            if (!tower.IsTargetValid(currentTarget, attackDef.TargetFilters))
-                currentTarget = tower.AcquireTarget(attackDef.TargetFilters);
-
-            if (currentTarget == null)
+            AcquireTargets();
+            if (currentTargets.Count == 0)
             {
+                SetAllBeamsEnabled(false);
                 tickTimer = 0f;
                 return;
             }
+
+            UpdateBeamRenderers();
 
             tickTimer -= deltaTime;
             if (tickTimer > 0f)
@@ -162,17 +166,133 @@ namespace Towers
 
             TowerResolvedStats stats = tower.GetResolvedStats();
             float damage = (stats.Damage * attackDef.damageMultiplier) + attackDef.flatDamageBonus;
-            bool wasAliveBeforeHit = !currentTarget.IsDeadOrEscaped;
-            currentTarget.TakeDamage(damage);
-            tower.ReportHit(currentTarget, damage, currentTarget.transform.position);
-            if (wasAliveBeforeHit && currentTarget.IsDeadOrEscaped)
-                tower.ReportKill(currentTarget, damage, currentTarget.transform.position);
+            for (int i = 0; i < currentTargets.Count; i++)
+            {
+                EnemyAgent target = currentTargets[i];
+                if (!tower.IsTargetValid(target, attackDef.TargetFilters))
+                    continue;
+
+                bool wasAliveBeforeHit = !target.IsDeadOrEscaped;
+                target.TakeDamage(damage);
+                tower.ReportHit(target, damage, target.transform.position);
+                if (wasAliveBeforeHit && target.IsDeadOrEscaped)
+                    tower.ReportKill(target, damage, target.transform.position);
+            }
+
             tickTimer = Mathf.Max(0.01f, attackDef.tickInterval);
         }
 
         public void Shutdown()
         {
-            currentTarget = null;
+            SetAllBeamsEnabled(false);
+            for (int i = 0; i < beamRendererInstances.Count; i++)
+            {
+                LineRenderer renderer = beamRendererInstances[i];
+                if (renderer != null)
+                    Object.Destroy(renderer.gameObject);
+            }
+
+            beamRendererInstances.Clear();
+            currentTargets.Clear();
+            candidateTargets.Clear();
+        }
+
+        private void AcquireTargets()
+        {
+            currentTargets.Clear();
+
+            EnemyManager enemyManager = tower.RuntimeContext.EnemyManager;
+            if (enemyManager == null)
+                return;
+
+            IReadOnlyList<EnemyAgent> activeEnemies = enemyManager.ActiveEnemies;
+            candidateTargets.Clear();
+            for (int i = 0; i < activeEnemies.Count; i++)
+            {
+                EnemyAgent enemy = activeEnemies[i];
+                if (tower.IsTargetValid(enemy, attackDef.TargetFilters))
+                    candidateTargets.Add(enemy);
+            }
+
+            if (candidateTargets.Count == 0)
+                return;
+
+            TowerResolvedStats stats = tower.GetResolvedStats();
+            int beamsToFire = Mathf.Max(1, attackDef.projectileCount);
+            while (currentTargets.Count < beamsToFire && candidateTargets.Count > 0)
+            {
+                EnemyAgent target = targetingStrategy.SelectTarget(
+                    new TargetingContext(tower, stats, tower.CurrentPriority, candidateTargets)
+                );
+                if (target == null)
+                    break;
+
+                currentTargets.Add(target);
+                candidateTargets.Remove(target);
+            }
+        }
+
+        private void UpdateBeamRenderers()
+        {
+            Vector3 origin = tower.transform.position;
+            for (int i = 0; i < currentTargets.Count; i++)
+            {
+                LineRenderer renderer = EnsureBeamRenderer(i);
+                EnemyAgent target = currentTargets[i];
+                if (renderer == null || target == null)
+                    continue;
+
+                renderer.SetPosition(0, origin);
+                renderer.SetPosition(1, target.transform.position);
+                renderer.enabled = true;
+            }
+
+            for (int i = currentTargets.Count; i < beamRendererInstances.Count; i++)
+            {
+                if (beamRendererInstances[i] != null)
+                    beamRendererInstances[i].enabled = false;
+            }
+        }
+
+        private LineRenderer EnsureBeamRenderer(int index)
+        {
+            while (beamRendererInstances.Count <= index)
+                beamRendererInstances.Add(null);
+
+            if (beamRendererInstances[index] != null)
+                return beamRendererInstances[index];
+
+            LineRenderer instance;
+            if (attackDef.beamRendererPrefab != null)
+            {
+                instance = Object.Instantiate(attackDef.beamRendererPrefab, tower.transform);
+                instance.positionCount = Mathf.Max(2, instance.positionCount);
+            }
+            else
+            {
+                GameObject fallback = new($"BeamRenderer_{index}");
+                fallback.transform.SetParent(tower.transform, false);
+                instance = fallback.AddComponent<LineRenderer>();
+                instance.positionCount = 2;
+                instance.useWorldSpace = true;
+                instance.widthMultiplier = 0.1f;
+                instance.material = new Material(Shader.Find("Sprites/Default"));
+                instance.startColor = Color.cyan;
+                instance.endColor = Color.cyan;
+            }
+
+            instance.enabled = false;
+            beamRendererInstances[index] = instance;
+            return instance;
+        }
+
+        private void SetAllBeamsEnabled(bool enabled)
+        {
+            for (int i = 0; i < beamRendererInstances.Count; i++)
+            {
+                if (beamRendererInstances[i] != null)
+                    beamRendererInstances[i].enabled = enabled;
+            }
         }
     }
 
