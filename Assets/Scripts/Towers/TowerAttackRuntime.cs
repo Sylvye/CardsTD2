@@ -86,28 +86,27 @@ namespace Towers
             int projectileCount = Mathf.Max(1, attackDef.projectileCount);
             Vector3 firePosition = tower.transform.position + attackDef.fireOffset;
             Vector3 targetDirection = target.transform.position - firePosition;
-            float targetDistance = targetDirection.magnitude;
-            if (targetDistance < 0.0001f)
+            if (targetDirection.sqrMagnitude < 0.0001f)
             {
                 targetDirection = Vector3.right;
-                targetDistance = 1f;
             }
 
             targetDirection.Normalize();
-            Vector3 perpendicular = new Vector3(-targetDirection.y, targetDirection.x, 0f);
             float spreadDegrees = Mathf.Max(0f, attackDef.degreesSpread);
             float centerIndex = (projectileCount - 1) * 0.5f;
 
             for (int i = 0; i < projectileCount; i++)
             {
                 TowerProjectile projectile = CreateProjectile();
-                float normalizedIndex = projectileCount > 1 ? (i - centerIndex) / centerIndex : 0f;
-                float projectileAngle = normalizedIndex * spreadDegrees * 0.5f;
-                float laneOffset = Mathf.Tan(projectileAngle * Mathf.Deg2Rad) * targetDistance;
-                projectile.transform.position = firePosition + (perpendicular * laneOffset);
+                float angleOffset = projectileCount > 1
+                    ? ((i - centerIndex) / centerIndex) * spreadDegrees * 0.5f
+                    : 0f;
+                Vector3 projectileDirection = Quaternion.Euler(0f, 0f, angleOffset) * targetDirection;
+                projectile.transform.position = firePosition;
                 projectile.Initialize(
                     tower,
                     target,
+                    projectileDirection,
                     damage,
                     attackDef.projectileSpeed,
                     attackDef.hitRadius,
