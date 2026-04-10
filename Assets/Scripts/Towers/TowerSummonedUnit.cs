@@ -3,25 +3,31 @@ using UnityEngine;
 
 namespace Towers
 {
-    public class TowerSummonedUnit : MonoBehaviour
+    /// <summary>
+    /// Concrete summon archetype: autonomous turret summon.
+    /// Uses live-linked parent tower stats while active.
+    /// </summary>
+    public class TowerSummonedUnit : MonoBehaviour, ITowerSummon
     {
+        private TowerAgent parentTower;
         private EnemyManager enemyManager;
         private float lifetimeRemaining;
-        private float range;
-        private float damage;
-        private float fireInterval;
         private float fireTimer;
         private bool isInitialized;
 
+        [Header("Turret Behavior")]
+        [Min(0f)] public float baseRange = 2.5f;
+        [Min(0f)] public float baseDamage = 1f;
+        [Min(0.01f)] public float baseFireInterval = 0.75f;
+        [Min(0f)] public float inheritedDamageMultiplier = 1f;
+
         public bool IsAlive => isInitialized && lifetimeRemaining > 0f;
 
-        public void Initialize(EnemyManager manager, float lifetime, float attackRange, float attackDamage, float interval)
+        public void Initialize(TowerSummonContext context)
         {
-            enemyManager = manager;
-            lifetimeRemaining = Mathf.Max(0.01f, lifetime);
-            range = Mathf.Max(0f, attackRange);
-            damage = Mathf.Max(0f, attackDamage);
-            fireInterval = Mathf.Max(0.01f, interval);
+            parentTower = context.ParentTower;
+            enemyManager = context.RuntimeContext.EnemyManager;
+            lifetimeRemaining = Mathf.Max(0.01f, context.LifetimeSeconds);
             fireTimer = 0f;
             isInitialized = true;
         }
@@ -46,14 +52,16 @@ namespace Towers
             if (target == null)
                 return;
 
+            float damage = Mathf.Max(0f, baseDamage + (GetInheritedDamage() * Mathf.Max(0f, inheritedDamageMultiplier)));
             target.TakeDamage(damage);
-            fireTimer = fireInterval;
+            fireTimer = Mathf.Max(0.01f, baseFireInterval);
         }
 
         private EnemyAgent GetFirstTargetInRange()
         {
             EnemyAgent bestTarget = null;
             float bestTrackDistance = float.MinValue;
+            float range = Mathf.Max(0f, baseRange);
 
             foreach (EnemyAgent enemy in enemyManager.ActiveEnemies)
             {
@@ -71,6 +79,15 @@ namespace Towers
             }
 
             return bestTarget;
+        }
+
+        private float GetInheritedDamage()
+        {
+            // Live-link behavior: mirrors parent tower modifiers/effects while summon is active.
+            if (parentTower == null || parentTower.IsDead)
+                return 0f;
+
+            return Mathf.Max(0f, parentTower.GetResolvedStats().Damage);
         }
     }
 }
