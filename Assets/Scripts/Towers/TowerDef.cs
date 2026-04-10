@@ -34,6 +34,11 @@ namespace Towers
         [Header("Triggered Effects")]
         public List<TowerTriggeredEffect> triggeredEffects = new();
 
+        private void OnValidate()
+        {
+            effectRadius = baseStats.range;
+        }
+
         public TowerResolvedStats GetBaseResolvedStats()
         {
             return baseStats.ToResolvedStats();
