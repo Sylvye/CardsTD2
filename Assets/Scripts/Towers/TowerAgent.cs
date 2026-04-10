@@ -11,6 +11,7 @@ namespace Towers
         private readonly List<EnemyAgent> targetBuffer = new();
         private readonly HashSet<EnemyAgent> inRangeEnemies = new();
         private readonly HashSet<EnemyAgent> previousInRangeEnemies = new();
+        private readonly List<TowerAttackDef> runtimeAttackDefinitions = new();
 
         private static readonly ITargetingStrategy DefaultTargetingStrategy = new PriorityTargetingStrategy();
 
@@ -24,6 +25,7 @@ namespace Towers
         private bool isLegacyTower;
         private bool isInitialized;
         private bool isDead;
+        private bool useRuntimeAttackDefinitions;
 
         public TowerDef Definition => towerDef;
         public TowerRuntimeContext RuntimeContext => runtimeContext;
@@ -46,6 +48,8 @@ namespace Towers
             isInitialized = true;
 
             runtimeModifiers.Clear();
+            runtimeAttackDefinitions.Clear();
+            useRuntimeAttackDefinitions = false;
             inRangeEnemies.Clear();
             previousInRangeEnemies.Clear();
             if (def != null && def.defaultModifiers != null)
@@ -63,18 +67,29 @@ namespace Towers
 
         public virtual void Initialize(float placementRadius, float range, TowerRuntimeContext context)
         {
+            Initialize(
+                placementRadius,
+                new TowerResolvedStats(10f, range, 1f, 0f),
+                context
+            );
+        }
+
+        public virtual void Initialize(float placementRadius, TowerResolvedStats baseStats, TowerRuntimeContext context)
+        {
             ShutdownExecutions();
 
             towerDef = null;
             runtimeContext = context;
             currentPriority = TargetPriority.First;
             legacyPlacementRadius = Mathf.Max(0f, placementRadius);
-            legacyStats = new TowerResolvedStats(10f, range, 1f, 0f);
+            legacyStats = baseStats;
             currentHealth = legacyStats.MaxHealth;
             isLegacyTower = true;
             isDead = false;
             isInitialized = true;
             runtimeModifiers.Clear();
+            runtimeAttackDefinitions.Clear();
+            useRuntimeAttackDefinitions = false;
             inRangeEnemies.Clear();
             previousInRangeEnemies.Clear();
         }
@@ -110,6 +125,43 @@ namespace Towers
                 return;
 
             runtimeModifiers.Remove(modifier);
+        }
+
+        public void InheritModifiersFrom(TowerAgent sourceTower, bool append = true)
+        {
+            if (sourceTower == null)
+                return;
+
+            if (!append)
+                runtimeModifiers.Clear();
+
+            for (int i = 0; i < sourceTower.runtimeModifiers.Count; i++)
+            {
+                IStatModifier modifier = sourceTower.runtimeModifiers[i];
+                if (modifier != null)
+                    runtimeModifiers.Add(modifier);
+            }
+        }
+
+        public void SetRuntimeAttackDefinitions(IReadOnlyList<TowerAttackDef> attacks)
+        {
+            runtimeAttackDefinitions.Clear();
+            useRuntimeAttackDefinitions = false;
+
+            if (attacks != null)
+            {
+                for (int i = 0; i < attacks.Count; i++)
+                {
+                    TowerAttackDef attackDef = attacks[i];
+                    if (attackDef != null)
+                        runtimeAttackDefinitions.Add(attackDef);
+                }
+            }
+
+            useRuntimeAttackDefinitions = runtimeAttackDefinitions.Count > 0;
+
+            if (isInitialized)
+                BuildAttackExecutions();
         }
 
         public TowerResolvedStats GetResolvedStats()
@@ -220,13 +272,21 @@ namespace Towers
 
         private void BuildAttackExecutions()
         {
+            ShutdownExecutions();
             attackExecutions.Clear();
 
-            if (towerDef == null || towerDef.attacks == null)
+            IReadOnlyList<TowerAttackDef> attackDefs = useRuntimeAttackDefinitions
+                ? runtimeAttackDefinitions
+                : towerDef != null
+                    ? towerDef.attacks
+                    : null;
+
+            if (attackDefs == null)
                 return;
 
-            foreach (TowerAttackDef attackDef in towerDef.attacks)
+            for (int i = 0; i < attackDefs.Count; i++)
             {
+                TowerAttackDef attackDef = attackDefs[i];
                 if (attackDef == null)
                     continue;
 
