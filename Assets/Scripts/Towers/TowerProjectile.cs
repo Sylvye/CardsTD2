@@ -11,9 +11,10 @@ namespace Towers
         private float speed;
         private float hitRadius;
         private float lifetimeRemaining;
+        private bool followTarget;
         private bool isInitialized;
 
-        public void Initialize(EnemyAgent targetEnemy, float projectileDamage, float projectileSpeed, float projectileHitRadius, float lifetime)
+        public void Initialize(EnemyAgent targetEnemy, float projectileDamage, float projectileSpeed, float projectileHitRadius, float lifetime, bool shouldFollowTarget)
         {
             target = targetEnemy;
             targetPosition = targetEnemy != null ? targetEnemy.transform.position : transform.position;
@@ -21,6 +22,7 @@ namespace Towers
             speed = Mathf.Max(0.01f, projectileSpeed);
             hitRadius = Mathf.Max(0.01f, projectileHitRadius);
             lifetimeRemaining = Mathf.Max(0.01f, lifetime);
+            followTarget = shouldFollowTarget;
             isInitialized = true;
         }
 
@@ -36,7 +38,7 @@ namespace Towers
                 return;
             }
 
-            if (target != null && !target.IsDeadOrEscaped)
+            if (followTarget && target != null && !target.IsDeadOrEscaped)
                 targetPosition = target.transform.position;
 
             transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
