@@ -363,6 +363,13 @@ namespace Towers
             if (attackDef.summonPrefab != null)
             {
                 MonoBehaviour summonPrefabInstance = Object.Instantiate(attackDef.summonPrefab);
+                SummonedTowerAgent summonHost = summonPrefabInstance.GetComponent<SummonedTowerAgent>();
+                if (summonHost != null)
+                {
+                    summonHost.ConfigureSummon(attackDef.summonTowerDef, attackDef.summonAttacks);
+                    return summonHost;
+                }
+
                 ITowerSummon typedSummon = summonPrefabInstance as ITowerSummon;
                 if (typedSummon != null)
                     return typedSummon;
@@ -371,7 +378,9 @@ namespace Towers
             }
 
             GameObject fallback = new("TowerSummon");
-            return fallback.AddComponent<TowerSummonedUnit>();
+            SummonedTowerAgent fallbackHost = fallback.AddComponent<SummonedTowerAgent>();
+            fallbackHost.ConfigureSummon(attackDef.summonTowerDef, attackDef.summonAttacks);
+            return fallbackHost;
         }
     }
 }
