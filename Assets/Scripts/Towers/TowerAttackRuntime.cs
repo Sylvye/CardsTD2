@@ -109,7 +109,6 @@ namespace Towers
                     projectileDirection,
                     damage,
                     attackDef.projectileSpeed,
-                    attackDef.hitRadius,
                     attackDef.projectileLifetime,
                     attackDef.followTarget
                 );
