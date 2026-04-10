@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Enemies;
 using UnityEngine;
 
@@ -15,9 +16,10 @@ namespace Towers
         private float damage;
         private float speed;
         private float lifetimeRemaining;
+        private int remainingPierces;
+        private readonly HashSet<int> hitEnemyInstanceIds = new();
         private bool followTarget;
         private bool isInitialized;
-        private bool hasHit;
 
         private void Awake()
         {
@@ -39,7 +41,8 @@ namespace Towers
             float projectileDamage,
             float projectileSpeed,
             float lifetime,
-            bool shouldFollowTarget)
+            bool shouldFollowTarget,
+            int pierceCount)
         {
             ownerTower = sourceTower;
             target = targetEnemy;
@@ -49,8 +52,9 @@ namespace Towers
             damage = projectileDamage;
             speed = Mathf.Max(0.01f, projectileSpeed);
             lifetimeRemaining = Mathf.Max(0.01f, lifetime);
+            remainingPierces = Mathf.Max(1, pierceCount);
+            hitEnemyInstanceIds.Clear();
             followTarget = shouldFollowTarget;
-            hasHit = false;
             isInitialized = true;
         }
 
@@ -69,7 +73,7 @@ namespace Towers
 
         private void FixedUpdate()
         {
-            if (!isInitialized || hasHit)
+            if (!isInitialized)
                 return;
 
             if (followTarget && target != null && !target.IsDeadOrEscaped)
@@ -95,19 +99,22 @@ namespace Towers
 
         private void TryApplyHit(EnemyAgent enemy)
         {
-            if (!isInitialized || hasHit)
+            if (!isInitialized)
                 return;
             if (enemy == null || enemy.IsDeadOrEscaped)
                 return;
+            if (!hitEnemyInstanceIds.Add(enemy.GetInstanceID()))
+                return;
 
-            hasHit = true;
             bool wasAliveBeforeHit = !enemy.IsDeadOrEscaped;
             enemy.TakeDamage(damage);
             ownerTower?.ReportHit(enemy, damage, transform.position);
             if (wasAliveBeforeHit && enemy.IsDeadOrEscaped)
                 ownerTower?.ReportKill(enemy, damage, transform.position);
 
-            Destroy(gameObject);
+            remainingPierces--;
+            if (remainingPierces <= 0)
+                Destroy(gameObject);
         }
     }
 }
