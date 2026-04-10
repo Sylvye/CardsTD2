@@ -600,7 +600,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 751640688}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &287364997
 MonoBehaviour:
@@ -625,7 +625,7 @@ MonoBehaviour:
   - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
     spawnCount: 2
     spawnInterval: 0.125
-    waitTime: 2
+    waitTime: 1
   - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
     spawnCount: 6
     spawnInterval: 0.5
@@ -894,9 +894,6 @@ MonoBehaviour:
   startingDeck:
   - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
   - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
-  - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
-  - {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
-  - {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
   - {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
   - {fileID: 11400000, guid: cfb67d3bb856a1444a1a5241d773589b, type: 2}
   - {fileID: 11400000, guid: f3cd7e76dccab714aafe89d7edafd689, type: 2}
@@ -904,6 +901,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 941482cdfeb3f21408567eb408f47c4d, type: 2}
   - {fileID: 11400000, guid: 62273b063f6d8f44a9822839ae214bfc, type: 2}
   - {fileID: 11400000, guid: d5f9933d13facd74da7a14618c88b329, type: 2}
+  - {fileID: 11400000, guid: fa75b8567bd9cc34e801c436a36de52e, type: 2}
+  - {fileID: 11400000, guid: fa75b8567bd9cc34e801c436a36de52e, type: 2}
+  - {fileID: 11400000, guid: fa75b8567bd9cc34e801c436a36de52e, type: 2}
   manualDrawCost: 5
   towerManager: {fileID: 284558777}
   handGameplayDriver: {fileID: 652010304}
@@ -1352,8 +1352,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 287364996}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &869737982
@@ -2615,6 +2614,7 @@ SceneRoots:
   - {fileID: 1498133146}
   - {fileID: 962809202}
   - {fileID: 751640688}
+  - {fileID: 287364996}
   - {fileID: 1640716598}
   - {fileID: 259795089}
   - {fileID: 1337066653}

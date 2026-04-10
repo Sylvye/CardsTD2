@@ -10,17 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8d2fe7064acd5794c94ba169cf2a4e68, type: 3}
-  m_Name: Test Card D
+  m_Name: Test Card I
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardDef
-  id: D
-  displayName: Pot of Greed
-  icon: {fileID: 1128286531543930043, guid: 614eb695ec64a0f458c3fdbcde292037, type: 3}
-  type: 2
-  description: Draws extra cards; can draw over your hand limit
+  id: H
+  displayName: Shotgunner
+  icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
+  type: 0
+  description: Shoots a burst of pellets at a target nearby
   baseManaCost: 4
   baseTier: 1
   baseAugmentSlots: 0
-  spawnableObject: {fileID: 0}
-  effects:
-  - effectType: 1
-    amount: 2
+  spawnableObject: {fileID: 11400000, guid: 829868fa109e6aa46ab44cf21b8f56e7, type: 2}
+  effects: []

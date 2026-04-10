@@ -6,7 +6,7 @@ namespace Towers
     public class BeamTowerAttackDef : TowerAttackDef
     {
         [Min(0.01f)] public float tickInterval = 0.2f;
-        [Min(0f)] public float damageMultiplier = 1f;
+        [Min(0f)] public float damageMultiplier = 1f; // increases damage dealt to the targeted enemy by this amount each attack
         [Min(0f)] public float flatDamageBonus;
         [Min(1)] public int projectileCount = 1;
         public LineRenderer beamRendererPrefab;
