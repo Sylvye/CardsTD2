@@ -338,7 +338,6 @@ namespace Towers
             summon.Initialize(new TowerSummonContext(
                 tower,
                 tower.RuntimeContext,
-                towerStats,
                 attackDef.summonLifetime
             ));
 

@@ -5,13 +5,13 @@ namespace Towers
 {
     /// <summary>
     /// Concrete summon archetype: autonomous turret summon.
-    /// Uses the parent tower stat snapshot captured at spawn.
+    /// Uses live-linked parent tower stats while active.
     /// </summary>
     public class TowerSummonedUnit : MonoBehaviour, ITowerSummon
     {
+        private TowerAgent parentTower;
         private EnemyManager enemyManager;
         private float lifetimeRemaining;
-        private float inheritedDamageAtSpawn;
         private float fireTimer;
         private bool isInitialized;
 
@@ -25,9 +25,9 @@ namespace Towers
 
         public void Initialize(TowerSummonContext context)
         {
+            parentTower = context.ParentTower;
             enemyManager = context.RuntimeContext.EnemyManager;
             lifetimeRemaining = Mathf.Max(0.01f, context.LifetimeSeconds);
-            inheritedDamageAtSpawn = Mathf.Max(0f, context.ParentStatsSnapshot.Damage);
             fireTimer = 0f;
             isInitialized = true;
         }
@@ -83,8 +83,11 @@ namespace Towers
 
         private float GetInheritedDamage()
         {
-            // Snapshot behavior: uses parent damage captured at spawn; no live-link updates afterwards.
-            return inheritedDamageAtSpawn;
+            // Live-link behavior: mirrors parent tower modifiers/effects while summon is active.
+            if (parentTower == null || parentTower.IsDead)
+                return 0f;
+
+            return Mathf.Max(0f, parentTower.GetResolvedStats().Damage);
         }
     }
 }
