@@ -9,9 +9,12 @@ namespace Towers
         private readonly List<IStatModifier> runtimeModifiers = new();
         private readonly List<IAttackExecution> attackExecutions = new();
         private readonly List<EnemyAgent> targetBuffer = new();
+        private readonly HashSet<EnemyAgent> inRangeEnemies = new();
+        private readonly HashSet<EnemyAgent> previousInRangeEnemies = new();
 
         private static readonly ITargetingStrategy DefaultTargetingStrategy = new PriorityTargetingStrategy();
 
+        private readonly TowerEffectResolver effectResolver = new();
         private TowerDef towerDef;
         private TowerRuntimeContext runtimeContext;
         private TargetPriority currentPriority;
@@ -43,6 +46,8 @@ namespace Towers
             isInitialized = true;
 
             runtimeModifiers.Clear();
+            inRangeEnemies.Clear();
+            previousInRangeEnemies.Clear();
             if (def != null && def.defaultModifiers != null)
             {
                 foreach (TowerStatModifierDef modifier in def.defaultModifiers)
@@ -70,12 +75,16 @@ namespace Towers
             isDead = false;
             isInitialized = true;
             runtimeModifiers.Clear();
+            inRangeEnemies.Clear();
+            previousInRangeEnemies.Clear();
         }
 
         protected virtual void Update()
         {
             if (!isInitialized || isDead)
                 return;
+
+            UpdateRangeTriggers();
 
             float deltaTime = Time.deltaTime;
             for (int i = 0; i < attackExecutions.Count; i++)
@@ -165,9 +174,27 @@ namespace Towers
                 return;
 
             isDead = true;
+            FireTrigger(TowerTriggerType.OnDeath, null, 0f, transform.position, false);
             ShutdownExecutions();
             runtimeContext.TowerManager?.UnregisterTower(this);
             Destroy(gameObject);
+        }
+
+        public void ReportHit(EnemyAgent enemy, float damageAmount, Vector3 effectPosition)
+        {
+            if (enemy == null)
+                return;
+
+            bool wasKill = enemy.IsDeadOrEscaped;
+            FireTrigger(TowerTriggerType.OnHit, enemy, damageAmount, effectPosition, wasKill);
+        }
+
+        public void ReportKill(EnemyAgent enemy, float damageAmount, Vector3 effectPosition)
+        {
+            if (enemy == null)
+                return;
+
+            FireTrigger(TowerTriggerType.OnKill, enemy, damageAmount, effectPosition, true);
         }
 
         private bool IsTargetValid(EnemyAgent enemy, IReadOnlyList<TowerTargetFilterDef> filters, TowerResolvedStats stats)
@@ -215,6 +242,53 @@ namespace Towers
                 attackExecutions[i].Shutdown();
 
             attackExecutions.Clear();
+            inRangeEnemies.Clear();
+            previousInRangeEnemies.Clear();
+        }
+
+        private void UpdateRangeTriggers()
+        {
+            EnemyManager enemyManager = runtimeContext.EnemyManager;
+            if (enemyManager == null)
+                return;
+
+            previousInRangeEnemies.Clear();
+            previousInRangeEnemies.UnionWith(inRangeEnemies);
+            inRangeEnemies.Clear();
+
+            TowerResolvedStats stats = GetResolvedStats();
+            IReadOnlyList<EnemyAgent> activeEnemies = enemyManager.ActiveEnemies;
+            for (int i = 0; i < activeEnemies.Count; i++)
+            {
+                EnemyAgent enemy = activeEnemies[i];
+                if (!IsTargetValid(enemy, null, stats))
+                    continue;
+
+                inRangeEnemies.Add(enemy);
+                if (!previousInRangeEnemies.Contains(enemy))
+                    FireTrigger(TowerTriggerType.OnEnemyEnterRange, enemy, 0f, enemy.transform.position, false);
+            }
+        }
+
+        private void FireTrigger(TowerTriggerType trigger, EnemyAgent enemy, float damageAmount, Vector3 effectPosition, bool wasKill)
+        {
+            if (towerDef == null || effectResolver == null || towerDef.triggeredEffects == null || towerDef.triggeredEffects.Count == 0)
+                return;
+
+            Vector3 towerPosition = transform.position;
+            Vector3 targetPosition = enemy != null ? enemy.transform.position : towerPosition;
+            TowerEffectContext effectContext = new(
+                this,
+                enemy,
+                towerPosition,
+                targetPosition,
+                effectPosition,
+                damageAmount,
+                wasKill,
+                runtimeContext
+            );
+
+            effectResolver.ResolveEffectsForTrigger(towerDef, trigger, effectContext);
         }
     }
 }

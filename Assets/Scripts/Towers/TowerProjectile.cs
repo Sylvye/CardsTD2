@@ -5,6 +5,7 @@ namespace Towers
 {
     public class TowerProjectile : MonoBehaviour
     {
+        private TowerAgent ownerTower;
         private EnemyAgent target;
         private Vector3 targetPosition;
         private float damage;
@@ -14,8 +15,16 @@ namespace Towers
         private bool followTarget;
         private bool isInitialized;
 
-        public void Initialize(EnemyAgent targetEnemy, float projectileDamage, float projectileSpeed, float projectileHitRadius, float lifetime, bool shouldFollowTarget)
+        public void Initialize(
+            TowerAgent sourceTower,
+            EnemyAgent targetEnemy,
+            float projectileDamage,
+            float projectileSpeed,
+            float projectileHitRadius,
+            float lifetime,
+            bool shouldFollowTarget)
         {
+            ownerTower = sourceTower;
             target = targetEnemy;
             targetPosition = targetEnemy != null ? targetEnemy.transform.position : transform.position;
             damage = projectileDamage;
@@ -47,7 +56,13 @@ namespace Towers
                 return;
 
             if (target != null && !target.IsDeadOrEscaped && Vector2.Distance(transform.position, target.transform.position) <= hitRadius)
+            {
+                bool wasAliveBeforeHit = !target.IsDeadOrEscaped;
                 target.TakeDamage(damage);
+                ownerTower?.ReportHit(target, damage, transform.position);
+                if (wasAliveBeforeHit && target.IsDeadOrEscaped)
+                    ownerTower?.ReportKill(target, damage, transform.position);
+            }
 
             Destroy(gameObject);
         }

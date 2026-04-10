@@ -31,6 +31,9 @@ namespace Towers
         [Header("Attacks")]
         public List<TowerAttackDef> attacks = new();
 
+        [Header("Triggered Effects")]
+        public List<TowerTriggeredEffect> triggeredEffects = new();
+
         public TowerResolvedStats GetBaseResolvedStats()
         {
             return baseStats.ToResolvedStats();
