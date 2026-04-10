@@ -110,7 +110,8 @@ namespace Towers
                     damage,
                     attackDef.projectileSpeed,
                     attackDef.projectileLifetime,
-                    attackDef.followTarget
+                    attackDef.followTarget,
+                    attackDef.pierceCount
                 );
             }
         }
