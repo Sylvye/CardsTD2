@@ -3,18 +3,34 @@ using UnityEngine;
 
 namespace Towers
 {
+    [RequireComponent(typeof(Rigidbody2D))]
+    [RequireComponent(typeof(Collider2D))]
     public class TowerProjectile : MonoBehaviour
     {
         private TowerAgent ownerTower;
         private EnemyAgent target;
-        private Vector3 targetPosition;
-        private Vector3 travelDirection;
+        private Rigidbody2D rb;
+        private Collider2D projectileCollider;
+        private Vector2 travelDirection;
         private float damage;
         private float speed;
-        private float hitRadius;
         private float lifetimeRemaining;
         private bool followTarget;
         private bool isInitialized;
+        private bool hasHit;
+
+        private void Awake()
+        {
+            rb = GetComponent<Rigidbody2D>();
+            projectileCollider = GetComponent<Collider2D>();
+
+            rb.gravityScale = 0f;
+            rb.bodyType = RigidbodyType2D.Kinematic;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+            if (!projectileCollider.isTrigger)
+                projectileCollider.isTrigger = true;
+        }
 
         public void Initialize(
             TowerAgent sourceTower,
@@ -22,21 +38,19 @@ namespace Towers
             Vector3 initialTravelDirection,
             float projectileDamage,
             float projectileSpeed,
-            float projectileHitRadius,
             float lifetime,
             bool shouldFollowTarget)
         {
             ownerTower = sourceTower;
             target = targetEnemy;
-            targetPosition = targetEnemy != null ? targetEnemy.transform.position : transform.position;
             travelDirection = initialTravelDirection.sqrMagnitude > 0.0001f
-                ? initialTravelDirection.normalized
-                : Vector3.right;
+                ? ((Vector2)initialTravelDirection).normalized
+                : Vector2.right;
             damage = projectileDamage;
             speed = Mathf.Max(0.01f, projectileSpeed);
-            hitRadius = Mathf.Max(0.01f, projectileHitRadius);
             lifetimeRemaining = Mathf.Max(0.01f, lifetime);
             followTarget = shouldFollowTarget;
+            hasHit = false;
             isInitialized = true;
         }
 
@@ -51,35 +65,47 @@ namespace Towers
                 Destroy(gameObject);
                 return;
             }
+        }
+
+        private void FixedUpdate()
+        {
+            if (!isInitialized || hasHit)
+                return;
 
             if (followTarget && target != null && !target.IsDeadOrEscaped)
             {
-                targetPosition = target.transform.position;
-                Vector3 updatedDirection = targetPosition - transform.position;
+                Vector2 updatedDirection = (Vector2)target.transform.position - rb.position;
                 if (updatedDirection.sqrMagnitude > 0.0001f)
                     travelDirection = updatedDirection.normalized;
             }
 
-            if (followTarget)
-            {
-                transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
-            }
-            else
-            {
-                transform.position += travelDirection * (speed * Time.deltaTime);
-            }
+            Vector2 nextPosition = rb.position + (travelDirection * (speed * Time.fixedDeltaTime));
+            rb.MovePosition(nextPosition);
+        }
 
-            if (Vector2.Distance(transform.position, targetPosition) > hitRadius)
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            TryApplyHit(other.GetComponentInParent<EnemyAgent>());
+        }
+
+        private void OnCollisionEnter2D(Collision2D collision)
+        {
+            TryApplyHit(collision.collider.GetComponentInParent<EnemyAgent>());
+        }
+
+        private void TryApplyHit(EnemyAgent enemy)
+        {
+            if (!isInitialized || hasHit)
+                return;
+            if (enemy == null || enemy.IsDeadOrEscaped)
                 return;
 
-            if (target != null && !target.IsDeadOrEscaped && Vector2.Distance(transform.position, target.transform.position) <= hitRadius)
-            {
-                bool wasAliveBeforeHit = !target.IsDeadOrEscaped;
-                target.TakeDamage(damage);
-                ownerTower?.ReportHit(target, damage, transform.position);
-                if (wasAliveBeforeHit && target.IsDeadOrEscaped)
-                    ownerTower?.ReportKill(target, damage, transform.position);
-            }
+            hasHit = true;
+            bool wasAliveBeforeHit = !enemy.IsDeadOrEscaped;
+            enemy.TakeDamage(damage);
+            ownerTower?.ReportHit(enemy, damage, transform.position);
+            if (wasAliveBeforeHit && enemy.IsDeadOrEscaped)
+                ownerTower?.ReportKill(enemy, damage, transform.position);
 
             Destroy(gameObject);
         }
