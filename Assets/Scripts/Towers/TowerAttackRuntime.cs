@@ -83,9 +83,30 @@ namespace Towers
             float damage = stats.Damage + attackDef.damageBonus;
             cooldownRemaining = stats.FireInterval;
 
-            TowerProjectile projectile = CreateProjectile();
-            projectile.transform.position = tower.transform.position + attackDef.fireOffset;
-            projectile.Initialize(target, damage, attackDef.projectileSpeed, attackDef.hitRadius, attackDef.projectileLifetime, attackDef.followTarget);
+            int projectileCount = Mathf.Max(1, attackDef.projectileCount);
+            Vector3 firePosition = tower.transform.position + attackDef.fireOffset;
+            Vector3 targetDirection = target.transform.position - firePosition;
+            float targetDistance = targetDirection.magnitude;
+            if (targetDistance < 0.0001f)
+            {
+                targetDirection = Vector3.right;
+                targetDistance = 1f;
+            }
+
+            targetDirection.Normalize();
+            Vector3 perpendicular = new Vector3(-targetDirection.y, targetDirection.x, 0f);
+            float spreadDegrees = Mathf.Max(0f, attackDef.degreesSpread);
+            float centerIndex = (projectileCount - 1) * 0.5f;
+
+            for (int i = 0; i < projectileCount; i++)
+            {
+                TowerProjectile projectile = CreateProjectile();
+                float normalizedIndex = projectileCount > 1 ? (i - centerIndex) / centerIndex : 0f;
+                float projectileAngle = normalizedIndex * spreadDegrees * 0.5f;
+                float laneOffset = Mathf.Tan(projectileAngle * Mathf.Deg2Rad) * targetDistance;
+                projectile.transform.position = firePosition + (perpendicular * laneOffset);
+                projectile.Initialize(target, damage, attackDef.projectileSpeed, attackDef.hitRadius, attackDef.projectileLifetime, attackDef.followTarget);
+            }
         }
 
         public void Shutdown()
