@@ -10,6 +10,7 @@ namespace Enemies
         [SerializeField] private EnemyManager enemyManager;
         [SerializeField] private EnemyPath enemyPath;
         [SerializeField] private MonoBehaviour playerEffectsSource;
+        [SerializeField] private Transform enemyParent;
 
         [Header("Wave Data")]
         [SerializeField] private List<SpawnBatch> spawnQueue = new();
@@ -158,7 +159,8 @@ namespace Enemies
             EnemyAgent enemy = Instantiate(
                 enemyDef.prefab,
                 transform.position,
-                Quaternion.identity
+                Quaternion.identity,
+                enemyParent
             );
 
             enemy.Initialize(enemyManager, this, playerEffects, enemyPath, enemyDef, trackDistance);

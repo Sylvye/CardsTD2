@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: TeslaBeamDef
   m_EditorClassIdentifier: Assembly-CSharp::Towers.BeamTowerAttackDef
   targetFilters: []
-  tickInterval: 0.5
+  tickInterval: 0.33
   damageMultiplier: 1
   flatDamageBonus: 0
+  projectileCount: 1
+  beamRendererPrefab: {fileID: 5982873725055338675, guid: 1152243fb1ad05a40a24a9b5119a04d1, type: 3}

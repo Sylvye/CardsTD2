@@ -280,6 +280,9 @@ namespace Towers
                 instance.endColor = Color.cyan;
             }
 
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            instance.useWorldSpace = true;
             instance.enabled = false;
             beamRendererInstances[index] = instance;
             return instance;
@@ -327,7 +330,7 @@ namespace Towers
             TowerResolvedStats towerStats = tower.GetResolvedStats();
             cooldownRemaining = towerStats.FireInterval;
 
-            ITowerSummon summon = CreateSummon();
+            ITowerSummon summon = CreateSummon(tower.transform.parent);
             MonoBehaviour summonBehaviour = summon as MonoBehaviour;
             if (summonBehaviour == null)
                 return;
@@ -357,11 +360,11 @@ namespace Towers
             }
         }
 
-        private ITowerSummon CreateSummon()
+        private ITowerSummon CreateSummon(Transform parentTransform)
         {
             if (attackDef.summonPrefab != null)
             {
-                MonoBehaviour summonPrefabInstance = Object.Instantiate(attackDef.summonPrefab);
+                MonoBehaviour summonPrefabInstance = Object.Instantiate(attackDef.summonPrefab, parentTransform);
                 SummonedTowerAgent summonHost = summonPrefabInstance.GetComponent<SummonedTowerAgent>();
                 if (summonHost != null)
                 {
@@ -377,6 +380,7 @@ namespace Towers
             }
 
             GameObject fallback = new("TowerSummon");
+            fallback.transform.SetParent(parentTransform, false);
             SummonedTowerAgent fallbackHost = fallback.AddComponent<SummonedTowerAgent>();
             fallbackHost.ConfigureSummon(attackDef.summonTowerDef, attackDef.summonAttacks);
             return fallbackHost;

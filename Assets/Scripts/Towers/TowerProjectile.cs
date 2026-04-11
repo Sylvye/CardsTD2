@@ -16,10 +16,11 @@ namespace Towers
         private float damage;
         private float speed;
         private float lifetimeRemaining;
-        private int remainingPierces;
+        private int remainingHits;
         private readonly HashSet<int> hitEnemyInstanceIds = new();
         private bool followTarget;
         private bool isInitialized;
+        private bool isExpended;
 
         private void Awake()
         {
@@ -52,10 +53,16 @@ namespace Towers
             damage = projectileDamage;
             speed = Mathf.Max(0.01f, projectileSpeed);
             lifetimeRemaining = Mathf.Max(0.01f, lifetime);
-            remainingPierces = Mathf.Max(1, pierceCount);
+            remainingHits = Mathf.Max(0, pierceCount) + 1;
             hitEnemyInstanceIds.Clear();
             followTarget = shouldFollowTarget;
             isInitialized = true;
+            isExpended = false;
+
+            if (projectileCollider != null)
+                projectileCollider.enabled = true;
+            if (rb != null)
+                rb.simulated = true;
         }
 
         private void Update()
@@ -99,22 +106,34 @@ namespace Towers
 
         private void TryApplyHit(EnemyAgent enemy)
         {
-            if (!isInitialized)
+            if (!isInitialized || isExpended || remainingHits <= 0)
                 return;
             if (enemy == null || enemy.IsDeadOrEscaped)
                 return;
             if (!hitEnemyInstanceIds.Add(enemy.GetEntityId()))
                 return;
 
+            remainingHits--;
+            if (remainingHits <= 0)
+                Expire();
+
             bool wasAliveBeforeHit = !enemy.IsDeadOrEscaped;
             enemy.TakeDamage(damage);
             ownerTower?.ReportHit(enemy, damage, transform.position);
             if (wasAliveBeforeHit && enemy.IsDeadOrEscaped)
                 ownerTower?.ReportKill(enemy, damage, transform.position);
+        }
 
-            remainingPierces--;
-            if (remainingPierces <= 0)
-                Destroy(gameObject);
+        private void Expire()
+        {
+            isExpended = true;
+
+            if (projectileCollider != null)
+                projectileCollider.enabled = false;
+            if (rb != null)
+                rb.simulated = false;
+
+            Destroy(gameObject);
         }
     }
 }

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Enemy B
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyDef
   prefab: {fileID: 2232636580848620905, guid: 99f77c6a385bacc44b3ebbe90919c6ba, type: 3}
-  maxHealth: 5
+  maxHealth: 6
   moveSpeed: 2
   lifeDamage: 1
   triggeredEffects:

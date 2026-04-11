@@ -23,7 +23,6 @@ namespace Enemies
 
         private void ResolveEffect(EnemyTriggeredEffect effect, EnemyEffectContext context)
         {
-            Debug.Log("Resolving:  " + effect.effectType);
             switch (effect.effectType)
             {
                 case EnemyEffectType.None:
