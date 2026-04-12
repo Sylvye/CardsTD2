@@ -20,11 +20,11 @@ MonoBehaviour:
   baseStats:
     maxHealth: 4
     range: 2
-    fireInterval: 0.5
+    fireInterval: 0.25
     damage: 1
   defaultTargetPriority: 0
   tags: []
   defaultModifiers: []
   attacks:
-  - {fileID: 11400000, guid: 1b7610861bd8d594b942262adec518fc, type: 2}
+  - {fileID: 11400000, guid: 1b24f0493e6e37043bed22573be62cc9, type: 2}
   triggeredEffects: []

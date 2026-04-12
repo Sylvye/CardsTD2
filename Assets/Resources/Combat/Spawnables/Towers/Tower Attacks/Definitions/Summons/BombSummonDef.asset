@@ -18,4 +18,3 @@ MonoBehaviour:
   spawnRadius: 2
   summonLifetime: 4
   summonTowerDef: {fileID: 11400000, guid: 4282e212813e3094293f2c71ce6dd073, type: 2}
-  summonAttacks: []

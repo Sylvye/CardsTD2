@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Towers
@@ -15,8 +14,6 @@ namespace Towers
             damage = 1f
         };
 
-        private readonly List<TowerAttackDef> configuredAttacks = new();
-
         private TowerDef configuredTowerDef;
         private TowerAgent parentTower;
         private float lifetimeRemaining;
@@ -24,20 +21,9 @@ namespace Towers
 
         public bool IsAlive => summonInitialized && !IsDead && lifetimeRemaining > 0f;
 
-        public void ConfigureSummon(TowerDef summonTowerDef, IReadOnlyList<TowerAttackDef> summonAttacks)
+        public void ConfigureSummon(TowerDef summonTowerDef)
         {
             configuredTowerDef = summonTowerDef;
-            configuredAttacks.Clear();
-
-            if (summonAttacks == null)
-                return;
-
-            for (int i = 0; i < summonAttacks.Count; i++)
-            {
-                TowerAttackDef attackDef = summonAttacks[i];
-                if (attackDef != null)
-                    configuredAttacks.Add(attackDef);
-            }
         }
 
         public void Initialize(TowerSummonContext context)
@@ -57,9 +43,6 @@ namespace Towers
                     context.RuntimeContext
                 );
             }
-
-            if (configuredAttacks.Count > 0)
-                SetRuntimeAttackDefinitions(configuredAttacks);
 
             if (parentTower != null)
                 InheritModifiersFrom(parentTower, append: true);

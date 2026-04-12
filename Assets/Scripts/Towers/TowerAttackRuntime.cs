@@ -178,7 +178,7 @@ namespace Towers
                     tower.ReportKill(target, damage, target.transform.position);
             }
 
-            tickTimer = Mathf.Max(0.01f, attackDef.tickInterval);
+            tickTimer = stats.FireInterval;
         }
 
         public void Shutdown()
@@ -368,7 +368,7 @@ namespace Towers
                 SummonedTowerAgent summonHost = summonPrefabInstance.GetComponent<SummonedTowerAgent>();
                 if (summonHost != null)
                 {
-                    summonHost.ConfigureSummon(attackDef.summonTowerDef, attackDef.summonAttacks);
+                    summonHost.ConfigureSummon(attackDef.summonTowerDef);
                     return summonHost;
                 }
 
@@ -382,7 +382,7 @@ namespace Towers
             GameObject fallback = new("TowerSummon");
             fallback.transform.SetParent(parentTransform, false);
             SummonedTowerAgent fallbackHost = fallback.AddComponent<SummonedTowerAgent>();
-            fallbackHost.ConfigureSummon(attackDef.summonTowerDef, attackDef.summonAttacks);
+            fallbackHost.ConfigureSummon(attackDef.summonTowerDef);
             return fallbackHost;
         }
     }

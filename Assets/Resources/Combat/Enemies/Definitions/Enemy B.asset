@@ -16,6 +16,8 @@ MonoBehaviour:
   maxHealth: 6
   moveSpeed: 2
   lifeDamage: 1
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  damageFlashDuration: 0.1
   triggeredEffects:
   - trigger: 5
     effectType: 2

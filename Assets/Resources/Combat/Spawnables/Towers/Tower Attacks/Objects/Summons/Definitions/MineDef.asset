@@ -22,11 +22,11 @@ MonoBehaviour:
     range: 2
     fireInterval: 0.01
     damage: 1
-  defaultTargetPriority: 0
+  defaultTargetPriority: 1
   tags: []
   defaultModifiers: []
   attacks: []
   triggeredEffects:
   - trigger: 0
     effectType: 1
-    amount: 4
+    amount: 2
