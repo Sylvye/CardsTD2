@@ -27,3 +27,4 @@ MonoBehaviour:
   defaultModifiers: []
   attacks:
   - {fileID: 11400000, guid: 3cec67bb2c650b244b49472ebe8b99f4, type: 2}
+  triggeredEffects: []

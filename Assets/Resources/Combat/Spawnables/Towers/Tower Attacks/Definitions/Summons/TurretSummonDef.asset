@@ -16,5 +16,5 @@ MonoBehaviour:
   summonPrefab: {fileID: -7173112402947520753, guid: 4f8a6ba641013c049b3317e8120fe323, type: 3}
   maxActiveSummons: 4
   spawnRadius: 3
-  summonLifetime: 8
+  summonLifetime: 16
   summonTowerDef: {fileID: 11400000, guid: f77360c9e22582c40b4cdff64e9e93ff, type: 2}

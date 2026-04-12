@@ -46,6 +46,20 @@ namespace Towers
                     return false;
             }
 
+            foreach (SplinePathRenderer pathRenderer in FindObjectsByType<SplinePathRenderer>(FindObjectsSortMode.None))
+            {
+                if (pathRenderer == null)
+                    continue;
+
+                EdgeCollider2D pathCollider = pathRenderer.GetComponent<EdgeCollider2D>();
+                if (pathCollider == null)
+                    continue;
+
+                Vector2 closestPoint = pathCollider.ClosestPoint(newPos);
+                if ((closestPoint - newPos).sqrMagnitude <= newRadius * newRadius)
+                    return false;
+            }
+
             return true;
         }
 

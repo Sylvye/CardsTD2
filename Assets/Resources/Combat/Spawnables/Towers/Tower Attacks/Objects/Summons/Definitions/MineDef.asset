@@ -20,13 +20,13 @@ MonoBehaviour:
   baseStats:
     maxHealth: 2
     range: 2
-    fireInterval: 0.01
+    fireInterval: 999
     damage: 1
   defaultTargetPriority: 1
   tags: []
   defaultModifiers: []
   attacks: []
   triggeredEffects:
-  - trigger: 0
+  - trigger: 3
     effectType: 1
-    amount: 2
+    amount: 10
