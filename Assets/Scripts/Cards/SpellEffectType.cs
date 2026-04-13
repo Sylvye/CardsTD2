@@ -3,7 +3,7 @@ namespace Cards
     public enum SpellEffectType
     {
         None,
-        HealTower,
+        GainMana,
         DamageEnemy,
         ApplyTowerModifier,
         ApplyEnemyModifier

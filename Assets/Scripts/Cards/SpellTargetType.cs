@@ -3,8 +3,9 @@ namespace Cards
     public enum SpellTargetType
     {
         None,
-        Towers,
         Enemies,
-        Both
+        Towers,
+        Player,
+        EnemiesAndTowers
     }
 }

@@ -10,25 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e5e272d3750a47dbadefd5ca85579660, type: 3}
-  m_Name: Fireball
+  m_Name: Haste
   m_EditorClassIdentifier: Assembly-CSharp::Cards.SpellDef
-  prefab: {fileID: 111924683814397001, guid: 9790aed41bd2bcc42a356dada405db18, type: 3}
-  effectRadius: 1
-  duration: 5
+  prefab: {fileID: 111924683814397001, guid: 87c9abe13513e514bb837233ccb919e5, type: 3}
+  effectRadius: 2.5
+  duration: 10
   triggeredEffects:
-  - trigger: 0
-    effectType: 2
-    targetType: 1
-    amount: 10
-    tickInterval: 0.01
-    towerModifier: {fileID: 0}
-    enemyModifier: {fileID: 0}
-    modifierApplicationMode: 0
   - trigger: 3
-    effectType: 2
-    targetType: 1
-    amount: 2
-    tickInterval: 0.3
-    towerModifier: {fileID: 0}
+    effectType: 3
+    targetType: 2
+    amount: 0
+    tickInterval: 0.1
+    towerModifier: {fileID: 11400000, guid: 8248dc53ce966bf4288aa6fb75f661ce, type: 2}
     enemyModifier: {fileID: 0}
-    modifierApplicationMode: 0
+    modifierApplicationMode: 1

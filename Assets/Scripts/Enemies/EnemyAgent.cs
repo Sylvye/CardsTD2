@@ -27,6 +27,8 @@ namespace Enemies
         private bool isInitialized;
         private bool isDeadOrEscaped;
 
+        public event System.Action<EnemyAgent> Died;
+
         public float CurrentHealth => currentHealth;
         public float MaxHealth => maxHealth;
         public int LifeDamage => lifeDamage;
@@ -134,9 +136,9 @@ namespace Enemies
             if (isDeadOrEscaped)
                 return;
 
-            FireTrigger(EnemyTriggerType.OnDeath);
-
             isDeadOrEscaped = true;
+            FireTrigger(EnemyTriggerType.OnDeath);
+            Died?.Invoke(this);
             enemyManager?.UnregisterEnemy(this);
             Destroy(gameObject);
         }

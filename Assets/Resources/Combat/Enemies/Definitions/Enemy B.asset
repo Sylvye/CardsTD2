@@ -27,3 +27,7 @@ MonoBehaviour:
     effectType: 2
     amount: 1
     enemyToSpawn: {fileID: 11400000}
+  - trigger: 4
+    effectType: 1
+    amount: 1
+    enemyToSpawn: {fileID: 11400000}

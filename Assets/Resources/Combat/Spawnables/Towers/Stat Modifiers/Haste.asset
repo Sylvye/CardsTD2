@@ -9,14 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 40ee971a81b020a42a580e40c7bf25b2, type: 3}
   m_Name: Haste
-  m_EditorClassIdentifier: Assembly-CSharp:Towers:TowerFlatStatModifierDef
+  m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerFlatStatModifierDef
   healthAdd: 0
   rangeAdd: 0
   fireIntervalAdd: 0
   damageAdd: 0
   healthMultiplier: 1
   rangeMultiplier: 1
-  fireIntervalMultiplier: 2
+  fireIntervalMultiplier: 0.5
   damageMultiplier: 1

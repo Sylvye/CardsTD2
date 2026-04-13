@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
+using Combat;
 using Enemies;
 using UnityEngine;
 using Towers;
@@ -14,6 +15,7 @@ namespace Cards
         [Header("Gameplay")]
         [SerializeField] private TowerManager towerManager;
         [SerializeField] private EnemyManager enemyManager;
+        [SerializeField] private MonoBehaviour playerEffectsSource;
         [SerializeField] private HandGameplayDriver handGameplayDriver;
 
         [Header("UI")]
@@ -23,14 +25,24 @@ namespace Cards
         private HandController handController;
         private CardEffectResolver effectResolver;
         private HandCardsPresenter handCardsPresenter;
+        private IPlayerEffects playerEffects;
 
         private void Start()
         {
+            playerEffects = playerEffectsSource as IPlayerEffects;
+            if (playerEffectsSource != null && playerEffects == null)
+            {
+                Debug.LogError($"{nameof(HandViewDriver)} requires {nameof(playerEffectsSource)} to implement {nameof(IPlayerEffects)}.");
+            }
+
+            if (playerEffects == null)
+                playerEffects = FindAnyObjectByType<CombatSessionDriver>();
+
             combatCardState = new CombatCardState();
             combatCardState.BuildDrawPileFromDefs(startingDeck);
 
             handController = new HandController(combatCardState, 5);
-            effectResolver = new CardEffectResolver(combatCardState, handController, towerManager, enemyManager);
+            effectResolver = new CardEffectResolver(combatCardState, handController, towerManager, enemyManager, playerEffects);
             handController.SetEffectResolver(effectResolver);
 
             handCardsPresenter = new HandCardsPresenter(handView);

@@ -16,12 +16,13 @@ namespace Cards
             CombatCardState cardState,
             HandController handController,
             TowerManager towerManager,
-            EnemyManager enemyManager)
+            EnemyManager enemyManager,
+            IPlayerEffects playerEffects)
         {
             this.cardState = cardState;
             this.handController = handController;
             this.towerManager = towerManager;
-            spellResolver = new SpellResolver(towerManager, enemyManager);
+            spellResolver = new SpellResolver(towerManager, enemyManager, playerEffects);
         }
 
         public void ResolveOnPlay(CardInstance card, PlayerState playerState, CardPlayContext playContext)
