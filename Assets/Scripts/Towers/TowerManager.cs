@@ -58,7 +58,7 @@ namespace Towers
                     return false;
             }
 
-            foreach (SplinePathRenderer pathRenderer in FindObjectsByType<SplinePathRenderer>(FindObjectsSortMode.None))
+            foreach (SplinePathRenderer pathRenderer in FindObjectsByType<SplinePathRenderer>())
             {
                 if (pathRenderer == null)
                     continue;

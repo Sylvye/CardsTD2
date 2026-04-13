@@ -101,16 +101,17 @@ namespace Cards
         {
             if (card.Definition.spawnableObject is SpellDef spellDef)
             {
-                Debug.Log("Resolving spell " + spellDef.name);
-                spellResolver.Resolve(spellDef, worldPosition);
+                GameObject spawnedSpellObject = null;
                 if (spellDef.prefab != null)
                 {
-                    Object.Instantiate(
+                    spawnedSpellObject = Object.Instantiate(
                         spellDef.prefab,
                         worldPosition,
                         Quaternion.identity
                     );
                 }
+
+                spellResolver.Resolve(spellDef, spawnedSpellObject);
                 return;
             }
 

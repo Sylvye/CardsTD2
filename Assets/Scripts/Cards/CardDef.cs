@@ -42,7 +42,10 @@ namespace Cards
             if (spawnableObject is TowerDef towerDef)
                 return towerDef.baseStats.range;
 
-            return spawnableObject.effectRadius;
+            if (type == CardType.Spell)
+                return SpawnableColliderUtility.GetPreviewRadius(spawnableObject);
+
+            return spawnableObject != null ? spawnableObject.effectRadius : 0f;
         }
     }
 }

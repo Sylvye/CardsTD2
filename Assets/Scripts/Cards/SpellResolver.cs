@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Enemies;
 using Towers;
 using UnityEngine;
@@ -15,80 +16,101 @@ namespace Cards
             this.enemyManager = enemyManager;
         }
 
-        public void Resolve(SpellDef spellDef, Vector3 worldPosition)
+        public void Resolve(SpellDef spellDef, GameObject spawnedSpellObject)
         {
             if (spellDef == null || spellDef.effects == null)
                 return;
 
-            for (int i = 0; i < spellDef.effects.Count; i++)
+            Collider2D spellCollider = spawnedSpellObject != null
+                ? spawnedSpellObject.GetComponent<Collider2D>()
+                : null;
+
+            if (spellCollider == null)
             {
-                SpellEffectData effect = spellDef.effects[i];
+                Debug.LogWarning($"Spell '{spellDef.name}' requires a Collider2D on its spawned object to resolve targets.");
+                return;
+            }
+
+            foreach (SpellEffectData effect in spellDef.effects)
+            {
                 if (effect == null || effect.effectType == SpellEffectType.None)
                     continue;
 
-                ResolveEffect(spellDef, effect, worldPosition);
+                ResolveEffect(effect, spellCollider);
             }
         }
 
-        private void ResolveEffect(SpellDef spellDef, SpellEffectData effect, Vector3 worldPosition)
+        private void ResolveEffect(SpellEffectData effect, Collider2D spellCollider)
         {
             switch (effect.effectType)
             {
                 case SpellEffectType.HealTower:
-                    ResolveTowers(spellDef, effect, worldPosition, tower => tower.Heal(effect.amount));
+                    ResolveTowers(effect, spellCollider, tower => tower.Heal(effect.amount));
                     break;
                 case SpellEffectType.DamageEnemy:
-                    ResolveEnemies(spellDef, effect, worldPosition, enemy => enemy.TakeDamage(effect.amount));
+                    ResolveEnemies(effect, spellCollider, enemy => enemy.TakeDamage(effect.amount));
                     break;
                 case SpellEffectType.ApplyTowerModifier:
                     if (effect.towerModifier == null)
                         return;
-                    ResolveTowers(spellDef, effect, worldPosition, tower => tower.AddModifier(effect.towerModifier));
+                    ResolveTowers(effect, spellCollider, tower => tower.AddModifier(effect.towerModifier));
                     break;
                 case SpellEffectType.ApplyEnemyModifier:
                     if (effect.enemyModifier == null)
                         return;
-                    ResolveEnemies(spellDef, effect, worldPosition, enemy => enemy.AddModifier(effect.enemyModifier));
+                    ResolveEnemies(effect, spellCollider, enemy => enemy.AddModifier(effect.enemyModifier));
                     break;
             }
         }
 
-        private void ResolveTowers(SpellDef spellDef, SpellEffectData effect, Vector3 worldPosition, System.Action<TowerAgent> applyEffect)
+        private void ResolveTowers(SpellEffectData effect, Collider2D spellCollider, System.Action<TowerAgent> applyEffect)
         {
             if (towerManager == null || effect.targetType == SpellTargetType.None || effect.targetType == SpellTargetType.Enemies)
                 return;
 
-            float radiusSqr = spellDef.effectRadius * spellDef.effectRadius;
-            for (int i = 0; i < towerManager.ActiveTowers.Count; i++)
+            IReadOnlyList<TowerAgent> towers = towerManager.ActiveTowers;
+            for (int i = towers.Count - 1; i >= 0; i--)
             {
-                TowerAgent tower = towerManager.ActiveTowers[i];
+                TowerAgent tower = towers[i];
                 if (tower == null || tower.IsDead)
                     continue;
 
-                if ((tower.transform.position - worldPosition).sqrMagnitude > radiusSqr)
+                if (!IsInsideSpellArea(tower.transform, spellCollider))
                     continue;
 
                 applyEffect(tower);
             }
         }
 
-        private void ResolveEnemies(SpellDef spellDef, SpellEffectData effect, Vector3 worldPosition, System.Action<EnemyAgent> applyEffect)
+        private void ResolveEnemies(SpellEffectData effect, Collider2D spellCollider, System.Action<EnemyAgent> applyEffect)
         {
             if (enemyManager == null || effect.targetType == SpellTargetType.None || effect.targetType == SpellTargetType.Towers)
                 return;
 
-            float radiusSqr = spellDef.effectRadius * spellDef.effectRadius;
-            for (int i = 0; i < enemyManager.ActiveEnemies.Count; i++)
+            IReadOnlyList<EnemyAgent> enemies = enemyManager.ActiveEnemies;
+            for (int i = enemies.Count - 1; i >= 0; i--)
             {
-                EnemyAgent enemy = enemyManager.ActiveEnemies[i];
+                EnemyAgent enemy = enemies[i];
                 if (enemy == null || enemy.IsDeadOrEscaped)
                     continue;
 
-                if ((enemy.transform.position - worldPosition).sqrMagnitude > radiusSqr)
+                if (!IsInsideSpellArea(enemy.transform, spellCollider))
                     continue;
 
                 applyEffect(enemy);
             }
+        }
+
+        private bool IsInsideSpellArea(Transform targetTransform, Collider2D spellCollider)
+        {
+            if (targetTransform == null)
+                return false;
+
+            Collider2D targetCollider = targetTransform.GetComponent<Collider2D>();
+            if (targetCollider != null)
+                return spellCollider.Distance(targetCollider).isOverlapped;
+
+            return spellCollider.OverlapPoint(targetTransform.position);
         }
     }
 }

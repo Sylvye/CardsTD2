@@ -17,7 +17,7 @@ namespace Towers
         private float speed;
         private float lifetimeRemaining;
         private int remainingHits;
-        private readonly HashSet<int> hitEnemyInstanceIds = new();
+        private readonly HashSet<EntityId> hitEnemyInstanceIds = new();
         private bool followTarget;
         private bool isInitialized;
         private bool isExpended;
