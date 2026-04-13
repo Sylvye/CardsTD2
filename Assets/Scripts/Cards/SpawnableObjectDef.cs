@@ -7,7 +7,6 @@ namespace Cards
     {
         [Header("Spawnable Fields")]
         public GameObject prefab;
-        public float placementRadius = 0.5f;
         public float effectRadius = 1f;
     }
 }

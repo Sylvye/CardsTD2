@@ -7,7 +7,6 @@ namespace Cards
     public class SpellDef : SpawnableObjectDef
     {
         [Header("Spell")]
-        [Min(0f)] public new float effectRadius = 1f;
         public List<SpellEffectData> effects = new();
     }
 }

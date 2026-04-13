@@ -31,14 +31,14 @@ namespace Cards
 
         public float GetPlacementRadius()
         {
-            return spawnableObject.placementRadius;
+            if (spawnableObject is TowerDef towerDef)
+                return towerDef.placementRadius;
+
+            return -1f;
         }
 
         public float GetEffectRadius()
         {
-            if (spawnableObject is SpellDef spellDef)
-                return spellDef.effectRadius;
-
             if (spawnableObject is TowerDef towerDef)
                 return towerDef.baseStats.range;
 

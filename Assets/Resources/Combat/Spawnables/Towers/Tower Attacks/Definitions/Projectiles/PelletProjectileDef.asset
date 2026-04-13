@@ -16,9 +16,9 @@ MonoBehaviour:
   projectilePrefab: {fileID: -4105005071899899272, guid: 95a5c9ccfc67b37409f9f9b6cd492b35, type: 3}
   projectileCount: 1
   damageBonus: 0
-  projectileSpeed: 12
+  projectileSpeed: 20
   projectileLifetime: 4
-  pierceCount: 1
+  pierceCount: 3
   degreesSpread: 0
   fireOffset: {x: 0, y: 0, z: 0}
   followTarget: 0

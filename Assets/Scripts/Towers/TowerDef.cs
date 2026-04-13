@@ -13,6 +13,7 @@ namespace Towers
         public string displayName;
 
         [Header("Stats")]
+        [Min(0f)] public float placementRadius = 0.5f;
         public TowerBaseStats baseStats = new()
         {
             maxHealth = 10f,

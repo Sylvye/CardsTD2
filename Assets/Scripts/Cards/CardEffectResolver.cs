@@ -101,6 +101,7 @@ namespace Cards
         {
             if (card.Definition.spawnableObject is SpellDef spellDef)
             {
+                Debug.Log("Resolving spell " + spellDef.name);
                 spellResolver.Resolve(spellDef, worldPosition);
                 if (spellDef.prefab != null)
                 {
