@@ -9,9 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f63388c43aa4621aeec6de03140da4b, type: 3}
+  m_Script: {fileID: 11500000, guid: e5e272d3750a47dbadefd5ca85579660, type: 3}
   m_Name: Fireball
-  m_EditorClassIdentifier: Assembly-CSharp::Combat.SpawnableObjectDef
+  m_EditorClassIdentifier: Assembly-CSharp::Cards.SpellDef
   prefab: {fileID: 111924683814397001, guid: 9790aed41bd2bcc42a356dada405db18, type: 3}
-  placementRadius: 0.5
   effectRadius: 1
+  effects:
+  - effectType: 2
+    targetType: 2
+    amount: 20
+    towerModifier: {fileID: 0}
+    enemyModifier: {fileID: 0}

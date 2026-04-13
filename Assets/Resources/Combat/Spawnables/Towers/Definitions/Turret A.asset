@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: Turret A
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerDef
   prefab: {fileID: 77660494436261291, guid: 99b2b75a3f0b246429a4c3b135ea877b, type: 3}
-  placementRadius: 0.5
   effectRadius: 3
   id: turret_a
   displayName: Turret A
+  placementRadius: 0.5
   baseStats:
     maxHealth: 10
     range: 3
     fireInterval: 0.5
-    damage: 2
+    damage: 1
   defaultTargetPriority: 0
   tags: []
   defaultModifiers: []
