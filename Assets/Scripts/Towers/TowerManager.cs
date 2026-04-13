@@ -97,7 +97,11 @@ namespace Towers
             TowerAgent tower = spawned.GetComponent<TowerAgent>();
             if (tower != null)
             {
-                tower.Initialize(spawnable.placementRadius, spawnable.effectRadius, BuildRuntimeContext());
+                float placementRadius = cardDef.GetPlacementRadius();
+                if (placementRadius < 0f)
+                    placementRadius = 0f;
+
+                tower.Initialize(placementRadius, spawnable.effectRadius, BuildRuntimeContext());
                 RegisterTower(tower);
             }
 
