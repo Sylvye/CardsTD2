@@ -1,4 +1,5 @@
 using Combat;
+using Enemies;
 using Towers;
 using UnityEngine;
 
@@ -9,15 +10,18 @@ namespace Cards
         private readonly CombatCardState cardState;
         private readonly HandController handController;
         private readonly TowerManager towerManager;
+        private readonly SpellResolver spellResolver;
 
         public CardEffectResolver(
             CombatCardState cardState,
             HandController handController,
-            TowerManager towerManager)
+            TowerManager towerManager,
+            EnemyManager enemyManager)
         {
             this.cardState = cardState;
             this.handController = handController;
             this.towerManager = towerManager;
+            spellResolver = new SpellResolver(towerManager, enemyManager);
         }
 
         public void ResolveOnPlay(CardInstance card, PlayerState playerState, CardPlayContext playContext)
@@ -95,6 +99,20 @@ namespace Cards
 
         private void ResolveSpell(CardInstance card, Vector3 worldPosition)
         {
+            if (card.Definition.spawnableObject is SpellDef spellDef)
+            {
+                spellResolver.Resolve(spellDef, worldPosition);
+                if (spellDef.prefab != null)
+                {
+                    Object.Instantiate(
+                        spellDef.prefab,
+                        worldPosition,
+                        Quaternion.identity
+                    );
+                }
+                return;
+            }
+
             if (card.Definition.spawnableObject is null || card.Definition.spawnableObject.prefab is null)
                 return;
 

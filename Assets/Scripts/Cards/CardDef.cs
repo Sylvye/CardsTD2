@@ -36,6 +36,9 @@ namespace Cards
 
         public float GetEffectRadius()
         {
+            if (spawnableObject is SpellDef spellDef)
+                return spellDef.effectRadius;
+
             if (spawnableObject is TowerDef towerDef)
                 return towerDef.baseStats.range;
 

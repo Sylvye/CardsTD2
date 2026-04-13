@@ -1,4 +1,5 @@
-﻿using Combat;
+﻿using System.Collections.Generic;
+using Combat;
 using UnityEngine;
 
 namespace Enemies
@@ -6,6 +7,7 @@ namespace Enemies
     [RequireComponent(typeof(PathFollower))]
     public class EnemyAgent : MonoBehaviour
     {
+        private readonly List<IEnemyStatModifier> runtimeModifiers = new();
         private PathFollower pathFollower;
         private SpriteRenderer[] spriteRenderers;
         private Color[] spriteBaseColors;
@@ -71,7 +73,8 @@ namespace Enemies
                 pathFollower = GetComponent<PathFollower>();
 
             pathFollower.SetPath(path, startingTrackDistance);
-            pathFollower.SetSpeed(def.moveSpeed);
+            runtimeModifiers.Clear();
+            ApplyResolvedStats();
 
             enemyManager?.RegisterEnemy(this);
 
@@ -96,7 +99,8 @@ namespace Enemies
             if (isDeadOrEscaped || amount <= 0f)
                 return;
 
-            currentHealth -= amount;
+            EnemyResolvedStats stats = GetResolvedStats();
+            currentHealth -= amount * stats.DamageTakenMultiplier;
             TriggerDamageFlash();
 
             FireTrigger(EnemyTriggerType.OnHit);
@@ -105,6 +109,24 @@ namespace Enemies
             {
                 Die();
             }
+        }
+
+        public void AddModifier(IEnemyStatModifier modifier)
+        {
+            if (modifier == null)
+                return;
+
+            runtimeModifiers.Add(modifier);
+            ApplyResolvedStats();
+        }
+
+        public void RemoveModifier(IEnemyStatModifier modifier)
+        {
+            if (modifier == null)
+                return;
+
+            runtimeModifiers.Remove(modifier);
+            ApplyResolvedStats();
         }
 
         private void Die()
@@ -218,6 +240,25 @@ namespace Enemies
             );
 
             effectResolver.ResolveEffectsForTrigger(enemyDef, trigger, context);
+        }
+
+        private EnemyResolvedStats GetResolvedStats()
+        {
+            EnemyResolvedStats stats = new(enemyDef != null ? enemyDef.moveSpeed : 0f, 1f);
+            for (int i = 0; i < runtimeModifiers.Count; i++)
+                runtimeModifiers[i].ModifyStats(this, ref stats);
+
+            stats.Clamp();
+            return stats;
+        }
+
+        private void ApplyResolvedStats()
+        {
+            if (pathFollower == null)
+                return;
+
+            EnemyResolvedStats stats = GetResolvedStats();
+            pathFollower.SetSpeed(stats.MoveSpeed);
         }
     }
 }
