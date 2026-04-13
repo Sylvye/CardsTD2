@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Enemies;
 using UnityEngine;
 using Towers;
 
@@ -12,6 +13,7 @@ namespace Cards
 
         [Header("Gameplay")]
         [SerializeField] private TowerManager towerManager;
+        [SerializeField] private EnemyManager enemyManager;
         [SerializeField] private HandGameplayDriver handGameplayDriver;
 
         [Header("UI")]
@@ -28,7 +30,7 @@ namespace Cards
             combatCardState.BuildDrawPileFromDefs(startingDeck);
 
             handController = new HandController(combatCardState, 5);
-            effectResolver = new CardEffectResolver(combatCardState, handController, towerManager);
+            effectResolver = new CardEffectResolver(combatCardState, handController, towerManager, enemyManager);
             handController.SetEffectResolver(effectResolver);
 
             handCardsPresenter = new HandCardsPresenter(handView);
