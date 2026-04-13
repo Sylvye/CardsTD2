@@ -300,6 +300,8 @@ namespace Towers
 
     internal sealed class SummonAttackExecution : IAttackExecution
     {
+        private const int MaxSummonPlacementAttempts = 16;
+
         private readonly TowerAgent tower;
         private readonly SummonTowerAttackDef attackDef;
         private readonly List<ITowerSummon> activeSummons = new();
@@ -327,16 +329,17 @@ namespace Towers
             if (target == null)
                 return;
 
-            TowerResolvedStats towerStats = tower.GetResolvedStats();
-            cooldownRemaining = towerStats.FireInterval;
+            if (!TryFindSummonPlacementPosition(out Vector3 summonPosition))
+                return;
 
             ITowerSummon summon = CreateSummon(tower.transform.parent);
             MonoBehaviour summonBehaviour = summon as MonoBehaviour;
             if (summonBehaviour == null)
                 return;
 
-            Vector2 offset = Random.insideUnitCircle * attackDef.spawnRadius;
-            summonBehaviour.transform.position = tower.transform.position + new Vector3(offset.x, offset.y, 0f);
+            TowerResolvedStats towerStats = tower.GetResolvedStats();
+            cooldownRemaining = towerStats.FireInterval;
+            summonBehaviour.transform.position = summonPosition;
             summon.Initialize(new TowerSummonContext(
                 tower,
                 tower.RuntimeContext,
@@ -349,6 +352,32 @@ namespace Towers
         public void Shutdown()
         {
             activeSummons.Clear();
+        }
+
+        private bool TryFindSummonPlacementPosition(out Vector3 summonPosition)
+        {
+            summonPosition = tower.transform.position;
+            TowerManager towerManager = tower.RuntimeContext.TowerManager;
+            if (towerManager == null)
+                return true;
+
+            float placementRadius = attackDef.summonTowerDef != null
+                ? attackDef.summonTowerDef.placementRadius
+                : 0f;
+            Vector3 sourcePosition = tower.transform.position;
+
+            for (int attempt = 0; attempt < MaxSummonPlacementAttempts; attempt++)
+            {
+                Vector2 offset = Random.insideUnitCircle * Mathf.Max(0f, attackDef.spawnRadius);
+                Vector3 candidate = sourcePosition + new Vector3(offset.x, offset.y, 0f);
+                if (!towerManager.CanPlaceTower(placementRadius, candidate))
+                    continue;
+
+                summonPosition = candidate;
+                return true;
+            }
+
+            return false;
         }
 
         private void CleanupSummons()

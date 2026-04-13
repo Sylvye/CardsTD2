@@ -28,8 +28,20 @@ namespace Towers
             if (cardDef == null)
                 return false;
 
-            float newRadius = cardDef.GetPlacementRadius();
-            if (newRadius < 0f)
+            return CanPlaceTower(cardDef.GetPlacementRadius(), position);
+        }
+
+        public bool CanPlaceTower(TowerDef towerDef, Vector3 position)
+        {
+            if (towerDef == null)
+                return false;
+
+            return CanPlaceTower(towerDef.placementRadius, position);
+        }
+
+        public bool CanPlaceTower(float placementRadius, Vector3 position)
+        {
+            if (placementRadius < 0f)
                 return false;
 
             Vector2 newPos = position;
@@ -39,7 +51,7 @@ namespace Towers
                 if (tower == null)
                     continue;
 
-                float combinedRadius = newRadius + tower.PlacementRadius;
+                float combinedRadius = placementRadius + tower.PlacementRadius;
                 Vector2 towerPos = tower.transform.position;
 
                 if (Vector2.Distance(newPos, towerPos) < combinedRadius)
@@ -56,7 +68,7 @@ namespace Towers
                     continue;
 
                 Vector2 closestPoint = pathCollider.ClosestPoint(newPos);
-                if ((closestPoint - newPos).sqrMagnitude <= newRadius * newRadius)
+                if ((closestPoint - newPos).sqrMagnitude <= placementRadius * placementRadius)
                     return false;
             }
 
