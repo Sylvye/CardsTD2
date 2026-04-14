@@ -300,11 +300,20 @@ namespace Towers
 
     internal sealed class SummonAttackExecution : IAttackExecution
     {
-        private const int MaxSummonPlacementAttempts = 16;
+        private const float GoldenAngleRadians = 2.39996323f;
+        private const int MinSummonPlacementSamples = 24;
+        private const int MaxSummonPlacementSamples = 128;
+        private const float SamplesPerRadiusUnit = 12f;
+        private const float AngularJitterFraction = 0.35f;
+        private const float RadialJitterFraction = 0.45f;
+        private const float PlacementDebugDuration = 1f;
+        private static readonly Color PlacementDebugStartColor = new Color(1f, 0.45f, 0.1f, 0.95f);
+        private static readonly Color PlacementDebugEndColor = new Color(0.2f, 1f, 0.45f, 0.95f);
 
         private readonly TowerAgent tower;
         private readonly SummonTowerAttackDef attackDef;
         private readonly List<ITowerSummon> activeSummons = new();
+        private readonly List<Vector3> placementDebugPath = new();
 
         private float cooldownRemaining;
 
@@ -345,6 +354,7 @@ namespace Towers
                 tower.RuntimeContext,
                 attackDef.summonLifetime
             ));
+            RenderPlacementDebugPath();
 
             activeSummons.Add(summon);
         }
@@ -357,6 +367,8 @@ namespace Towers
         private bool TryFindSummonPlacementPosition(out Vector3 summonPosition)
         {
             summonPosition = tower.transform.position;
+            placementDebugPath.Clear();
+            placementDebugPath.Add(summonPosition);
             TowerManager towerManager = tower.RuntimeContext.TowerManager;
             if (towerManager == null)
                 return true;
@@ -365,11 +377,26 @@ namespace Towers
                 ? attackDef.summonTowerDef.placementRadius
                 : 0f;
             Vector3 sourcePosition = tower.transform.position;
+            float maxSpawnRadius = Mathf.Max(0f, attackDef.spawnRadius);
+            int sampleCount = GetSummonPlacementSampleCount(maxSpawnRadius);
+            float radialStep = sampleCount > 1
+                ? maxSpawnRadius / (sampleCount - 1)
+                : 0f;
+            float angleSeed = Random.value * Mathf.PI * 2f;
 
-            for (int attempt = 0; attempt < MaxSummonPlacementAttempts; attempt++)
+            for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++)
             {
-                Vector2 offset = Random.insideUnitCircle * Mathf.Max(0f, attackDef.spawnRadius);
-                Vector3 candidate = sourcePosition + new Vector3(offset.x, offset.y, 0f);
+                Vector3 candidate = GetSpiralPlacementCandidate(
+                    sourcePosition,
+                    maxSpawnRadius,
+                    sampleCount,
+                    sampleIndex,
+                    radialStep,
+                    angleSeed
+                );
+                if (placementDebugPath.Count == 0 || placementDebugPath[placementDebugPath.Count - 1] != candidate)
+                    placementDebugPath.Add(candidate);
+
                 if (!towerManager.CanPlaceTower(placementRadius, candidate))
                     continue;
 
@@ -378,6 +405,71 @@ namespace Towers
             }
 
             return false;
+        }
+
+        private void RenderPlacementDebugPath()
+        {
+            if (placementDebugPath.Count < 2)
+                return;
+
+            int segmentCount = placementDebugPath.Count - 1;
+            for (int segmentIndex = 0; segmentIndex < segmentCount; segmentIndex++)
+            {
+                float t = segmentCount > 1
+                    ? segmentIndex / (float)(segmentCount - 1)
+                    : 1f;
+                Color segmentColor = Color.Lerp(
+                    PlacementDebugStartColor,
+                    PlacementDebugEndColor,
+                    t
+                );
+
+                Debug.DrawLine(
+                    placementDebugPath[segmentIndex],
+                    placementDebugPath[segmentIndex + 1],
+                    segmentColor,
+                    PlacementDebugDuration
+                );
+            }
+        }
+
+        private static int GetSummonPlacementSampleCount(float maxSpawnRadius)
+        {
+            if (maxSpawnRadius <= 0f)
+                return 1;
+
+            return Mathf.Clamp(
+                Mathf.CeilToInt(maxSpawnRadius * SamplesPerRadiusUnit),
+                MinSummonPlacementSamples,
+                MaxSummonPlacementSamples
+            );
+        }
+
+        private static Vector3 GetSpiralPlacementCandidate(
+            Vector3 sourcePosition,
+            float maxSpawnRadius,
+            int sampleCount,
+            int sampleIndex,
+            float radialStep,
+            float angleSeed)
+        {
+            if (sampleIndex <= 0 || maxSpawnRadius <= 0f || sampleCount <= 1)
+                return sourcePosition;
+
+            float normalizedRadius = (float)sampleIndex / (sampleCount - 1);
+            float radius = normalizedRadius * maxSpawnRadius;
+            float radialJitter = radialStep * RadialJitterFraction;
+            radius += Random.Range(-radialJitter, radialJitter);
+            radius = Mathf.Clamp(radius, 0f, maxSpawnRadius);
+
+            float angleJitter = GoldenAngleRadians * AngularJitterFraction;
+            float angle = angleSeed
+                + (sampleIndex * GoldenAngleRadians)
+                + Random.Range(-angleJitter, angleJitter);
+
+            Vector2 offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            offset *= radius;
+            return sourcePosition + new Vector3(offset.x, offset.y, 0f);
         }
 
         private void CleanupSummons()

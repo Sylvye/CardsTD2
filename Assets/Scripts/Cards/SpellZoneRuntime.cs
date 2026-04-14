@@ -80,6 +80,7 @@ namespace Cards
             }
 
             RefreshOccupants();
+            SyncWhileInsideModifiers();
             previousEnemiesInZone.Clear();
             previousEnemiesInZone.UnionWith(enemiesInZone);
             previousTowersInZone.Clear();
@@ -104,6 +105,7 @@ namespace Cards
             RefreshOccupants();
             ProcessEnemyMembershipChanges();
             ProcessTowerMembershipChanges();
+            SyncWhileInsideModifiers();
             UpdateTicks(deltaTime);
             SaveOccupancyState();
         }
@@ -231,6 +233,44 @@ namespace Cards
             previousEnemiesInZone.UnionWith(enemiesInZone);
             previousTowersInZone.Clear();
             previousTowersInZone.UnionWith(towersInZone);
+        }
+
+        private void SyncWhileInsideModifiers()
+        {
+            if (spellDef == null || spellDef.triggeredEffects == null)
+                return;
+
+            for (int i = 0; i < spellDef.triggeredEffects.Count; i++)
+            {
+                SpellTriggeredEffect effect = spellDef.triggeredEffects[i];
+                if (effect == null || effect.modifierApplicationMode != SpellModifierApplicationMode.WhileInside)
+                    continue;
+
+                switch (effect.effectType)
+                {
+                    case SpellEffectType.ApplyEnemyModifier:
+                        if (effect.enemyModifier == null)
+                            continue;
+
+                        foreach (EnemyAgent enemy in enemiesInZone)
+                        {
+                            if (enemy != null && !enemy.IsDeadOrEscaped && TryTrackEnemyAuraEffect(enemy, effect))
+                                enemy.AddModifier(effect.enemyModifier);
+                        }
+                        break;
+
+                    case SpellEffectType.ApplyTowerModifier:
+                        if (effect.towerModifier == null)
+                            continue;
+
+                        foreach (TowerAgent tower in towersInZone)
+                        {
+                            if (tower != null && !tower.IsDead && TryTrackTowerAuraEffect(tower, effect))
+                                tower.AddModifier(effect.towerModifier);
+                        }
+                        break;
+                }
+            }
         }
 
         private void ResolveTrigger(SpellTriggerType trigger, EnemyAgent sourceEnemy, TowerAgent sourceTower)

@@ -7,6 +7,7 @@ namespace Towers
     public class TowerAgent : MonoBehaviour
     {
         private readonly List<IStatModifier> runtimeModifiers = new();
+        private readonly List<TowerAgent> inheritedModifierSources = new();
         private readonly List<IAttackExecution> attackExecutions = new();
         private readonly List<EnemyAgent> targetBuffer = new();
         private readonly HashSet<EnemyAgent> inRangeEnemies = new();
@@ -48,6 +49,7 @@ namespace Towers
             isInitialized = true;
 
             runtimeModifiers.Clear();
+            inheritedModifierSources.Clear();
             runtimeAttackDefinitions.Clear();
             useRuntimeAttackDefinitions = false;
             inRangeEnemies.Clear();
@@ -88,6 +90,7 @@ namespace Towers
             isDead = false;
             isInitialized = true;
             runtimeModifiers.Clear();
+            inheritedModifierSources.Clear();
             runtimeAttackDefinitions.Clear();
             useRuntimeAttackDefinitions = false;
             inRangeEnemies.Clear();
@@ -133,14 +136,13 @@ namespace Towers
                 return;
 
             if (!append)
-                runtimeModifiers.Clear();
-
-            for (int i = 0; i < sourceTower.runtimeModifiers.Count; i++)
             {
-                IStatModifier modifier = sourceTower.runtimeModifiers[i];
-                if (modifier != null)
-                    runtimeModifiers.Add(modifier);
+                runtimeModifiers.Clear();
+                inheritedModifierSources.Clear();
             }
+
+            if (sourceTower != this && !inheritedModifierSources.Contains(sourceTower))
+                inheritedModifierSources.Add(sourceTower);
         }
 
         public void SetRuntimeAttackDefinitions(IReadOnlyList<TowerAttackDef> attacks)
@@ -170,11 +172,30 @@ namespace Towers
                 ? legacyStats
                 : towerDef.GetBaseResolvedStats();
 
-            for (int i = 0; i < runtimeModifiers.Count; i++)
-                runtimeModifiers[i].ModifyStats(this, ref stats);
+            ApplyRuntimeModifiers(ref stats);
 
             stats.Clamp();
             return stats;
+        }
+
+        private void ApplyRuntimeModifiers(ref TowerResolvedStats stats)
+        {
+            for (int i = 0; i < runtimeModifiers.Count; i++)
+                runtimeModifiers[i].ModifyStats(this, ref stats);
+
+            for (int i = 0; i < inheritedModifierSources.Count; i++)
+            {
+                TowerAgent sourceTower = inheritedModifierSources[i];
+                if (sourceTower == null || sourceTower.IsDead)
+                    continue;
+
+                for (int modifierIndex = 0; modifierIndex < sourceTower.runtimeModifiers.Count; modifierIndex++)
+                {
+                    IStatModifier modifier = sourceTower.runtimeModifiers[modifierIndex];
+                    if (modifier != null)
+                        modifier.ModifyStats(this, ref stats);
+                }
+            }
         }
 
         public EnemyAgent AcquireTarget(IReadOnlyList<TowerTargetFilterDef> filters)
