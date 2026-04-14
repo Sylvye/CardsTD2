@@ -9,7 +9,7 @@ namespace Cards
     public class HandViewDriver : MonoBehaviour
     {
         [Header("Deck Setup")]
-        [SerializeField] private List<CardDef> startingDeck = new();
+        [SerializeField] private List<OwnedCard> startingDeck = new();
         [SerializeField] private int manualDrawCost = 2;
 
         [Header("Gameplay")]
@@ -39,7 +39,7 @@ namespace Cards
                 playerEffects = FindAnyObjectByType<CombatSessionDriver>();
 
             combatCardState = new CombatCardState();
-            combatCardState.BuildDrawPileFromDefs(startingDeck);
+            combatCardState.BuildDrawPileFromOwnedCards(startingDeck);
 
             handController = new HandController(combatCardState, 5);
             effectResolver = new CardEffectResolver(combatCardState, handController, towerManager, enemyManager, playerEffects);

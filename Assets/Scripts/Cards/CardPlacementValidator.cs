@@ -26,7 +26,7 @@ namespace Cards
                     return true;
 
                 case CardType.Tower:
-                    return towerManager != null && towerManager.CanPlaceTower(card.Definition, position);
+                    return towerManager != null && towerManager.CanPlaceTower(card, position);
 
                 default:
                     return false;

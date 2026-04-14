@@ -18,7 +18,10 @@ MonoBehaviour:
   type: 1
   description: Doubles attack speed of affected towers
   baseManaCost: 7
+  cardFamilyId: 
   baseTier: 1
-  baseAugmentSlots: 0
+  upgradeTier: 1
+  baseAugmentSlots: 1
+  nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 11400000, guid: 0bb5ed7e2fb329d4f9edaa29762e4d7c, type: 2}
   effects: []

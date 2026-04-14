@@ -20,8 +20,11 @@ namespace Cards
         public int baseManaCost = 1;
 
         [Header("Progression")]
+        public string cardFamilyId;
         public int baseTier = 1;
+        public int upgradeTier = 1;
         public int baseAugmentSlots = 0;
+        public CardDef nextUpgradeDef;
 
         [Header("World Use")]
         public SpawnableObjectDef spawnableObject;
@@ -46,6 +49,19 @@ namespace Cards
                 return SpawnableColliderUtility.GetPreviewRadius(spawnableObject);
 
             return spawnableObject != null ? spawnableObject.effectRadius : 0f;
+        }
+
+        public string CardFamilyId => string.IsNullOrWhiteSpace(cardFamilyId) ? id : cardFamilyId;
+
+        public int GetUpgradeTier()
+        {
+            int tier = upgradeTier > 0 ? upgradeTier : baseTier;
+            return Mathf.Max(1, tier);
+        }
+
+        public int GetBaseAugmentSlots()
+        {
+            return Mathf.Max(0, baseAugmentSlots);
         }
     }
 }

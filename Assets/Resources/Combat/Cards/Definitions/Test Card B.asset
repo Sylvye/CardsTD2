@@ -18,7 +18,10 @@ MonoBehaviour:
   type: 1
   description: Smites an area with firey wrath
   baseManaCost: 8
+  cardFamilyId: 
   baseTier: 1
-  baseAugmentSlots: 0
+  upgradeTier: 1
+  baseAugmentSlots: 1
+  nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 11400000, guid: 8bea909573f3b4b8ca2332549b0ba320, type: 2}
   effects: []

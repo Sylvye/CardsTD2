@@ -6,36 +6,37 @@ namespace Cards
     [Serializable]
     public class CardInstance
     {
-        [SerializeField] private CardDef definition;
+        [SerializeField] private OwnedCard ownedCard;
         [SerializeField] private int currentManaCost;
-        [SerializeField] private int tier;
-        [SerializeField] private int filledAugmentSlots;
         [SerializeField] private int uniqueRuntimeId;
+        [NonSerialized] private ResolvedCardData resolvedData;
 
         // properties
-        public CardDef Definition => definition;
+        public OwnedCard OwnedCard => ownedCard;
+        public CardDef Definition => resolvedData != null ? resolvedData.Definition : ownedCard != null ? ownedCard.CurrentDefinition : null;
+        public ResolvedCardData ResolvedData => resolvedData;
         public int CurrentManaCost => currentManaCost;
-        public int Tier => tier;
-        public int FilledAugmentSlots => filledAugmentSlots;
+        public int Tier => resolvedData != null ? resolvedData.Tier : 1;
+        public int FilledAugmentSlots => ownedCard != null && ownedCard.AppliedAugments != null ? ownedCard.AppliedAugments.Count : 0;
+        public int TotalAugmentSlots => resolvedData != null ? resolvedData.AugmentSlots : 0;
         public int UniqueRuntimeId => uniqueRuntimeId;
         
         
-        public string DisplayName => definition != null ? definition.displayName : "NULL CARD";
-        public CardType Type => definition != null ? definition.type : default;
-        public string Description => definition != null ? definition.description : "";
-        public Sprite Icon => definition != null ? definition.icon : null;
+        public string DisplayName => resolvedData != null ? resolvedData.DisplayName : "NULL CARD";
+        public CardType Type => resolvedData != null ? resolvedData.Type : default;
+        public string Description => resolvedData != null ? resolvedData.Description : "";
+        public Sprite Icon => resolvedData != null ? resolvedData.Icon : null;
 
         public CardInstance(CardDef definition, int runtimeId)
+            : this(definition != null ? new OwnedCard(definition) : null, runtimeId)
         {
-            this.definition = definition;
-            uniqueRuntimeId = runtimeId;
+        }
 
-            if (definition != null)
-            {
-                currentManaCost = definition.baseManaCost;
-                tier = definition.baseTier;
-                filledAugmentSlots = 0;
-            }
+        public CardInstance(OwnedCard ownedCard, int runtimeId)
+        {
+            this.ownedCard = ownedCard;
+            uniqueRuntimeId = runtimeId;
+            RefreshResolvedData();
         }
 
         public void SetManaCost(int newCost)
@@ -48,31 +49,41 @@ namespace Cards
             currentManaCost = Mathf.Max(0, currentManaCost + amount);
         }
 
-        public void SetTier(int newTier)
+        public bool TryUpgrade()
         {
-            tier = Mathf.Max(1, newTier);
+            if (ownedCard == null || !ownedCard.TryUpgrade())
+                return false;
+
+            RefreshResolvedData();
+            return true;
         }
 
-        public void IncreaseTier(int amount = 1)
+        public bool TryApplyAugment(CardAugmentDef augment)
         {
-            tier = Mathf.Max(1, tier + amount);
-        }
+            if (ownedCard == null || !ownedCard.TryApplyAugment(augment))
+                return false;
 
-        public void FillAugmentSlot(int amount = 1)
-        {
-            filledAugmentSlots = Mathf.Max(0, filledAugmentSlots + amount);
+            RefreshResolvedData();
+            return true;
         }
 
         public void ResetForBattle()
         {
-            if (definition == null) return;
+            if (resolvedData == null)
+                RefreshResolvedData();
 
-            currentManaCost = definition.baseManaCost;
+            currentManaCost = resolvedData != null ? resolvedData.ManaCost : 0;
+        }
+
+        public void RefreshResolvedData()
+        {
+            resolvedData = CardRuntimeResolver.Build(ownedCard);
+            currentManaCost = resolvedData != null ? resolvedData.ManaCost : 0;
         }
 
         public override string ToString()
         {
-            return $"{DisplayName} (Cost: {currentManaCost}, Tier: {tier}, ID: {uniqueRuntimeId})";
+            return $"{DisplayName} (Cost: {currentManaCost}, Tier: {Tier}, ID: {uniqueRuntimeId})";
         }
     }
 }

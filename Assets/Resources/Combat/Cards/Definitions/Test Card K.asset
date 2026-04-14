@@ -18,7 +18,10 @@ MonoBehaviour:
   type: 1
   description: Slows and makes affected enemies take double damage
   baseManaCost: 5
+  cardFamilyId: 
   baseTier: 1
-  baseAugmentSlots: 0
+  upgradeTier: 1
+  baseAugmentSlots: 1
+  nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 11400000, guid: 45c76e923e27f0f469a9771f5e531508, type: 2}
   effects: []

@@ -885,21 +885,44 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Cards.HandViewDriver
   startingDeck:
-  - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
-  - {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
-  - {fileID: 11400000, guid: cfb67d3bb856a1444a1a5241d773589b, type: 2}
-  - {fileID: 11400000, guid: f3cd7e76dccab714aafe89d7edafd689, type: 2}
-  - {fileID: 11400000, guid: 7616c717da96d44498a586eaeaa0de0c, type: 2}
-  - {fileID: 11400000, guid: 941482cdfeb3f21408567eb408f47c4d, type: 2}
-  - {fileID: 11400000, guid: 62273b063f6d8f44a9822839ae214bfc, type: 2}
-  - {fileID: 11400000, guid: d5f9933d13facd74da7a14618c88b329, type: 2}
-  - {fileID: 11400000, guid: fa75b8567bd9cc34e801c436a36de52e, type: 2}
-  - {fileID: 11400000, guid: cf69c53d76221e440826ce53d5859383, type: 2}
-  - {fileID: 11400000, guid: 312818d6e7d1e6a4881f7858cea62544, type: 2}
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
+    appliedAugments:
+    - {fileID: 11400000, guid: fb8df54920f7b48d7ade71871aba0a26, type: 2}
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
+    appliedAugments: []
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: cfb67d3bb856a1444a1a5241d773589b, type: 2}
+    appliedAugments: []
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: f3cd7e76dccab714aafe89d7edafd689, type: 2}
+    appliedAugments: []
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: 7616c717da96d44498a586eaeaa0de0c, type: 2}
+    appliedAugments: []
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: 941482cdfeb3f21408567eb408f47c4d, type: 2}
+    appliedAugments: []
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: 62273b063f6d8f44a9822839ae214bfc, type: 2}
+    appliedAugments: []
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: d5f9933d13facd74da7a14618c88b329, type: 2}
+    appliedAugments: []
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: fa75b8567bd9cc34e801c436a36de52e, type: 2}
+    appliedAugments: []
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: cf69c53d76221e440826ce53d5859383, type: 2}
+    appliedAugments: []
+  - uniqueId: 
+    currentDefinition: {fileID: 11400000, guid: 312818d6e7d1e6a4881f7858cea62544, type: 2}
+    appliedAugments: []
   manualDrawCost: 5
   towerManager: {fileID: 284558777}
   enemyManager: {fileID: 751640687}
-  playerEffectsSource: {fileID: 0}
+  playerEffectsSource: {fileID: 962809201}
   handGameplayDriver: {fileID: 652010304}
   handView: {fileID: 522036608}
 --- !u!1 &519420028

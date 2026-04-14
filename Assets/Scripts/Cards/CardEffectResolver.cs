@@ -27,13 +27,13 @@ namespace Cards
 
         public void ResolveOnPlay(CardInstance card, PlayerState playerState, CardPlayContext playContext)
         {
-            if (card == null || card.Definition is null)
+            if (card == null || card.ResolvedData == null)
             {
                 Debug.LogWarning("Tried to resolve effects for a null card.");
                 return;
             }
 
-            foreach (CardEffectData effect in card.Definition.effects)
+            foreach (CardEffectData effect in card.ResolvedData.Effects)
                 ResolveEffect(effect, playerState);
 
             ResolveWorldUse(card, playContext);
@@ -58,7 +58,7 @@ namespace Cards
 
         private void ResolveWorldUse(CardInstance card, CardPlayContext playContext)
         {
-            if (card == null || card.Definition is null || playContext == null)
+            if (card == null || card.ResolvedData == null || playContext == null)
                 return;
 
             if (!playContext.HasWorldPosition)
@@ -81,13 +81,13 @@ namespace Cards
 
         private void ResolveTower(CardInstance card, Vector3 worldPosition)
         {
-            SpawnableObjectDef spawnable = card.Definition.spawnableObject;
-            if (spawnable is TowerDef towerDef)
+            if (card.ResolvedData.TowerDefinition != null)
             {
-                towerManager.PlaceTower(towerDef, worldPosition);
+                towerManager.PlaceTower(card.ResolvedData, worldPosition);
                 return;
             }
 
+            SpawnableObjectDef spawnable = card.ResolvedData.SpawnableObject;
             if (spawnable == null || spawnable.prefab == null)
                 return;
 
@@ -100,7 +100,7 @@ namespace Cards
 
         private void ResolveSpell(CardInstance card, Vector3 worldPosition)
         {
-            if (card.Definition.spawnableObject is SpellDef spellDef)
+            if (card.ResolvedData.SpellDefinition is SpellDef spellDef)
             {
                 GameObject spawnedSpellObject = null;
                 if (spellDef.prefab != null)
@@ -116,11 +116,11 @@ namespace Cards
                 return;
             }
 
-            if (card.Definition.spawnableObject is null || card.Definition.spawnableObject.prefab is null)
+            if (card.ResolvedData.SpawnableObject is null || card.ResolvedData.SpawnableObject.prefab is null)
                 return;
 
             Object.Instantiate(
-                card.Definition.spawnableObject.prefab,
+                card.ResolvedData.SpawnableObject.prefab,
                 worldPosition,
                 Quaternion.identity
             );

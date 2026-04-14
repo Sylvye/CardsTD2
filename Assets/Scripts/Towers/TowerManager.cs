@@ -31,6 +31,14 @@ namespace Towers
             return CanPlaceTower(cardDef.GetPlacementRadius(), position);
         }
 
+        public bool CanPlaceTower(CardInstance card, Vector3 position)
+        {
+            if (card == null)
+                return false;
+
+            return CanPlaceTower(card.Definition, position);
+        }
+
         public bool CanPlaceTower(TowerDef towerDef, Vector3 position)
         {
             if (towerDef == null)
@@ -125,6 +133,41 @@ namespace Towers
                 return null;
 
             tower.Initialize(towerDef, BuildRuntimeContext());
+            RegisterTower(tower);
+            return tower;
+        }
+
+        public TowerAgent PlaceTower(ResolvedCardData resolvedCard, Vector3 position)
+        {
+            if (resolvedCard == null || resolvedCard.TowerDefinition == null || resolvedCard.TowerDefinition.prefab == null)
+                return null;
+
+            GameObject spawned = Instantiate(
+                resolvedCard.TowerDefinition.prefab,
+                position,
+                Quaternion.identity,
+                towerParent
+            );
+
+            TowerAgent tower = spawned.GetComponent<TowerAgent>();
+            if (tower == null)
+                return null;
+
+            tower.Initialize(resolvedCard.TowerDefinition, BuildRuntimeContext());
+
+            if (resolvedCard.AdditionalTowerModifiers != null)
+            {
+                for (int i = 0; i < resolvedCard.AdditionalTowerModifiers.Count; i++)
+                {
+                    IStatModifier modifier = resolvedCard.AdditionalTowerModifiers[i];
+                    if (modifier != null)
+                        tower.AddModifier(modifier);
+                }
+            }
+
+            if (resolvedCard.RuntimeTowerAttacks != null && resolvedCard.RuntimeTowerAttacks.Count > 0)
+                tower.SetRuntimeAttackDefinitions(resolvedCard.RuntimeTowerAttacks);
+
             RegisterTower(tower);
             return tower;
         }

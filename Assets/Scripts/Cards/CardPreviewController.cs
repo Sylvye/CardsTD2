@@ -63,7 +63,7 @@ namespace Cards
 
         private void UpdatePreview(CardInstance card, Vector3 point, bool isValid)
         {
-            if (card is null || card.Definition is null)
+            if (card is null || card.ResolvedData is null)
             {
                 HideAll();
                 return;
@@ -76,12 +76,12 @@ namespace Cards
             }
 
             Color color = isValid ? validColor : invalidColor;
-            float placementRadius = card.Definition.GetPlacementRadius();
-            float effectRadius = card.Definition.GetEffectRadius();
+            float placementRadius = card.Definition != null ? card.Definition.GetPlacementRadius() : -1f;
+            float effectRadius = GetEffectRadius(card);
 
             if (card.Type == CardType.Spell)
             {
-                if (card.Definition.spawnableObject == null)
+                if (card.ResolvedData.SpawnableObject == null)
                 {
                     HideAll();
                     return;
@@ -131,6 +131,20 @@ namespace Cards
         {
             HideCircle(primaryRadiusVisual);
             HideCircle(secondaryRadiusVisual);
+        }
+
+        private float GetEffectRadius(CardInstance card)
+        {
+            if (card == null || card.ResolvedData == null)
+                return 0f;
+
+            if (card.ResolvedData.TowerDefinition != null)
+                return card.ResolvedData.TowerDefinition.baseStats.range;
+
+            if (card.Type == CardType.Spell)
+                return SpawnableColliderUtility.GetPreviewRadius(card.ResolvedData.SpawnableObject);
+
+            return card.ResolvedData.SpawnableObject != null ? card.ResolvedData.SpawnableObject.effectRadius : 0f;
         }
     }
 }

@@ -18,5 +18,20 @@ namespace Cards
         public TowerStatModifierDef towerModifier;
         public EnemyStatModifierDef enemyModifier;
         public SpellModifierApplicationMode modifierApplicationMode = SpellModifierApplicationMode.Persistent;
+
+        public SpellTriggeredEffect Clone()
+        {
+            return new SpellTriggeredEffect
+            {
+                trigger = trigger,
+                effectType = effectType,
+                targetType = targetType,
+                amount = amount,
+                tickInterval = tickInterval,
+                towerModifier = towerModifier,
+                enemyModifier = enemyModifier,
+                modifierApplicationMode = modifierApplicationMode
+            };
+        }
     }
 }

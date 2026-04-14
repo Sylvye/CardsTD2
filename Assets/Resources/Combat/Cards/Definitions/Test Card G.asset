@@ -19,7 +19,10 @@ MonoBehaviour:
   description: Spawns mines in a radius around it. Mines activate and move towards
     nearby enemies before blowing up on contact or after some time.
   baseManaCost: 5
+  cardFamilyId: 
   baseTier: 1
-  baseAugmentSlots: 0
+  upgradeTier: 1
+  baseAugmentSlots: 1
+  nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 11400000, guid: bb4c106db5226d14281fb1686f4d1cef, type: 2}
   effects: []

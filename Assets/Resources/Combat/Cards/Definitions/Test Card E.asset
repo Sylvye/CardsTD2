@@ -18,8 +18,11 @@ MonoBehaviour:
   type: 2
   description: Draws a new card and gains mana
   baseManaCost: 0
+  cardFamilyId: 
   baseTier: 1
-  baseugmentSlots: 0
+  upgradeTier: 1
+  baseAugmentSlots: 0
+  nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 0}
   effects:
   - effectType: 1

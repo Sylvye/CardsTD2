@@ -20,22 +20,27 @@
             ExhaustPile = new CardZone("Exhaust Pile");
         }
 
-        public void BuildDrawPileFromDefs(IEnumerable<CardDef> cardDefs)
+        public void BuildDrawPileFromOwnedCards(IEnumerable<OwnedCard> ownedCards)
         {
             DrawPile.Clear();
             Hand.Clear();
             DiscardPile.Clear();
             ExhaustPile.Clear();
+            nextRuntimeId = 1;
 
-            foreach (CardDef def in cardDefs)
+            if (ownedCards == null)
+                return;
+
+            foreach (OwnedCard ownedCard in ownedCards)
             {
-                if (def == null)
+                if (ownedCard == null || ownedCard.CurrentDefinition == null)
                 {
-                    Debug.LogWarning("Null CardDef found while building draw pile.");
+                    Debug.LogWarning("Null owned card found while building draw pile.");
                     continue;
                 }
 
-                CardInstance instance = new CardInstance(def, nextRuntimeId++);
+                ownedCard.EnsureUniqueId();
+                CardInstance instance = new CardInstance(ownedCard, nextRuntimeId++);
                 DrawPile.Add(instance);
             }
 

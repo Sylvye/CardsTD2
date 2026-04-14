@@ -18,7 +18,10 @@ MonoBehaviour:
   type: 0
   description: Fires a laser at a nearby enemy, dealing damage rapidly.
   baseManaCost: 3
+  cardFamilyId: 
   baseTier: 1
-  baseAugmentSlots: 0
+  upgradeTier: 1
+  baseAugmentSlots: 1
+  nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 11400000, guid: 4de3c91fdb6bc0b46ba2b06fea4e661c, type: 2}
   effects: []

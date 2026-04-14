@@ -18,8 +18,11 @@ MonoBehaviour:
   type: 2
   description: Draws extra cards; can draw over your hand limit
   baseManaCost: 4
+  cardFamilyId: 
   baseTier: 1
+  upgradeTier: 1
   baseAugmentSlots: 0
+  nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 0}
   effects:
   - effectType: 1

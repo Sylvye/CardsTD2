@@ -18,7 +18,10 @@ MonoBehaviour:
   type: 0
   description: Shoots a burst of pellets at a target nearby
   baseManaCost: 4
+  cardFamilyId: 
   baseTier: 1
-  baseAugmentSlots: 0
+  upgradeTier: 1
+  baseAugmentSlots: 1
+  nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 11400000, guid: 829868fa109e6aa46ab44cf21b8f56e7, type: 2}
   effects: []
