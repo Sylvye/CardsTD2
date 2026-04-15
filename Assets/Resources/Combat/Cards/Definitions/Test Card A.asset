@@ -22,6 +22,6 @@ MonoBehaviour:
   baseTier: 1
   upgradeTier: 1
   baseAugmentSlots: 1
-  nextUpgradeDef: {fileID: 0}
+  nextUpgradeDef: {fileID: 11400000, guid: 9597b314491050c4a8d5d3bc6bf627a2, type: 2}
   spawnableObject: {fileID: 11400000, guid: ad5df17f89095254e9c54db4a8044995, type: 2}
   effects: []

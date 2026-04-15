@@ -28,6 +28,11 @@ MonoBehaviour:
     degreesSpreadDelta: 0
     projectileSpeedDelta: 0
     projectileLifetimeDelta: 0
+    flatDamageBonusDelta: 0
+    damageMultiplierDelta: 0
+    maxActiveSummonsDelta: 0
+    spawnRadiusDelta: 0
+    summonLifetimeDelta: 0
   additionalSpellEffects: []
-  allowedCardTypes: 
+  allowedCardTypes: 00000000
   allowedFamilyIds: []

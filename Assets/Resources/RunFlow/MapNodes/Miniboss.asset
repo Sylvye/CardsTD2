@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b507df6970aee2478c5114da4a4559e, type: 3}
+  m_Name: Miniboss
+  m_EditorClassIdentifier: Assembly-CSharp::RunFlow.MapNodeDef
+  id: node-miniboss
+  displayName: Miniboss
+  nodeType: 4
+  encounter: {fileID: 11400000, guid: 762072d3f4bbd8346be023251c19ddc0, type: 2}
+  shopInventory: {fileID: 0}
+  nextNodes:
+  - {fileID: 11400000, guid: 0d8b0e292ada20840a6a37bfc3cb55e1, type: 2}

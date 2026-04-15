@@ -1,32 +1,47 @@
-﻿using Cards;
+using Cards;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Combat
 {
     public class CombatSessionDriver : MonoBehaviour, IPlayerEffects
     {
         [Header("Player Setup")]
-        [SerializeField] private int startingMana = 0;
-        [SerializeField] private int maxMana = 20;
-        [SerializeField] private float manaRegenPerSecond = 1f;
-        [SerializeField] private int startingLives = 20;
-
-        [Header("Battle Setup")]
-        [SerializeField] private int openingHandSize = 5;
+        [SerializeField] private int defaultStartingMana = 0;
+        [SerializeField] private int defaultMaxMana = 20;
+        [SerializeField] private float defaultManaRegenPerSecond = 1f;
+        [FormerlySerializedAs("startingLives")]
+        [SerializeField] private int defaultCurrentHealth = 20;
+        [SerializeField] private int defaultMaxHealth = 20;
+        [SerializeField] private int defaultOpeningHandSize = 5;
 
         private PlayerState playerState;
         private BattleFlowController battleFlowController;
+        private CombatSessionSetup sessionSetup;
 
         public PlayerState PlayerState => playerState;
+
+        public void ConfigureSession(CombatSessionSetup setup)
+        {
+            sessionSetup = setup;
+        }
 
         public void InitializeSession(HandController handController)
         {
             if (handController == null)
                 return;
 
-            playerState = new PlayerState(startingMana, maxMana, manaRegenPerSecond, startingLives);
+            CombatSessionSetup setup = sessionSetup ?? BuildDefaultSetup();
+            playerState = new PlayerState(
+                setup.StartingMana,
+                setup.MaxMana,
+                setup.ManaRegenPerSecond,
+                setup.CurrentHealth,
+                setup.MaxHealth
+            );
+
             battleFlowController = new BattleFlowController(playerState, handController);
-            battleFlowController.StartBattle(openingHandSize);
+            battleFlowController.StartBattle(setup.OpeningHandSize);
         }
 
         private void Update()
@@ -50,13 +65,13 @@ namespace Combat
             return handController.CanManuallyDraw(playerState, drawCost);
         }
 
-        public void LoseLives(int amount)
+        public void LoseHealth(int amount)
         {
             if (playerState == null || amount <= 0)
                 return;
 
-            playerState.LoseLives(amount);
-            Debug.Log($"Player lost {amount} lives. Remaining: {playerState.Lives}");
+            playerState.LoseHealth(amount);
+            Debug.Log($"Player lost {amount} health. Remaining: {playerState.CurrentHealth}");
         }
 
         public void GainMana(int amount)
@@ -66,6 +81,19 @@ namespace Combat
 
             playerState.GainBurstMana(amount);
             Debug.Log($"Player gained {amount} mana. Current mana: {playerState.CurrentMana}");
+        }
+
+        private CombatSessionSetup BuildDefaultSetup()
+        {
+            return new CombatSessionSetup
+            {
+                StartingMana = defaultStartingMana,
+                MaxMana = defaultMaxMana,
+                ManaRegenPerSecond = defaultManaRegenPerSecond,
+                CurrentHealth = defaultCurrentHealth,
+                MaxHealth = defaultMaxHealth,
+                OpeningHandSize = defaultOpeningHandSize
+            };
         }
     }
 }

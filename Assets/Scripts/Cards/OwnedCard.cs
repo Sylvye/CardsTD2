@@ -43,6 +43,14 @@ namespace Cards
             EnsureUniqueId();
         }
 
+        public OwnedCard(CardDef definition, string existingUniqueId, IEnumerable<CardAugmentDef> augments)
+        {
+            currentDefinition = definition;
+            uniqueId = existingUniqueId;
+            EnsureUniqueId();
+            appliedAugments = augments != null ? new List<CardAugmentDef>(augments) : new List<CardAugmentDef>();
+        }
+
         public void EnsureUniqueId()
         {
             if (string.IsNullOrWhiteSpace(uniqueId))

@@ -5,16 +5,18 @@
         public int CurrentMana { get; private set; }
         public int MaxMana { get; private set; }
         public float ManaRegenPerSecond { get; private set; }
-        public int Lives { get; private set; }
+        public int CurrentHealth { get; private set; }
+        public int MaxHealth { get; private set; }
 
         private float manaRegenProgress;
 
-        public PlayerState(int startingMana = 0, int maxMana = 20, float manaRegenPerSecond = 1f, int startingLives = 20)
+        public PlayerState(int startingMana = 0, int maxMana = 20, float manaRegenPerSecond = 1f, int currentHealth = 20, int maxHealth = 20)
         {
             CurrentMana = startingMana;
             MaxMana = maxMana;
             ManaRegenPerSecond = manaRegenPerSecond;
-            Lives = startingLives;
+            MaxHealth = UnityEngine.Mathf.Max(1, maxHealth);
+            CurrentHealth = UnityEngine.Mathf.Clamp(currentHealth, 0, MaxHealth);
             manaRegenProgress = 0f;
         }
 
@@ -55,14 +57,14 @@
             CurrentMana += amount;
         }
 
-        public void LoseLives(int amount)
+        public void LoseHealth(int amount)
         {
             if (amount <= 0)
                 return;
 
-            Lives -= amount;
-            if (Lives < 0)
-                Lives = 0;
+            CurrentHealth -= amount;
+            if (CurrentHealth < 0)
+                CurrentHealth = 0;
         }
     }
 }

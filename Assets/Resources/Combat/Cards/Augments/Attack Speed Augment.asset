@@ -23,5 +23,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8248dc53ce966bf4288aa6fb75f661ce, type: 2}
   towerAttackModifiers: []
   additionalSpellEffects: []
-  allowedCardTypes: 
+  allowedCardTypes: 00000000
   allowedFamilyIds: []

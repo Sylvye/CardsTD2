@@ -884,6 +884,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a255127e82b4aa38a38c0aba3d94648, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Cards.HandViewDriver
+  autoInitializeOnStart: 1
   startingDeck:
   - uniqueId: 
     currentDefinition: {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
@@ -1532,11 +1533,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f0a8b4f7cc14f2a9d2f3e4b8a9c1d55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combat.CombatSessionDriver
-  startingMana: 10
-  maxMana: 20
-  manaRegenPerSecond: 1
-  startingLives: 100
-  openingHandSize: 5
+  defaultStartingMana: 0
+  defaultMaxMana: 20
+  defaultManaRegenPerSecond: 1
+  defaultCurrentHealth: 100
+  defaultMaxHealth: 20
+  defaultOpeningHandSize: 5
 --- !u!4 &962809202
 Transform:
   m_ObjectHideFlags: 0
@@ -2193,7 +2195,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combat.BattleHUD
   manaText: {fileID: 424905220}
-  livesText: {fileID: 1941657791}
+  healthText: {fileID: 1941657791}
 --- !u!114 &1847772221
 MonoBehaviour:
   m_ObjectHideFlags: 0

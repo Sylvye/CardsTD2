@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Combat;
 using UnityEngine;
 
@@ -44,7 +44,7 @@ namespace Enemies
             if (enemy is null)
                 return;
 
-            playerEffects?.LoseLives(enemy.LifeDamage);
+            playerEffects?.LoseHealth(enemy.LifeDamage);
         }
     }
 }

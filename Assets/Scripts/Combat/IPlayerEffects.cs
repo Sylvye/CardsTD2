@@ -2,7 +2,7 @@ namespace Combat
 {
     public interface IPlayerEffects
     {
-        void LoseLives(int amount);
+        void LoseHealth(int amount);
         void GainMana(int amount);
     }
 }

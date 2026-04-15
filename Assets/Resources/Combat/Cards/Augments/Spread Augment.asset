@@ -34,5 +34,5 @@ MonoBehaviour:
     spawnRadiusDelta: 0
     summonLifetimeDelta: 0
   additionalSpellEffects: []
-  allowedCardTypes: 
+  allowedCardTypes: 00000000
   allowedFamilyIds: []

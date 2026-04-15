@@ -9,6 +9,7 @@ namespace Cards
     public class HandViewDriver : MonoBehaviour
     {
         [Header("Deck Setup")]
+        [SerializeField] private bool autoInitializeOnStart = true;
         [SerializeField] private List<OwnedCard> startingDeck = new();
         [SerializeField] private int manualDrawCost = 2;
 
@@ -29,17 +30,18 @@ namespace Cards
 
         private void Start()
         {
-            playerEffects = playerEffectsSource as IPlayerEffects;
-            if (playerEffectsSource != null && playerEffects == null)
-            {
-                Debug.LogError($"{nameof(HandViewDriver)} requires {nameof(playerEffectsSource)} to implement {nameof(IPlayerEffects)}.");
-            }
+            if (autoInitializeOnStart)
+                Initialize(startingDeck, manualDrawCost);
+        }
 
-            if (playerEffects == null)
-                playerEffects = FindAnyObjectByType<CombatSessionDriver>();
+        public void Initialize(IReadOnlyList<OwnedCard> deck, int drawCost, IPlayerEffects overridePlayerEffects = null)
+        {
+            if (handController != null)
+                return;
 
+            playerEffects = ResolvePlayerEffects(overridePlayerEffects);
             combatCardState = new CombatCardState();
-            combatCardState.BuildDrawPileFromOwnedCards(startingDeck);
+            combatCardState.BuildDrawPileFromOwnedCards(deck ?? startingDeck);
 
             handController = new HandController(combatCardState, 5);
             effectResolver = new CardEffectResolver(combatCardState, handController, towerManager, enemyManager, playerEffects);
@@ -52,8 +54,25 @@ namespace Cards
                 combatCardState,
                 handController,
                 handCardsPresenter.SelectedCardController,
-                manualDrawCost
+                drawCost
             );
+        }
+
+        private IPlayerEffects ResolvePlayerEffects(IPlayerEffects overridePlayerEffects)
+        {
+            if (overridePlayerEffects != null)
+                return overridePlayerEffects;
+
+            IPlayerEffects resolvedEffects = playerEffectsSource as IPlayerEffects;
+            if (playerEffectsSource != null && resolvedEffects == null)
+            {
+                Debug.LogError($"{nameof(HandViewDriver)} requires {nameof(playerEffectsSource)} to implement {nameof(IPlayerEffects)}.");
+            }
+
+            if (resolvedEffects == null)
+                resolvedEffects = FindAnyObjectByType<CombatSessionDriver>();
+
+            return resolvedEffects;
         }
     }
 }

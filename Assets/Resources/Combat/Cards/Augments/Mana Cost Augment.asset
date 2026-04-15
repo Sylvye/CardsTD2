@@ -22,5 +22,5 @@ MonoBehaviour:
   additionalTowerModifiers: []
   towerAttackModifiers: []
   additionalSpellEffects: []
-  allowedCardTypes: 
+  allowedCardTypes: 000000000100000002000000
   allowedFamilyIds: []
