@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d2fe7064acd5794c94ba169cf2a4e68, type: 3}
+  m_Name: Shotgunner+
+  m_EditorClassIdentifier: Assembly-CSharp::Cards.CardDef
+  id: shotgunner_PLUS
+  displayName: Shotgunner+
+  icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
+  type: 0
+  description: Shoots a burst of pellets at a target nearby
+  baseManaCost: 4
+  cardFamilyId: shotgun
+  baseTier: 1
+  upgradeTier: 2
+  baseAugmentSlots: 1
+  nextUpgradeDef: {fileID: 0}
+  spawnableObject: {fileID: 11400000, guid: 7788560959eecbb42a8e7c8d0b56f17f, type: 2}
+  effects: []

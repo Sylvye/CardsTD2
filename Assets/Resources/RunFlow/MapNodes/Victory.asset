@@ -17,4 +17,3 @@ MonoBehaviour:
   nodeType: 5
   encounter: {fileID: 0}
   shopInventory: {fileID: 0}
-  nextNodes: []

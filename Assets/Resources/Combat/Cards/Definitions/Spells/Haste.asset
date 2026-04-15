@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d2fe7064acd5794c94ba169cf2a4e68, type: 3}
+  m_Name: Haste
+  m_EditorClassIdentifier: Assembly-CSharp::Cards.CardDef
+  id: J
+  displayName: Haste
+  icon: {fileID: 1178460889840726108, guid: 96989d419b98bf94c93e1c46dfe974d4, type: 3}
+  type: 1
+  description: Doubles attack speed of affected towers
+  baseManaCost: 7
+  cardFamilyId: J
+  baseTier: 1
+  upgradeTier: 1
+  baseAugmentSlots: 1
+  nextUpgradeDef: {fileID: 0}
+  spawnableObject: {fileID: 11400000, guid: 0bb5ed7e2fb329d4f9edaa29762e4d7c, type: 2}
+  effects: []

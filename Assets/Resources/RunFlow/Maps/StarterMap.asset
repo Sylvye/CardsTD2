@@ -14,39 +14,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.MapTemplateDef
   id: starter-map
   displayName: Starter Act
-  startNode: {fileID: 0}
+  startNode: {fileID: 11400000, guid: 57f1f9052a042a0469aff2b198f37db7, type: 2}
   nodes: []
   startingDeck:
   - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
+  - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
+  - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
+  - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
+  - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
   - {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
-  - {fileID: 11400000, guid: cfb67d3bb856a1444a1a5241d773589b, type: 2}
-  - {fileID: 11400000, guid: f3cd7e76dccab714aafe89d7edafd689, type: 2}
-  - {fileID: 11400000, guid: 7616c717da96d44498a586eaeaa0de0c, type: 2}
   startingHealth: 20
   maxHealth: 20
-  startingGold: 12
-  totalPlayableNodes: 8
-  maxActivePaths: 3
-  minColumns: 5
-  maxColumns: 6
-  branchChance: 0.5
-  mergeChance: 0.4
+  startingGold: 0
+  totalPlayableNodes: 24
+  maxActivePaths: 5
+  minColumns: 8
+  maxColumns: 12
+  branchChance: 0.6
+  mergeChance: 0.6
   defaultShopInventory: {fileID: 11400000, guid: 4aa76f3f89e7fde4a9bd0b6e57e177f6, type: 2}
   nodeTypeRules:
   - nodeType: 1
-    weight: 6
+    weight: 60
     minCount: 0
     maxCount: -1
-  - nodeType: 2
-    weight: 2
+  - nodeType: 3
+    weight: 20
     minCount: 1
     maxCount: 2
-  - nodeType: 3
-    weight: 2
+  - nodeType: 2
+    weight: 15
     minCount: 1
     maxCount: 2
   - nodeType: 4
-    weight: 1
+    weight: 5
     minCount: 1
     maxCount: 1
   nodeEncounterPools:

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace RunFlow
@@ -11,8 +10,6 @@ namespace RunFlow
         public MapNodeType nodeType;
         public EncounterDef encounter;
         public ShopInventoryDef shopInventory;
-        public List<MapNodeDef> nextNodes = new();
-
         public string NodeId => string.IsNullOrWhiteSpace(id) ? name : id;
         public string DisplayNameOrFallback => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
     }

@@ -297,7 +297,6 @@ public static class RunFlowProjectSetup
         node.nodeType = nodeType;
         node.encounter = encounter;
         node.shopInventory = shopInventory;
-        node.nextNodes = node.nextNodes ?? new List<MapNodeDef>();
         EditorUtility.SetDirty(node);
         return node;
     }

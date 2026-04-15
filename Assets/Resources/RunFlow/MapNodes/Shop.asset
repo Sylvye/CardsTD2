@@ -17,5 +17,3 @@ MonoBehaviour:
   nodeType: 2
   encounter: {fileID: 0}
   shopInventory: {fileID: 11400000, guid: 4aa76f3f89e7fde4a9bd0b6e57e177f6, type: 2}
-  nextNodes:
-  - {fileID: 11400000, guid: dbe36befb621ab34aae91e6c2d018da1, type: 2}

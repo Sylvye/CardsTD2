@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0983a4d4b8c710e4eb72b596083f89d3, type: 3}
+  m_Name: Fight III 2
+  m_EditorClassIdentifier: Assembly-CSharp::RunFlow.EncounterDef
+  id: regular-fight-c
+  displayName: Regular Fight III
+  encounterKind: 0
+  pathPrefab: {fileID: 222235461983059477, guid: 57c8d953f37782c4580c359284f59da3, type: 3}
+  spawnBatches:
+  - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
+    spawnCount: 16
+    spawnInterval: 0.2
+    waitTime: 1
+  - enemyDef: {fileID: 11400000, guid: 69ed3973e26e43d4cb7047f6e2cad04f, type: 2}
+    spawnCount: 6
+    spawnInterval: 1
+    waitTime: 1
+  - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
+    spawnCount: 16
+    spawnInterval: 0.2
+    waitTime: 1
+  rewardPool: {fileID: 11400000, guid: 6f5304e7a01c79941b946c59023f100c, type: 2}
+  goldReward: 14
+  metaCurrencyReward: 1
