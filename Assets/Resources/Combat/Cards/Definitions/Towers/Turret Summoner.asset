@@ -20,6 +20,7 @@ MonoBehaviour:
     time and will shoot at nearby enemies in their range. Spawned turrets inherit
     buffs from the main tower.
   baseManaCost: 8
+  exhaust: 1
   cardFamilyId: turret_summoner
   baseTier: 1
   upgradeTier: 1

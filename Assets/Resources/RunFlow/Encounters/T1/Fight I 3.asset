@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0983a4d4b8c710e4eb72b596083f89d3, type: 3}
   m_Name: Fight I 3
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.EncounterDef
-  id: regular-fight-a
+  id: regular-fight-a-3
   displayName: Regular Fight I
   encounterKind: 0
   pathPrefab: {fileID: 222235461983059477, guid: 9d6ce8af8ce7d504d95214d8c07e1612, type: 3}

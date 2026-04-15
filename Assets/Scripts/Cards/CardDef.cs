@@ -18,6 +18,7 @@ namespace Cards
         [TextArea(3, 6)]
         public string description;
         public int baseManaCost = 1;
+        public bool exhaust;
 
         [Header("Progression")]
         public string cardFamilyId;

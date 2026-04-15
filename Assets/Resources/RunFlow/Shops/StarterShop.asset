@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bcac6ccd0c50864cac0d63614e899a9, type: 3}
   m_Name: StarterShop
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.ShopInventoryDef
-  id: starter-shop
-  displayName: Starter Shop
+  id: shop
+  displayName: Shop
   offers:
   - id: shop-card
     displayName: Buy Basic Turret+

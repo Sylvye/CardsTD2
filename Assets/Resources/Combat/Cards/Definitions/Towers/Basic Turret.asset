@@ -18,6 +18,7 @@ MonoBehaviour:
   type: 0
   description: A simple turret. Can be placed.
   baseManaCost: 4
+  exhaust: 1
   cardFamilyId: basic_turret
   baseTier: 1
   upgradeTier: 1

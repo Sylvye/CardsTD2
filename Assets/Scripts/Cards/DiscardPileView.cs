@@ -7,6 +7,7 @@ namespace Cards
     public class DiscardPileView : MonoBehaviour
     {
         [SerializeField] private TMP_Text countText;
+        [SerializeField] private TMP_Text exhaustCountText;
 
         private CombatCardState cardState;
         private HandController handController;
@@ -35,10 +36,14 @@ namespace Cards
 
         public void Refresh()
         {
-            if (cardState == null || countText is null)
+            if (cardState == null)
                 return;
 
-            countText.text = $"{cardState.DiscardPile.Count}";
+            if (countText is not null)
+                countText.text = $"{cardState.DiscardPile.Count}";
+
+            if (exhaustCountText is not null)
+                exhaustCountText.text = $"{cardState.ExhaustPile.Count}";
         }
     }
 }

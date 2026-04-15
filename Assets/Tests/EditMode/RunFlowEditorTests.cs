@@ -2,10 +2,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Cards;
+using Combat;
 using Enemies;
 using NUnit.Framework;
 using RunFlow;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public class RunFlowEditorTests
@@ -212,6 +214,48 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void RunFlowContent_EncounterIdsAreUnique()
+    {
+        EncounterDef[] encounters = Resources.LoadAll<EncounterDef>("RunFlow/Encounters");
+        Dictionary<string, string> namesById = new();
+
+        for (int i = 0; i < encounters.Length; i++)
+        {
+            EncounterDef encounter = encounters[i];
+            Assert.NotNull(encounter);
+
+            string encounterId = encounter.EncounterId;
+            Assert.That(string.IsNullOrWhiteSpace(encounterId), Is.False, $"Encounter '{encounter.name}' is missing an id.");
+
+            if (namesById.TryGetValue(encounterId, out string existingName))
+                Assert.Fail($"Duplicate encounter id '{encounterId}' found on '{existingName}' and '{encounter.name}'.");
+
+            namesById[encounterId] = encounter.name;
+        }
+    }
+
+    [Test]
+    public void RunFlowContent_EncounterPoolIdsAreUnique()
+    {
+        EncounterPoolDef[] encounterPools = Resources.LoadAll<EncounterPoolDef>("RunFlow");
+        Dictionary<string, string> namesById = new();
+
+        for (int i = 0; i < encounterPools.Length; i++)
+        {
+            EncounterPoolDef encounterPool = encounterPools[i];
+            Assert.NotNull(encounterPool);
+
+            string poolId = encounterPool.PoolId;
+            Assert.That(string.IsNullOrWhiteSpace(poolId), Is.False, $"Encounter pool '{encounterPool.name}' is missing an id.");
+
+            if (namesById.TryGetValue(poolId, out string existingName))
+                Assert.Fail($"Duplicate encounter pool id '{poolId}' found on '{existingName}' and '{encounterPool.name}'.");
+
+            namesById[poolId] = encounterPool.name;
+        }
+    }
+
+    [Test]
     public void RunMapGenerator_EveryRouteCanReachBoss()
     {
         RunMapGenerator generator = new(contentRepository);
@@ -360,6 +404,69 @@ public class RunFlowEditorTests
         Assert.That(preservedEncounter.spawnBatches[0].spawnCount, Is.EqualTo(7));
         Assert.That(preservedEncounter.spawnBatches[0].spawnInterval, Is.EqualTo(0.25f));
         Assert.That(preservedEncounter.spawnBatches[0].waitTime, Is.EqualTo(2.5f));
+    }
+
+    [Test]
+    public void RunFlowProjectSetup_LoadDefaultPathPrefab_ReturnsStarterCombatPath()
+    {
+        MethodInfo loadDefaultPathPrefab = typeof(RunFlowProjectSetup).GetMethod("LoadDefaultPathPrefab", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(loadDefaultPathPrefab);
+
+        GameObject pathPrefab = (GameObject)loadDefaultPathPrefab.Invoke(null, null);
+        Assert.NotNull(pathPrefab);
+        Assert.That(AssetDatabase.GetAssetPath(pathPrefab), Is.EqualTo("Assets/Resources/RunFlow/Paths/StarterCombatPath 1.prefab"));
+    }
+
+    [Test]
+    public void RunFlowProjectSetup_CreateCombatScene_ConfiguresExistingCombatScene()
+    {
+        MethodInfo createCombatScene = typeof(RunFlowProjectSetup).GetMethod("CreateCombatScene", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(createCombatScene);
+
+        List<EncounterDef> regularFights = contentRepository.GetEncountersByKind(EncounterKind.RegularFight);
+        Assert.That(regularFights.Count, Is.GreaterThan(0));
+
+        EncounterDef debugEncounter = regularFights[0];
+        List<CardDef> cards = new(contentRepository.Cards);
+        createCombatScene.Invoke(null, new object[] { debugEncounter, cards });
+
+        _ = EditorSceneManager.OpenScene("Assets/Scenes/Combat.unity", OpenSceneMode.Single);
+
+        CombatSessionDriver combatSessionDriver = Object.FindAnyObjectByType<CombatSessionDriver>();
+        HandViewDriver handViewDriver = Object.FindAnyObjectByType<HandViewDriver>();
+        EnemySpawner enemySpawner = Object.FindAnyObjectByType<EnemySpawner>();
+        EnemyManager enemyManager = Object.FindAnyObjectByType<EnemyManager>();
+        GameObject pathAnchor = GameObject.Find("Path Anchor");
+        CombatSceneBootstrapper[] bootstrappers = Object.FindObjectsByType<CombatSceneBootstrapper>();
+        CombatOutcomeWatcher[] outcomeWatchers = Object.FindObjectsByType<CombatOutcomeWatcher>();
+
+        Assert.NotNull(combatSessionDriver);
+        Assert.NotNull(handViewDriver);
+        Assert.NotNull(enemySpawner);
+        Assert.NotNull(enemyManager);
+        Assert.NotNull(pathAnchor);
+        Assert.That(bootstrappers.Length, Is.EqualTo(1));
+        Assert.That(outcomeWatchers.Length, Is.EqualTo(1));
+
+        CombatSceneBootstrapper bootstrapper = bootstrappers[0];
+        CombatOutcomeWatcher outcomeWatcher = outcomeWatchers[0];
+        Assert.That(GetPrivateField<CombatSessionDriver>(bootstrapper, "combatSessionDriver"), Is.EqualTo(combatSessionDriver));
+        Assert.That(GetPrivateField<HandViewDriver>(bootstrapper, "handViewDriver"), Is.EqualTo(handViewDriver));
+        Assert.That(GetPrivateField<EnemySpawner>(bootstrapper, "enemySpawner"), Is.EqualTo(enemySpawner));
+        Assert.That(GetPrivateField<Transform>(bootstrapper, "pathAnchor"), Is.EqualTo(pathAnchor.transform));
+        Assert.That(GetPrivateField<EncounterDef>(bootstrapper, "debugEncounter"), Is.EqualTo(debugEncounter));
+        Assert.That(GetPrivateField<int>(bootstrapper, "debugCurrentHealth"), Is.EqualTo(20));
+        Assert.That(GetPrivateField<int>(bootstrapper, "debugMaxHealth"), Is.EqualTo(20));
+
+        List<OwnedCard> debugDeck = GetPrivateField<List<OwnedCard>>(bootstrapper, "debugDeck");
+        Assert.NotNull(debugDeck);
+        Assert.That(debugDeck.Count, Is.EqualTo(Mathf.Min(5, cards.Count)));
+
+        Assert.That(GetPrivateField<CombatSessionDriver>(outcomeWatcher, "combatSessionDriver"), Is.EqualTo(combatSessionDriver));
+        Assert.That(GetPrivateField<EnemySpawner>(outcomeWatcher, "enemySpawner"), Is.EqualTo(enemySpawner));
+        Assert.That(GetPrivateField<EnemyManager>(outcomeWatcher, "enemyManager"), Is.EqualTo(enemyManager));
+        Assert.False(GetPrivateField<bool>(handViewDriver, "autoInitializeOnStart"));
+        Assert.False(GetPrivateField<bool>(enemySpawner, "startOnPlay"));
     }
 
     private MapTemplateDef CreateTemplate()
@@ -541,5 +648,12 @@ public class RunFlowEditorTests
         }
 
         return null;
+    }
+
+    private static T GetPrivateField<T>(object target, string fieldName)
+    {
+        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        Assert.NotNull(field, $"Missing field '{fieldName}' on {target.GetType().Name}.");
+        return (T)field.GetValue(target);
     }
 }

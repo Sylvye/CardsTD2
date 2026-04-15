@@ -18,6 +18,7 @@ MonoBehaviour:
   type: 2
   description: Draws extra cards; can draw over your hand limit
   baseManaCost: 4
+  exhaust: 1
   cardFamilyId: D
   baseTier: 1
   upgradeTier: 1

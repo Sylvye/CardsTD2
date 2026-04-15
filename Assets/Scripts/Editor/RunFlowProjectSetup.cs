@@ -11,7 +11,6 @@ using UnityEngine.SceneManagement;
 
 public static class RunFlowProjectSetup
 {
-    private const string SampleScenePath = "Assets/Scenes/SampleScene.unity";
     private const string BootstrapScenePath = "Assets/Scenes/Bootstrap.unity";
     private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
     private const string RunMapScenePath = "Assets/Scenes/RunMap.unity";
@@ -31,7 +30,7 @@ public static class RunFlowProjectSetup
     {
         EnsureFolders();
 
-        GameObject pathPrefab = ExtractPathPrefab();
+        GameObject pathPrefab = LoadDefaultPathPrefab();
 
         List<CardDef> cards = LoadAssets<CardDef>("Assets/Resources/Combat/Cards/Definitions");
         List<CardAugmentDef> augments = LoadAssets<CardAugmentDef>("Assets/Resources/Combat/Cards/Augments");
@@ -89,14 +88,13 @@ public static class RunFlowProjectSetup
         AssetDatabase.CreateFolder(parent, folder);
     }
 
-    private static GameObject ExtractPathPrefab()
+    private static GameObject LoadDefaultPathPrefab()
     {
-        EditorSceneManager.OpenScene(SampleScenePath, OpenSceneMode.Single);
-        GameObject pathRoot = GameObject.Find("Enemy Path");
-        if (pathRoot == null)
-            throw new MissingReferenceException("SampleScene does not contain an 'Enemy Path' object.");
+        GameObject pathPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(DefaultPathPrefabPath);
+        if (pathPrefab == null)
+            throw new MissingReferenceException($"Default combat path prefab could not be found at '{DefaultPathPrefabPath}'.");
 
-        return PrefabUtility.SaveAsPrefabAsset(pathRoot, DefaultPathPrefabPath);
+        return pathPrefab;
     }
 
     private static List<T> LoadAssets<T>(string folder) where T : Object
@@ -367,28 +365,23 @@ public static class RunFlowProjectSetup
 
     private static void CreateCombatScene(EncounterDef debugEncounter, List<CardDef> cards)
     {
-        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(CombatScenePath) != null)
-            AssetDatabase.DeleteAsset(CombatScenePath);
-
-        AssetDatabase.CopyAsset(SampleScenePath, CombatScenePath);
-        AssetDatabase.Refresh();
+        SceneAsset combatSceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(CombatScenePath);
+        if (combatSceneAsset == null)
+            throw new MissingReferenceException($"Combat scene could not be found at '{CombatScenePath}'.");
 
         Scene combatScene = EditorSceneManager.OpenScene(CombatScenePath, OpenSceneMode.Single);
-        GameObject existingPath = GameObject.Find("Enemy Path");
-        if (existingPath != null)
-            Object.DestroyImmediate(existingPath);
 
-        CombatSessionDriver combatSessionDriver = Object.FindFirstObjectByType<CombatSessionDriver>();
-        HandViewDriver handViewDriver = Object.FindFirstObjectByType<HandViewDriver>();
-        EnemySpawner enemySpawner = Object.FindFirstObjectByType<EnemySpawner>();
-        EnemyManager enemyManager = Object.FindFirstObjectByType<EnemyManager>();
+        CombatSessionDriver combatSessionDriver = RequireSceneComponent<CombatSessionDriver>(CombatScenePath);
+        HandViewDriver handViewDriver = RequireSceneComponent<HandViewDriver>(CombatScenePath);
+        EnemySpawner enemySpawner = RequireSceneComponent<EnemySpawner>(CombatScenePath);
+        EnemyManager enemyManager = RequireSceneComponent<EnemyManager>(CombatScenePath);
 
         GameObject pathAnchor = GameObject.Find("Path Anchor");
         if (pathAnchor == null)
             pathAnchor = new GameObject("Path Anchor");
 
-        CombatSceneBootstrapper bootstrapper = new GameObject("Combat Scene Bootstrapper").AddComponent<CombatSceneBootstrapper>();
-        CombatOutcomeWatcher outcomeWatcher = new GameObject("Combat Outcome Watcher").AddComponent<CombatOutcomeWatcher>();
+        CombatSceneBootstrapper bootstrapper = FindOrCreateComponent(() => new GameObject("Combat Scene Bootstrapper").AddComponent<CombatSceneBootstrapper>());
+        CombatOutcomeWatcher outcomeWatcher = FindOrCreateComponent(() => new GameObject("Combat Outcome Watcher").AddComponent<CombatOutcomeWatcher>());
 
         SetField(bootstrapper, "combatSessionDriver", combatSessionDriver);
         SetField(bootstrapper, "handViewDriver", handViewDriver);
@@ -408,6 +401,24 @@ public static class RunFlowProjectSetup
 
         EditorSceneManager.MarkSceneDirty(combatScene);
         EditorSceneManager.SaveScene(combatScene);
+    }
+
+    private static T RequireSceneComponent<T>(string scenePath) where T : Component
+    {
+        T component = Object.FindFirstObjectByType<T>();
+        if (component == null)
+            throw new MissingReferenceException($"{scenePath} does not contain a required {typeof(T).Name} component.");
+
+        return component;
+    }
+
+    private static T FindOrCreateComponent<T>(System.Func<T> create) where T : Component
+    {
+        T component = Object.FindFirstObjectByType<T>();
+        if (component != null)
+            return component;
+
+        return create();
     }
 
     private static void CreateCamera(string name)

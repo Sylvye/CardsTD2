@@ -19,6 +19,7 @@ MonoBehaviour:
   description: Spawns mines in a radius around it. Mines activate and move towards
     nearby enemies before blowing up on contact or after some time.
   baseManaCost: 5
+  exhaust: 1
   cardFamilyId: bomb_summoner
   baseTier: 1
   upgradeTier: 1

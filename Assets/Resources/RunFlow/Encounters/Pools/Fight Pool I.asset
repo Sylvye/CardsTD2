@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3a4d538d0fe4fd0a1a30b0ce6895f55, type: 3}
   m_Name: Fight Pool I
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.EncounterPoolDef
-  id: starter-fight-pool
+  id: starter_fight_pool
   displayName: Fight Pool I
   encounters:
   - encounter: {fileID: 11400000, guid: 10b7e26a95c3bf047ab1efd04a06e4b2, type: 2}

@@ -68,7 +68,10 @@ namespace Cards
 
             effectResolver?.ResolveOnPlay(card, playerState, playContext);
 
-            cardState.DiscardPile.Add(card);
+            if (card.Definition != null && card.Definition.exhaust)
+                cardState.ExhaustPile.Add(card);
+            else
+                cardState.DiscardPile.Add(card);
 
             OnHandChanged?.Invoke();
             return true;

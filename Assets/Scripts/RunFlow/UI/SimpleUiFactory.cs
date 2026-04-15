@@ -12,7 +12,7 @@ namespace RunFlow
 
         public static Canvas EnsureCanvas(string name = "Canvas")
         {
-            Canvas existingCanvas = Object.FindFirstObjectByType<Canvas>();
+            Canvas existingCanvas = Object.FindAnyObjectByType<Canvas>();
             if (existingCanvas != null)
                 return existingCanvas;
 
@@ -30,7 +30,7 @@ namespace RunFlow
 
         public static void EnsureEventSystem()
         {
-            if (Object.FindFirstObjectByType<EventSystem>() != null)
+            if (Object.FindAnyObjectByType<EventSystem>() != null)
                 return;
 
             _ = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));

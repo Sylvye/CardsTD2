@@ -18,6 +18,7 @@ MonoBehaviour:
   type: 0
   description: Fires a laser at a nearby enemy, dealing damage rapidly.
   baseManaCost: 3
+  exhaust: 1
   cardFamilyId: tesla
   baseTier: 1
   upgradeTier: 1

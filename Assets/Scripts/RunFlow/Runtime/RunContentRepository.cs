@@ -187,8 +187,20 @@ namespace RunFlow
             for (int i = 0; i < encounters.Length; i++)
             {
                 EncounterDef encounter = encounters[i];
-                if (encounter != null)
-                    encountersById[encounter.EncounterId] = encounter;
+                if (encounter == null)
+                    continue;
+
+                string encounterId = encounter.EncounterId;
+                if (string.IsNullOrWhiteSpace(encounterId))
+                    continue;
+
+                if (encountersById.ContainsKey(encounterId))
+                {
+                    Debug.LogWarning($"Duplicate encounter id '{encounterId}' found on '{encounter.name}'. Encounter ids must be unique.");
+                    continue;
+                }
+
+                encountersById[encounterId] = encounter;
             }
         }
 
@@ -198,8 +210,20 @@ namespace RunFlow
             for (int i = 0; i < encounterPools.Length; i++)
             {
                 EncounterPoolDef encounterPool = encounterPools[i];
-                if (encounterPool != null)
-                    encounterPoolsById[encounterPool.PoolId] = encounterPool;
+                if (encounterPool == null)
+                    continue;
+
+                string poolId = encounterPool.PoolId;
+                if (string.IsNullOrWhiteSpace(poolId))
+                    continue;
+
+                if (encounterPoolsById.ContainsKey(poolId))
+                {
+                    Debug.LogWarning($"Duplicate encounter pool id '{poolId}' found on '{encounterPool.name}'. Encounter pool ids should be unique.");
+                    continue;
+                }
+
+                encounterPoolsById[poolId] = encounterPool;
             }
         }
 

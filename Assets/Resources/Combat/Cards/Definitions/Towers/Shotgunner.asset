@@ -18,6 +18,7 @@ MonoBehaviour:
   type: 0
   description: Shoots a burst of pellets at a target nearby
   baseManaCost: 4
+  exhaust: 1
   cardFamilyId: shotgun
   baseTier: 1
   upgradeTier: 1
