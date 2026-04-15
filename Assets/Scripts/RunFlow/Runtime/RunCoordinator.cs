@@ -12,6 +12,7 @@ namespace RunFlow
 
         private readonly SaveService saveService;
         private readonly RunContentRepository contentRepository;
+        private readonly RunMapGenerator mapGenerator;
         private readonly Action<string> loadScene;
 
         public ProfileSaveData Profile { get; private set; }
@@ -28,6 +29,7 @@ namespace RunFlow
         {
             this.saveService = saveService;
             this.contentRepository = contentRepository;
+            mapGenerator = new RunMapGenerator(contentRepository);
             this.loadScene = loadScene;
 
             RefreshLoadedState();
@@ -87,46 +89,47 @@ namespace RunFlow
             loadScene?.Invoke(SceneNames.MainMenu);
         }
 
-        public MapNodeDef GetNode(string nodeId)
+        public RunMapNodeData GetNode(string nodeId)
         {
-            return CurrentMapTemplate != null ? CurrentMapTemplate.FindNode(nodeId) : null;
+            return CurrentRun?.mapState != null ? CurrentRun.mapState.FindNode(nodeId) : null;
         }
 
-        public IEnumerable<MapNodeDef> GetMapNodes()
+        public IEnumerable<RunMapNodeData> GetMapNodes()
         {
-            return CurrentMapTemplate != null ? CurrentMapTemplate.nodes : Array.Empty<MapNodeDef>();
+            return CurrentRun?.mapState?.nodes != null
+                ? CurrentRun.mapState.nodes
+                : Array.Empty<RunMapNodeData>();
         }
 
-        public List<MapNodeDef> GetAvailableNodes()
+        public List<RunMapNodeData> GetAvailableNodes()
         {
-            List<MapNodeDef> availableNodes = new();
-            if (CurrentMapTemplate == null || CurrentRun == null)
+            List<RunMapNodeData> availableNodes = new();
+            if (CurrentRun?.mapState == null)
                 return availableNodes;
 
-            if (CurrentMapTemplate.startNode != null && !CurrentRun.HasCompletedNode(CurrentMapTemplate.startNode.NodeId))
+            RunMapNodeData currentNode = GetNode(CurrentRun.currentNodeId);
+            if (currentNode == null && !string.IsNullOrWhiteSpace(CurrentRun.mapState.startNodeId))
+                currentNode = GetNode(CurrentRun.mapState.startNodeId);
+
+            if (currentNode == null)
+                return availableNodes;
+
+            if (!CurrentRun.HasCompletedNode(currentNode.nodeId))
             {
-                availableNodes.Add(CurrentMapTemplate.startNode);
+                availableNodes.Add(currentNode);
                 return availableNodes;
             }
 
-            HashSet<string> seenIds = new();
-            if (CurrentRun.completedNodeIds == null)
+            if (currentNode.nextNodeIds == null)
                 return availableNodes;
 
-            for (int i = 0; i < CurrentRun.completedNodeIds.Count; i++)
+            for (int i = 0; i < currentNode.nextNodeIds.Count; i++)
             {
-                MapNodeDef completedNode = GetNode(CurrentRun.completedNodeIds[i]);
-                if (completedNode == null || completedNode.nextNodes == null)
+                RunMapNodeData nextNode = GetNode(currentNode.nextNodeIds[i]);
+                if (nextNode == null || CurrentRun.HasCompletedNode(nextNode.nodeId))
                     continue;
 
-                for (int nextIndex = 0; nextIndex < completedNode.nextNodes.Count; nextIndex++)
-                {
-                    MapNodeDef nextNode = completedNode.nextNodes[nextIndex];
-                    if (nextNode == null || CurrentRun.HasCompletedNode(nextNode.NodeId) || !seenIds.Add(nextNode.NodeId))
-                        continue;
-
-                    availableNodes.Add(nextNode);
-                }
+                availableNodes.Add(nextNode);
             }
 
             return availableNodes;
@@ -134,10 +137,10 @@ namespace RunFlow
 
         public bool IsNodeAvailable(string nodeId)
         {
-            List<MapNodeDef> availableNodes = GetAvailableNodes();
+            List<RunMapNodeData> availableNodes = GetAvailableNodes();
             for (int i = 0; i < availableNodes.Count; i++)
             {
-                if (availableNodes[i] != null && availableNodes[i].NodeId == nodeId)
+                if (availableNodes[i] != null && availableNodes[i].nodeId == nodeId)
                     return true;
             }
 
@@ -149,24 +152,22 @@ namespace RunFlow
             if (CurrentRun == null || CurrentMapTemplate == null || !IsNodeAvailable(nodeId))
                 return;
 
-            MapNodeDef node = GetNode(nodeId);
+            RunMapNodeData node = GetNode(nodeId);
             if (node == null)
                 return;
 
-            CurrentRun.currentNodeId = node.NodeId;
+            CurrentRun.currentNodeId = node.nodeId;
             SaveCurrentRun();
 
             switch (node.nodeType)
             {
                 case MapNodeType.Fight:
                 case MapNodeType.Miniboss:
-                    CurrentCombatRequest = new CombatSceneRequest(node.NodeId, node.encounter, CurrentRun);
+                case MapNodeType.Boss:
+                    EncounterDef encounter = contentRepository.GetEncounterById(node.encounterId);
+                    CurrentCombatRequest = new CombatSceneRequest(node.nodeId, encounter, CurrentRun);
                     SaveCurrentRun();
                     loadScene?.Invoke(SceneNames.Combat);
-                    break;
-
-                case MapNodeType.Victory:
-                    FinishRunVictory(node.NodeId);
                     break;
             }
         }
@@ -214,14 +215,15 @@ namespace RunFlow
         public List<ShopOfferData> GetAvailableShopOffers(string nodeId)
         {
             List<ShopOfferData> offers = new();
-            MapNodeDef node = GetNode(nodeId);
-            if (node?.shopInventory?.offers == null || CurrentRun?.mapState == null)
+            RunMapNodeData node = GetNode(nodeId);
+            ShopInventoryDef shopInventory = contentRepository.GetShopInventoryById(node?.shopInventoryId);
+            if (shopInventory?.offers == null || CurrentRun?.mapState == null)
                 return offers;
 
             ShopPurchaseStateData shopState = CurrentRun.mapState.GetOrCreateShopState(nodeId);
-            for (int i = 0; i < node.shopInventory.offers.Count; i++)
+            for (int i = 0; i < shopInventory.offers.Count; i++)
             {
-                ShopOfferData offer = node.shopInventory.offers[i];
+                ShopOfferData offer = shopInventory.offers[i];
                 if (offer != null && !shopState.HasPurchased(offer.OfferId))
                     offers.Add(offer);
             }
@@ -234,14 +236,15 @@ namespace RunFlow
             if (CurrentRun == null)
                 return false;
 
-            MapNodeDef node = GetNode(nodeId);
-            if (node?.shopInventory?.offers == null)
+            RunMapNodeData node = GetNode(nodeId);
+            ShopInventoryDef shopInventory = contentRepository.GetShopInventoryById(node?.shopInventoryId);
+            if (shopInventory?.offers == null)
                 return false;
 
             ShopOfferData offer = null;
-            for (int i = 0; i < node.shopInventory.offers.Count; i++)
+            for (int i = 0; i < shopInventory.offers.Count; i++)
             {
-                ShopOfferData candidate = node.shopInventory.offers[i];
+                ShopOfferData candidate = shopInventory.offers[i];
                 if (candidate != null && candidate.OfferId == offerId)
                 {
                     offer = candidate;
@@ -325,6 +328,7 @@ namespace RunFlow
                 return;
             }
 
+            RunMapNodeData node = GetNode(result.nodeId);
             CompleteNode(result.nodeId, saveAfterComplete: false);
 
             if (result.encounter != null)
@@ -334,6 +338,14 @@ namespace RunFlow
 
                 if (result.encounter.encounterKind == EncounterKind.Miniboss)
                     Profile.AddUnlock(FirstMinibossUnlockId);
+
+                if (node?.nodeType == MapNodeType.Boss || result.encounter.encounterKind == EncounterKind.Boss)
+                {
+                    CurrentRun.pendingReward = null;
+                    SaveAll();
+                    FinishRunVictory(result.nodeId);
+                    return;
+                }
 
                 if (result.encounter.rewardPool != null)
                 {
@@ -363,24 +375,23 @@ namespace RunFlow
 
         private RunSaveData CreateNewRun(MapTemplateDef template)
         {
+            int seed = Environment.TickCount;
+            RunMapStateData mapState = mapGenerator.Generate(template, seed);
             RunSaveData run = new()
             {
                 runId = Guid.NewGuid().ToString("N"),
                 currentHealth = Mathf.Max(1, template.startingHealth),
                 maxHealth = Mathf.Max(1, template.maxHealth),
                 gold = Mathf.Max(0, template.startingGold),
-                currentNodeId = template.startNode != null ? template.startNode.NodeId : string.Empty,
+                currentNodeId = mapState.startNodeId,
                 completedNodeIds = new List<string>(),
-                mapState = new RunMapStateData
-                {
-                    mapTemplateId = template.TemplateId
-                },
-                seed = Environment.TickCount,
+                mapState = mapState,
+                seed = seed,
                 deck = new List<OwnedCard>()
             };
 
-            if (template.startNode != null)
-                run.MarkNodeCompleted(template.startNode.NodeId);
+            if (!string.IsNullOrWhiteSpace(mapState.startNodeId))
+                run.MarkNodeCompleted(mapState.startNodeId);
 
             if (template.startingDeck != null && template.startingDeck.Count > 0)
             {

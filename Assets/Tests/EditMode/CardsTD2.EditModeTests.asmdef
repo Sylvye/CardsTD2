@@ -2,7 +2,8 @@
   "name": "CardsTD2.EditModeTests",
   "rootNamespace": "",
   "references": [
-    "CardsTD2"
+    "CardsTD2",
+    "CardsTD2.Editor"
   ],
   "includePlatforms": [
     "Editor"

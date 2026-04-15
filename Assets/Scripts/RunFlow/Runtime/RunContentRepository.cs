@@ -10,6 +10,7 @@ namespace RunFlow
         private readonly Dictionary<string, CardAugmentDef> augmentsById = new();
         private readonly Dictionary<string, MapTemplateDef> mapTemplatesById = new();
         private readonly Dictionary<string, EncounterDef> encountersById = new();
+        private readonly Dictionary<string, EncounterPoolDef> encounterPoolsById = new();
         private readonly Dictionary<string, CardRewardPoolDef> rewardPoolsById = new();
         private readonly Dictionary<string, ShopInventoryDef> shopInventoriesById = new();
 
@@ -23,6 +24,7 @@ namespace RunFlow
             augmentsById.Clear();
             mapTemplatesById.Clear();
             encountersById.Clear();
+            encounterPoolsById.Clear();
             rewardPoolsById.Clear();
             shopInventoriesById.Clear();
 
@@ -30,6 +32,7 @@ namespace RunFlow
             LoadAugments();
             LoadMapTemplates();
             LoadEncounters();
+            LoadEncounterPools();
             LoadRewardPools();
             LoadShopInventories();
 
@@ -60,6 +63,18 @@ namespace RunFlow
             return !string.IsNullOrWhiteSpace(id) && encountersById.TryGetValue(id, out EncounterDef encounter) ? encounter : null;
         }
 
+        public EncounterPoolDef GetEncounterPoolById(string id)
+        {
+            EnsureLoaded();
+            return !string.IsNullOrWhiteSpace(id) && encounterPoolsById.TryGetValue(id, out EncounterPoolDef encounterPool) ? encounterPool : null;
+        }
+
+        public ShopInventoryDef GetShopInventoryById(string id)
+        {
+            EnsureLoaded();
+            return !string.IsNullOrWhiteSpace(id) && shopInventoriesById.TryGetValue(id, out ShopInventoryDef inventory) ? inventory : null;
+        }
+
         public MapTemplateDef GetDefaultMapTemplate()
         {
             EnsureLoaded();
@@ -81,6 +96,48 @@ namespace RunFlow
         public string GetAugmentId(CardAugmentDef augment)
         {
             return augment == null ? null : string.IsNullOrWhiteSpace(augment.id) ? augment.name : augment.id;
+        }
+
+        public string GetEncounterId(EncounterDef encounter)
+        {
+            return encounter == null ? null : encounter.EncounterId;
+        }
+
+        public string GetEncounterPoolId(EncounterPoolDef encounterPool)
+        {
+            return encounterPool == null ? null : encounterPool.PoolId;
+        }
+
+        public string GetShopInventoryId(ShopInventoryDef inventory)
+        {
+            return inventory == null ? null : inventory.InventoryId;
+        }
+
+        public ShopInventoryDef GetDefaultShopInventory()
+        {
+            EnsureLoaded();
+
+            if (shopInventoriesById.TryGetValue("starter-shop", out ShopInventoryDef starterShop))
+                return starterShop;
+
+            foreach (ShopInventoryDef inventory in shopInventoriesById.Values)
+                return inventory;
+
+            return null;
+        }
+
+        public List<EncounterDef> GetEncountersByKind(EncounterKind encounterKind)
+        {
+            EnsureLoaded();
+
+            List<EncounterDef> encounters = new();
+            foreach (EncounterDef encounter in encountersById.Values)
+            {
+                if (encounter != null && encounter.encounterKind == encounterKind)
+                    encounters.Add(encounter);
+            }
+
+            return encounters;
         }
 
         private void EnsureLoaded()
@@ -132,6 +189,17 @@ namespace RunFlow
                 EncounterDef encounter = encounters[i];
                 if (encounter != null)
                     encountersById[encounter.EncounterId] = encounter;
+            }
+        }
+
+        private void LoadEncounterPools()
+        {
+            EncounterPoolDef[] encounterPools = Resources.LoadAll<EncounterPoolDef>("RunFlow");
+            for (int i = 0; i < encounterPools.Length; i++)
+            {
+                EncounterPoolDef encounterPool = encounterPools[i];
+                if (encounterPool != null)
+                    encounterPoolsById[encounterPool.PoolId] = encounterPool;
             }
         }
 

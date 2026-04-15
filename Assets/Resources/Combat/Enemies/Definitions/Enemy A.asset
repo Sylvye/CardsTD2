@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Enemy A
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyDef
   prefab: {fileID: 2232636580848620905, guid: 674143ff06aa1b945ae3142edff0730b, type: 3}
-  maxHealth: 10
-  moveSpeed: 2
+  maxHealth: 12
+  moveSpeed: 1
   lifeDamage: 1
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
   damageFlashDuration: 0.1

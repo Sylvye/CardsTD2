@@ -7,6 +7,7 @@ using RunFlow;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 public class RunFlowPlayModeTests
 {
@@ -36,17 +37,18 @@ public class RunFlowPlayModeTests
         coordinator.StartNewRun();
         yield return WaitForScene(SceneNames.RunMap);
 
-        MapNodeDef firstFight = coordinator.GetAvailableNodes().Find(node => node.nodeType == MapNodeType.Fight);
+        RunMapNodeData firstFight = null;
+        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Fight, node => firstFight = node, treatAnyCombatAsMatch: true);
         Assert.NotNull(firstFight);
 
-        coordinator.SelectNode(firstFight.NodeId);
+        coordinator.SelectNode(firstFight.nodeId);
         yield return WaitForScene(SceneNames.Combat);
 
         CombatSceneRequest request = coordinator.CurrentCombatRequest;
         Assert.NotNull(request);
-        Assert.That(request.encounter.encounterKind, Is.EqualTo(EncounterKind.RegularFight));
+        Assert.That(request.encounter.encounterKind, Is.Not.EqualTo(EncounterKind.Boss));
 
-        coordinator.HandleCombatResult(new CombatSceneResult(firstFight.NodeId, request.encounter, true, coordinator.CurrentRun.currentHealth));
+        coordinator.HandleCombatResult(new CombatSceneResult(firstFight.nodeId, request.encounter, true, coordinator.CurrentRun.currentHealth));
         yield return WaitForScene(SceneNames.RunMap);
 
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
@@ -54,33 +56,23 @@ public class RunFlowPlayModeTests
     }
 
     [UnityTest]
-    public IEnumerator RegularFight_And_Miniboss_Reuse_CombatScene()
+    public IEnumerator RunMapScene_RendersScrollableGraph()
     {
-        yield return ConfigureRuntime("CombatReuse");
+        yield return ConfigureRuntime("ScrollableMap");
 
         RunCoordinator coordinator = GameFlowRoot.Instance.Coordinator;
         coordinator.StartNewRun();
         yield return WaitForScene(SceneNames.RunMap);
 
-        yield return CompleteFightAndSkipReward(coordinator);
-        yield return CompleteFightAndSkipReward(coordinator);
+        RunMapSceneController controller = Object.FindFirstObjectByType<RunMapSceneController>();
+        ScrollRect scrollRect = Object.FindFirstObjectByType<ScrollRect>();
 
-        MapNodeDef shopNode = coordinator.GetAvailableNodes().Find(node => node.nodeType == MapNodeType.Shop);
-        Assert.NotNull(shopNode);
-        coordinator.SelectNode(shopNode.NodeId);
-        yield return null;
-        coordinator.LeaveShop(shopNode.NodeId);
-
-        yield return CompleteFightAndSkipReward(coordinator);
-
-        MapNodeDef minibossNode = coordinator.GetAvailableNodes().Find(node => node.nodeType == MapNodeType.Miniboss);
-        Assert.NotNull(minibossNode);
-
-        coordinator.SelectNode(minibossNode.NodeId);
-        yield return WaitForScene(SceneNames.Combat);
-
-        Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(SceneNames.Combat));
-        Assert.That(coordinator.CurrentCombatRequest.encounter.encounterKind, Is.EqualTo(EncounterKind.Miniboss));
+        Assert.NotNull(controller);
+        Assert.NotNull(scrollRect);
+        Assert.True(scrollRect.horizontal);
+        Assert.True(scrollRect.vertical);
+        Assert.NotNull(scrollRect.content);
+        Assert.That(scrollRect.content.GetComponentsInChildren<Button>(true).Length, Is.GreaterThan(0));
     }
 
     [UnityTest]
@@ -92,24 +84,23 @@ public class RunFlowPlayModeTests
         coordinator.StartNewRun();
         yield return WaitForScene(SceneNames.RunMap);
 
-        yield return CompleteFightAndSkipReward(coordinator);
-        yield return CompleteFightAndSkipReward(coordinator);
-
-        MapNodeDef shopNode = coordinator.GetAvailableNodes().Find(node => node.nodeType == MapNodeType.Shop);
+        RunMapNodeData shopNode = null;
+        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Shop, node => shopNode = node);
         Assert.NotNull(shopNode);
-        coordinator.SelectNode(shopNode.NodeId);
+
+        coordinator.SelectNode(shopNode.nodeId);
         yield return null;
 
-        List<ShopOfferData> offers = coordinator.GetAvailableShopOffers(shopNode.NodeId);
+        List<ShopOfferData> offers = coordinator.GetAvailableShopOffers(shopNode.nodeId);
         ShopOfferData offer = offers.Find(candidate => candidate.offerType != ShopOfferType.Augment);
         Assert.NotNull(offer);
 
         int goldBefore = coordinator.CurrentRun.gold;
-        Assert.True(coordinator.TryPurchaseShopOffer(shopNode.NodeId, offer.OfferId));
+        Assert.True(coordinator.TryPurchaseShopOffer(shopNode.nodeId, offer.OfferId));
         Assert.Less(coordinator.CurrentRun.gold, goldBefore);
 
         yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
-        Assert.That(coordinator.GetAvailableShopOffers(shopNode.NodeId).Count, Is.EqualTo(offers.Count - 1));
+        Assert.That(coordinator.GetAvailableShopOffers(shopNode.nodeId).Count, Is.EqualTo(offers.Count - 1));
     }
 
     [UnityTest]
@@ -121,12 +112,11 @@ public class RunFlowPlayModeTests
         coordinator.StartNewRun();
         yield return WaitForScene(SceneNames.RunMap);
 
-        yield return CompleteFightAndSkipReward(coordinator);
-        yield return CompleteFightAndSkipReward(coordinator);
-
-        MapNodeDef restNode = coordinator.GetAvailableNodes().Find(node => node.nodeType == MapNodeType.Rest);
+        RunMapNodeData restNode = null;
+        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Rest, node => restNode = node);
         Assert.NotNull(restNode);
-        coordinator.SelectNode(restNode.NodeId);
+
+        coordinator.SelectNode(restNode.nodeId);
         yield return null;
 
         List<OwnedCard> upgradeableCards = coordinator.GetUpgradeableCards();
@@ -135,13 +125,36 @@ public class RunFlowPlayModeTests
         string cardId = card.UniqueId;
         CardDef originalDefinition = card.CurrentDefinition;
 
-        Assert.True(coordinator.ApplyRestUpgrade(restNode.NodeId, cardId));
+        Assert.True(coordinator.ApplyRestUpgrade(restNode.nodeId, cardId));
 
         yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
 
         OwnedCard persistedCard = coordinator.CurrentRun.deck.Find(entry => entry.UniqueId == cardId);
         Assert.NotNull(persistedCard);
         Assert.AreNotEqual(originalDefinition, persistedCard.CurrentDefinition);
+    }
+
+    [UnityTest]
+    public IEnumerator BossVictory_EndsRunAtMainMenu()
+    {
+        yield return ConfigureRuntime("BossVictory");
+
+        RunCoordinator coordinator = GameFlowRoot.Instance.Coordinator;
+        coordinator.StartNewRun();
+        yield return WaitForScene(SceneNames.RunMap);
+
+        RunMapNodeData bossNode = null;
+        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Boss, node => bossNode = node);
+        Assert.NotNull(bossNode);
+
+        coordinator.SelectNode(bossNode.nodeId);
+        yield return WaitForScene(SceneNames.Combat);
+        Assert.That(coordinator.CurrentCombatRequest.encounter.encounterKind, Is.EqualTo(EncounterKind.Boss));
+
+        coordinator.HandleCombatResult(new CombatSceneResult(bossNode.nodeId, coordinator.CurrentCombatRequest.encounter, true, coordinator.CurrentRun.currentHealth));
+        yield return WaitForScene(SceneNames.MainMenu);
+
+        Assert.IsNull(coordinator.CurrentRun);
     }
 
     private IEnumerator ConfigureRuntime(string testName)
@@ -176,15 +189,98 @@ public class RunFlowPlayModeTests
         Assert.Fail($"Timed out waiting for scene '{sceneName}'.");
     }
 
-    private static IEnumerator CompleteFightAndSkipReward(RunCoordinator coordinator)
+    private static IEnumerator AdvanceUntilNodeTypeAvailable(RunCoordinator coordinator, MapNodeType targetType, System.Action<RunMapNodeData> captureNode, bool treatAnyCombatAsMatch = false)
     {
-        MapNodeDef fightNode = coordinator.GetAvailableNodes().Find(node => node.nodeType == MapNodeType.Fight);
-        Assert.NotNull(fightNode);
+        for (int i = 0; i < 16; i++)
+        {
+            List<RunMapNodeData> availableNodes = coordinator.GetAvailableNodes();
+            RunMapNodeData targetNode = treatAnyCombatAsMatch
+                ? availableNodes.Find(node => IsCombatNode(node.nodeType))
+                : availableNodes.Find(node => node.nodeType == targetType);
+            if (targetNode != null)
+            {
+                captureNode(targetNode);
+                yield break;
+            }
 
-        coordinator.SelectNode(fightNode.NodeId);
-        yield return WaitForScene(SceneNames.Combat);
-        coordinator.HandleCombatResult(new CombatSceneResult(fightNode.NodeId, coordinator.CurrentCombatRequest.encounter, true, coordinator.CurrentRun.currentHealth));
-        yield return WaitForScene(SceneNames.RunMap);
-        coordinator.SkipPendingReward();
+            RunMapNodeData nextNode = ChooseNodeLeadingToType(coordinator, availableNodes, targetType);
+            Assert.NotNull(nextNode);
+
+            if (IsCombatNode(nextNode.nodeType))
+            {
+                coordinator.SelectNode(nextNode.nodeId);
+                yield return WaitForScene(SceneNames.Combat);
+                coordinator.HandleCombatResult(new CombatSceneResult(nextNode.nodeId, coordinator.CurrentCombatRequest.encounter, true, coordinator.CurrentRun.currentHealth));
+
+                if (nextNode.nodeType == MapNodeType.Boss)
+                    yield break;
+
+                yield return WaitForScene(SceneNames.RunMap);
+                if (coordinator.CurrentRun != null && coordinator.CurrentRun.pendingReward != null)
+                    coordinator.SkipPendingReward();
+            }
+            else if (nextNode.nodeType == MapNodeType.Shop)
+            {
+                coordinator.SelectNode(nextNode.nodeId);
+                yield return null;
+                if (targetType == MapNodeType.Shop)
+                {
+                    captureNode(nextNode);
+                    yield break;
+                }
+
+                coordinator.LeaveShop(nextNode.nodeId);
+            }
+            else if (nextNode.nodeType == MapNodeType.Rest)
+            {
+                coordinator.SelectNode(nextNode.nodeId);
+                yield return null;
+                if (targetType == MapNodeType.Rest)
+                {
+                    captureNode(nextNode);
+                    yield break;
+                }
+
+                coordinator.ApplyRestHeal(nextNode.nodeId);
+            }
+
+            yield return null;
+        }
+
+        Assert.Fail($"Unable to route to node type '{targetType}'.");
+    }
+
+    private static RunMapNodeData ChooseNodeLeadingToType(RunCoordinator coordinator, List<RunMapNodeData> candidates, MapNodeType targetType)
+    {
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            RunMapNodeData candidate = candidates[i];
+            if (candidate != null && CanReachType(coordinator, candidate, targetType, new HashSet<string>()))
+                return candidate;
+        }
+
+        return candidates.Count > 0 ? candidates[0] : null;
+    }
+
+    private static bool CanReachType(RunCoordinator coordinator, RunMapNodeData node, MapNodeType targetType, HashSet<string> visited)
+    {
+        if (node == null || !visited.Add(node.nodeId))
+            return false;
+
+        if (node.nodeType == targetType)
+            return true;
+
+        for (int i = 0; i < node.nextNodeIds.Count; i++)
+        {
+            if (CanReachType(coordinator, coordinator.GetNode(node.nextNodeIds[i]), targetType, visited))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsCombatNode(MapNodeType nodeType)
+    {
+        return nodeType == MapNodeType.Fight || nodeType == MapNodeType.Miniboss || nodeType == MapNodeType.Boss;
     }
 }

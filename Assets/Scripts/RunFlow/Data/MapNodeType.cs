@@ -7,6 +7,7 @@ namespace RunFlow
         Shop = 2,
         Rest = 3,
         Miniboss = 4,
-        Victory = 5
+        Victory = 5,
+        Boss = 6
     }
 }

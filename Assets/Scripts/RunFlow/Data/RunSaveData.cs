@@ -38,7 +38,24 @@ namespace RunFlow
     public class RunMapStateData
     {
         public string mapTemplateId;
+        public string startNodeId;
+        public List<RunMapNodeData> nodes = new();
         public List<ShopPurchaseStateData> shopPurchaseStates = new();
+
+        public RunMapNodeData FindNode(string nodeId)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId) || nodes == null)
+                return null;
+
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                RunMapNodeData node = nodes[i];
+                if (node != null && node.nodeId == nodeId)
+                    return node;
+            }
+
+            return null;
+        }
 
         public ShopPurchaseStateData GetOrCreateShopState(string nodeId)
         {
@@ -55,6 +72,21 @@ namespace RunFlow
             shopPurchaseStates.Add(created);
             return created;
         }
+    }
+
+    [Serializable]
+    public class RunMapNodeData
+    {
+        public string nodeId;
+        public string displayName;
+        public MapNodeType nodeType;
+        public string encounterId;
+        public string shopInventoryId;
+        public int column;
+        public int lane;
+        public List<string> nextNodeIds = new();
+
+        public string DisplayNameOrFallback => string.IsNullOrWhiteSpace(displayName) ? nodeType.ToString() : displayName;
     }
 
     [Serializable]

@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e7e99368baf4b3bb40e1750a05d04cf, type: 3}
-  m_Name: Enemy B
+  m_Name: Enemy C
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyDef
-  prefab: {fileID: 2232636580848620905, guid: 99f77c6a385bacc44b3ebbe90919c6ba, type: 3}
-  maxHealth: 6
+  prefab: {fileID: 2232636580848620905, guid: e3c5058020cb21544b349fafe4bb0beb, type: 3}
+  maxHealth: 24
   moveSpeed: 2
-  lifeDamage: 1
+  lifeDamage: 2
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
   damageFlashDuration: 0.1
   triggeredEffects: []

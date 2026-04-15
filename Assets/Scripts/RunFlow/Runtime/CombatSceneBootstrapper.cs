@@ -14,6 +14,7 @@ namespace RunFlow
         [SerializeField] private Transform pathAnchor;
 
         [Header("Debug Fallback")]
+        [Tooltip("Assign an encounter here to preview a fight directly in the Combat scene without entering through the run map.")]
         [SerializeField] private EncounterDef debugEncounter;
         [SerializeField] private List<OwnedCard> debugDeck = new();
         [SerializeField] private int debugCurrentHealth = 20;
