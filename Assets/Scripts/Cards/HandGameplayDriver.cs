@@ -50,7 +50,10 @@ namespace Cards
 
             if (battleHUD != null)
             {
-                battleHUD.Initialize(combatSessionDriver != null ? combatSessionDriver.PlayerState : null);
+                battleHUD.Initialize(
+                    combatSessionDriver != null ? combatSessionDriver.PlayerState : null,
+                    combatSessionDriver
+                );
             }
 
             if (cardPreviewController != null)

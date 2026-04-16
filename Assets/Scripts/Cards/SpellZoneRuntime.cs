@@ -89,12 +89,12 @@ namespace Cards
             return true;
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             if (!isInitialized)
                 return;
 
-            float deltaTime = Time.deltaTime;
+            float deltaTime = Time.fixedDeltaTime;
             remainingLifetime -= deltaTime;
             if (remainingLifetime <= 0f)
             {

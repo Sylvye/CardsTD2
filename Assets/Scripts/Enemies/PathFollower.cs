@@ -20,12 +20,12 @@ namespace Enemies
             SnapToPath();
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             if (path is null)
                 return;
 
-            DistanceTravelled += speed * Time.deltaTime;
+            DistanceTravelled += speed * Time.fixedDeltaTime;
             DistanceTravelled = Mathf.Min(DistanceTravelled, path.TotalLength);
 
             SnapToPath();

@@ -89,6 +89,12 @@ namespace Enemies
                 return;
 
             UpdateDamageFlash(Time.deltaTime);
+        }
+
+        private void FixedUpdate()
+        {
+            if (!isInitialized || isDeadOrEscaped || pathFollower == null)
+                return;
 
             if (pathFollower.ReachedEnd)
             {

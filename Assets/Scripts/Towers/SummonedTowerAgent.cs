@@ -50,7 +50,7 @@ namespace Towers
             summonInitialized = true;
         }
 
-        protected override void Update()
+        protected override void FixedUpdate()
         {
             if (!summonInitialized)
                 return;
@@ -61,14 +61,14 @@ namespace Towers
                 return;
             }
 
-            lifetimeRemaining -= Time.deltaTime;
+            lifetimeRemaining -= Time.fixedDeltaTime;
             if (lifetimeRemaining <= 0f)
             {
                 Destroy(gameObject);
                 return;
             }
 
-            base.Update();
+            base.FixedUpdate();
         }
     }
 }

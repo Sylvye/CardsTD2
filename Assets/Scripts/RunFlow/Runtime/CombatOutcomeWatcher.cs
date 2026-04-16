@@ -13,7 +13,7 @@ namespace RunFlow
 
         private bool hasResolved;
 
-        private void Update()
+        private void FixedUpdate()
         {
             if (hasResolved || combatSessionDriver == null || combatSessionDriver.PlayerState == null)
                 return;

@@ -6,6 +6,8 @@ namespace Combat
 {
     public class CombatSessionDriver : MonoBehaviour, IPlayerEffects
     {
+        private static readonly float[] SimulationSpeedMultipliers = { 1f, 2f, 4f };
+
         [Header("Player Setup")]
         [SerializeField] private int defaultStartingMana = 0;
         [SerializeField] private int defaultMaxMana = 20;
@@ -18,8 +20,15 @@ namespace Combat
         private PlayerState playerState;
         private BattleFlowController battleFlowController;
         private CombatSessionSetup sessionSetup;
+        private int currentSimulationSpeedIndex;
 
         public PlayerState PlayerState => playerState;
+        public float CurrentSpeedMultiplier => SimulationSpeedMultipliers[currentSimulationSpeedIndex];
+
+        private void OnEnable()
+        {
+            ResetSimulationSpeed();
+        }
 
         public void ConfigureSession(CombatSessionSetup setup)
         {
@@ -40,13 +49,24 @@ namespace Combat
                 setup.MaxHealth
             );
 
+            ResetSimulationSpeed();
             battleFlowController = new BattleFlowController(playerState, handController);
             battleFlowController.StartBattle(setup.OpeningHandSize);
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
-            battleFlowController?.Update(Time.deltaTime);
+            battleFlowController?.FixedTick(Time.fixedDeltaTime);
+        }
+
+        private void OnDisable()
+        {
+            ResetSimulationSpeed();
+        }
+
+        private void OnDestroy()
+        {
+            ResetSimulationSpeed();
         }
 
         public bool TryManualDraw(HandController handController, int drawCost)
@@ -83,6 +103,12 @@ namespace Combat
             Debug.Log($"Player gained {amount} mana. Current mana: {playerState.CurrentMana}");
         }
 
+        public void CycleSimulationSpeed()
+        {
+            currentSimulationSpeedIndex = (currentSimulationSpeedIndex + 1) % SimulationSpeedMultipliers.Length;
+            ApplySimulationSpeed();
+        }
+
         private CombatSessionSetup BuildDefaultSetup()
         {
             return new CombatSessionSetup
@@ -94,6 +120,17 @@ namespace Combat
                 MaxHealth = defaultMaxHealth,
                 OpeningHandSize = defaultOpeningHandSize
             };
+        }
+
+        private void ResetSimulationSpeed()
+        {
+            currentSimulationSpeedIndex = 0;
+            ApplySimulationSpeed();
+        }
+
+        private void ApplySimulationSpeed()
+        {
+            Time.timeScale = CurrentSpeedMultiplier;
         }
     }
 }

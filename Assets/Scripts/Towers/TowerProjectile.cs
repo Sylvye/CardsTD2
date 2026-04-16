@@ -65,23 +65,17 @@ namespace Towers
                 rb.simulated = true;
         }
 
-        private void Update()
-        {
-            if (!isInitialized)
-                return;
-
-            lifetimeRemaining -= Time.deltaTime;
-            if (lifetimeRemaining <= 0f)
-            {
-                Destroy(gameObject);
-                return;
-            }
-        }
-
         private void FixedUpdate()
         {
             if (!isInitialized)
                 return;
+
+            lifetimeRemaining -= Time.fixedDeltaTime;
+            if (lifetimeRemaining <= 0f)
+            {
+                Expire();
+                return;
+            }
 
             if (followTarget && target != null && !target.IsDeadOrEscaped)
             {

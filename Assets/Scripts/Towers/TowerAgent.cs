@@ -97,14 +97,14 @@ namespace Towers
             previousInRangeEnemies.Clear();
         }
 
-        protected virtual void Update()
+        protected virtual void FixedUpdate()
         {
             if (!isInitialized || isDead)
                 return;
 
             UpdateRangeTriggers();
 
-            float deltaTime = Time.deltaTime;
+            float deltaTime = Time.fixedDeltaTime;
             for (int i = 0; i < attackExecutions.Count; i++)
                 attackExecutions[i].Tick(deltaTime);
         }

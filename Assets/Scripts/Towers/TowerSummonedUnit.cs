@@ -32,19 +32,19 @@ namespace Towers
             isInitialized = true;
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             if (!isInitialized)
                 return;
 
-            lifetimeRemaining -= Time.deltaTime;
+            lifetimeRemaining -= Time.fixedDeltaTime;
             if (lifetimeRemaining <= 0f)
             {
                 Destroy(gameObject);
                 return;
             }
 
-            fireTimer -= Time.deltaTime;
+            fireTimer -= Time.fixedDeltaTime;
             if (fireTimer > 0f || enemyManager == null)
                 return;
 

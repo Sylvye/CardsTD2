@@ -436,6 +436,7 @@ public class RunFlowEditorTests
         HandViewDriver handViewDriver = Object.FindAnyObjectByType<HandViewDriver>();
         EnemySpawner enemySpawner = Object.FindAnyObjectByType<EnemySpawner>();
         EnemyManager enemyManager = Object.FindAnyObjectByType<EnemyManager>();
+        BattleHUD battleHUD = Object.FindAnyObjectByType<BattleHUD>();
         GameObject pathAnchor = GameObject.Find("Path Anchor");
         CombatSceneBootstrapper[] bootstrappers = Object.FindObjectsByType<CombatSceneBootstrapper>();
         CombatOutcomeWatcher[] outcomeWatchers = Object.FindObjectsByType<CombatOutcomeWatcher>();
@@ -444,6 +445,7 @@ public class RunFlowEditorTests
         Assert.NotNull(handViewDriver);
         Assert.NotNull(enemySpawner);
         Assert.NotNull(enemyManager);
+        Assert.NotNull(battleHUD);
         Assert.NotNull(pathAnchor);
         Assert.That(bootstrappers.Length, Is.EqualTo(1));
         Assert.That(outcomeWatchers.Length, Is.EqualTo(1));
@@ -465,6 +467,8 @@ public class RunFlowEditorTests
         Assert.That(GetPrivateField<CombatSessionDriver>(outcomeWatcher, "combatSessionDriver"), Is.EqualTo(combatSessionDriver));
         Assert.That(GetPrivateField<EnemySpawner>(outcomeWatcher, "enemySpawner"), Is.EqualTo(enemySpawner));
         Assert.That(GetPrivateField<EnemyManager>(outcomeWatcher, "enemyManager"), Is.EqualTo(enemyManager));
+        Assert.NotNull(GetPrivateField<Object>(battleHUD, "speedButton"));
+        Assert.NotNull(GetPrivateField<Object>(battleHUD, "speedButtonText"));
         Assert.False(GetPrivateField<bool>(handViewDriver, "autoInitializeOnStart"));
         Assert.False(GetPrivateField<bool>(enemySpawner, "startOnPlay"));
     }

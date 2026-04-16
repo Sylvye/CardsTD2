@@ -19,7 +19,7 @@ namespace Combat
             handController.DrawCards(openingHandSize);
         }
 
-        public void Update(float deltaTime)
+        public void FixedTick(float deltaTime)
         {
             playerState.UpdateMana(deltaTime);
         }

@@ -41,7 +41,7 @@ namespace Enemies
             }
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             if (!isRunning)
                 return;
@@ -49,9 +49,11 @@ namespace Enemies
             if (currentBatchIndex >= spawnQueue.Count)
                 return;
 
+            float deltaTime = Time.fixedDeltaTime;
+
             if (isWaitingBetweenBatches)
             {
-                waitTimer -= Time.deltaTime;
+                waitTimer -= deltaTime;
 
                 if (waitTimer <= 0f)
                 {
@@ -70,7 +72,7 @@ namespace Enemies
                 return;
             }
 
-            spawnTimer -= Time.deltaTime;
+            spawnTimer -= deltaTime;
 
             if (spawnedInCurrentBatch < currentBatch.spawnCount && spawnTimer <= 0f)
             {
