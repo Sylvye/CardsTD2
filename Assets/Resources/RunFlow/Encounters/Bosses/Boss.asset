@@ -18,12 +18,20 @@ MonoBehaviour:
   pathPrefab: {fileID: 222235461983059477, guid: 57c8d953f37782c4580c359284f59da3, type: 3}
   spawnBatches:
   - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
-    spawnCount: 6
-    spawnInterval: 0.75
-    waitTime: 1
+    spawnCount: 12
+    spawnInterval: 0.2
+    waitTime: 0.5
   - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
-    spawnCount: 8
-    spawnInterval: 0.95
+    spawnCount: 6
+    spawnInterval: 0.5
+    waitTime: 0.5
+  - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
+    spawnCount: 12
+    spawnInterval: 0.2
+    waitTime: 2
+  - enemyDef: {fileID: 11400000, guid: 69ed3973e26e43d4cb7047f6e2cad04f, type: 2}
+    spawnCount: 3
+    spawnInterval: 1
     waitTime: 1.25
   rewardPool: {fileID: 11400000, guid: 6f5304e7a01c79941b946c59023f100c, type: 2}
   goldReward: 32

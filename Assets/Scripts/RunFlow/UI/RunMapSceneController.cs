@@ -23,6 +23,7 @@ namespace RunFlow
         private RectTransform mapContent;
         private RectTransform connectionLayer;
         private RectTransform nodeLayer;
+        private string selectedRestAugmentUniqueId;
 
         private void Start()
         {
@@ -60,17 +61,16 @@ namespace RunFlow
 
             RectTransform leftColumn = SimpleUiFactory.CreatePanel(content.transform, "LeftColumn");
             LayoutElement leftLayout = leftColumn.gameObject.AddComponent<LayoutElement>();
-            leftLayout.flexibleWidth = 1.5f;
+            leftLayout.flexibleWidth = 1.35f;
             SimpleUiFactory.AddVerticalLayout(leftColumn, spacing: 12, padding: 24);
 
             RectTransform rightColumn = SimpleUiFactory.CreatePanel(content.transform, "RightColumn");
             LayoutElement rightLayout = rightColumn.gameObject.AddComponent<LayoutElement>();
-            rightLayout.flexibleWidth = 1f;
-            SimpleUiFactory.AddVerticalLayout(rightColumn, spacing: 12, padding: 24);
+            rightLayout.flexibleWidth = 1.15f;
 
             headerText = SimpleUiFactory.CreateText(leftColumn, string.Empty, 30);
             detailText = SimpleUiFactory.CreateText(leftColumn, string.Empty, 22);
-            detailRoot = rightColumn;
+            detailRoot = SimpleUiFactory.CreateScrollContent(rightColumn, "DetailScroll", spacing: 12, padding: 24);
             BuildMapScrollView(leftColumn);
         }
 
@@ -139,6 +139,7 @@ namespace RunFlow
             headerText.text =
                 $"Health: {coordinator.CurrentRun.currentHealth}/{coordinator.CurrentRun.maxHealth}\n" +
                 $"Gold: {coordinator.CurrentRun.gold}\n" +
+                $"Augments: {coordinator.GetOwnedAugments().Count}\n" +
                 $"Meta Currency: {coordinator.Profile.metaCurrency}";
 
             int nodeCount = 0;
@@ -153,6 +154,7 @@ namespace RunFlow
 
             if (coordinator.CurrentRun.pendingReward != null)
             {
+                selectedRestAugmentUniqueId = null;
                 ShowRewardPanel(coordinator);
                 return;
             }
@@ -162,6 +164,7 @@ namespace RunFlow
             {
                 if (currentNode.nodeType == MapNodeType.Shop)
                 {
+                    selectedRestAugmentUniqueId = null;
                     ShowShopPanel(coordinator, currentNode);
                     return;
                 }
@@ -173,6 +176,7 @@ namespace RunFlow
                 }
             }
 
+            selectedRestAugmentUniqueId = null;
             ShowInfoPanel("Select an available node.");
         }
 
@@ -282,6 +286,7 @@ namespace RunFlow
 
             if (node.nodeType == MapNodeType.Shop)
             {
+                selectedRestAugmentUniqueId = null;
                 ShowShopPanel(coordinator, node);
                 RebuildMapGraph(coordinator);
                 return;
@@ -289,6 +294,7 @@ namespace RunFlow
 
             if (node.nodeType == MapNodeType.Rest)
             {
+                selectedRestAugmentUniqueId = null;
                 ShowRestPanel(coordinator, node);
                 RebuildMapGraph(coordinator);
                 return;
@@ -308,19 +314,26 @@ namespace RunFlow
         {
             SimpleUiFactory.ClearChildren(detailRoot);
             SimpleUiFactory.CreateText(detailRoot, "Reward", 28);
-            SimpleUiFactory.CreateText(detailRoot, "Choose one card reward or skip.", 22);
+            SimpleUiFactory.CreateText(detailRoot, "Choose one reward to keep, or skip it.", 22);
 
-            List<CardDef> rewardCards = coordinator.GetPendingRewardCards();
-            for (int i = 0; i < rewardCards.Count; i++)
+            RectTransform rewardsSection = SimpleUiFactory.CreateSection(detailRoot, "RewardChoices");
+            List<PendingRewardEntry> rewards = coordinator.GetPendingRewards();
+            if (rewards.Count == 0)
             {
-                CardDef rewardCard = rewardCards[i];
-                if (rewardCard == null)
+                SimpleUiFactory.CreateText(rewardsSection, "No rewards are available.", 20);
+            }
+
+            for (int i = 0; i < rewards.Count; i++)
+            {
+                PendingRewardEntry rewardEntry = rewards[i];
+                if (!TryGetRewardPresentation(rewardEntry, out Sprite icon, out string title, out string subtitle, out string detail))
                     continue;
 
-                string rewardCardId = GameFlowRoot.Instance.ContentRepository.GetCardId(rewardCard);
-                SimpleUiFactory.CreateButton(detailRoot, $"Take {rewardCard.displayName}", () =>
+                RunRewardType rewardType = rewardEntry.rewardType;
+                string contentId = rewardEntry.contentId;
+                SimpleUiFactory.CreateItemTile(rewardsSection, icon, title, subtitle, detail, () =>
                 {
-                    if (coordinator.ClaimRewardCard(rewardCardId))
+                    if (coordinator.ClaimPendingReward(rewardType, contentId))
                         RefreshUi();
                 });
             }
@@ -337,28 +350,91 @@ namespace RunFlow
             SimpleUiFactory.ClearChildren(detailRoot);
             SimpleUiFactory.CreateText(detailRoot, node.DisplayNameOrFallback, 28);
             SimpleUiFactory.CreateText(detailRoot, "Choose exactly one rest action.", 22);
+            SimpleUiFactory.CreateText(detailRoot, $"Gold: {coordinator.CurrentRun.gold}", 20);
 
-            int healAmount = coordinator.GetRestHealAmount();
-            SimpleUiFactory.CreateButton(detailRoot, $"Heal {healAmount}", () =>
+            OwnedAugment selectedAugment = coordinator.GetOwnedAugment(selectedRestAugmentUniqueId);
+            if (selectedAugment?.Definition != null)
             {
-                coordinator.ApplyRestHeal(node.nodeId);
-                RefreshUi();
-            });
+                ShowRestAugmentTargetPanel(coordinator, node, selectedAugment);
+                return;
+            }
+
+            selectedRestAugmentUniqueId = null;
+
+            RectTransform actionSection = SimpleUiFactory.CreateSection(detailRoot, "RestActions", 10);
+            int healAmount = coordinator.GetRestHealAmount();
+            SimpleUiFactory.CreateItemTile(
+                actionSection,
+                null,
+                $"Heal {healAmount}",
+                "Rest Action",
+                "Recover health and end this rest stop.",
+                () =>
+                {
+                    coordinator.ApplyRestHeal(node.nodeId);
+                    RefreshUi();
+                });
 
             List<OwnedCard> upgradeableCards = coordinator.GetUpgradeableCards();
-            for (int i = 0; i < upgradeableCards.Count; i++)
+            if (upgradeableCards.Count > 0)
             {
-                OwnedCard card = upgradeableCards[i];
-                if (card?.CurrentDefinition == null)
+                SimpleUiFactory.CreateText(detailRoot, "Upgradeable Cards", 24);
+                RectTransform upgradeSection = SimpleUiFactory.CreateSection(detailRoot, "UpgradeableCards", 10);
+                for (int i = 0; i < upgradeableCards.Count; i++)
+                {
+                    OwnedCard card = upgradeableCards[i];
+                    if (card?.CurrentDefinition == null)
+                        continue;
+
+                    string uniqueId = card.UniqueId;
+                    SimpleUiFactory.CreateItemTile(
+                        upgradeSection,
+                        card.CurrentDefinition.icon,
+                        card.CurrentDefinition.displayName,
+                        "Upgrade Card",
+                        GetCardRestDetail(card),
+                        () =>
+                        {
+                            if (coordinator.ApplyRestUpgrade(node.nodeId, uniqueId))
+                                RefreshUi();
+                        });
+                }
+            }
+
+            SimpleUiFactory.CreateText(detailRoot, "Owned Augments", 24);
+            RectTransform augmentSection = SimpleUiFactory.CreateSection(detailRoot, "OwnedAugments", 10);
+            List<OwnedAugment> ownedAugments = coordinator.GetOwnedAugments();
+            if (ownedAugments.Count == 0)
+            {
+                SimpleUiFactory.CreateText(augmentSection, "No augments stored yet.", 20);
+                return;
+            }
+
+            for (int i = 0; i < ownedAugments.Count; i++)
+            {
+                OwnedAugment ownedAugment = ownedAugments[i];
+                if (ownedAugment?.Definition == null)
                     continue;
 
-                string uniqueId = card.UniqueId;
-                string displayName = card.CurrentDefinition.displayName;
-                SimpleUiFactory.CreateButton(detailRoot, $"Upgrade {displayName}", () =>
-                {
-                    if (coordinator.ApplyRestUpgrade(node.nodeId, uniqueId))
+                string uniqueAugmentId = ownedAugment.UniqueId;
+                List<OwnedCard> validTargets = coordinator.GetValidAugmentTargets(uniqueAugmentId);
+                bool hasValidTargets = validTargets.Count > 0;
+                string detail = $"{ownedAugment.Definition.description}\nApply for {Mathf.Max(0, ownedAugment.Definition.applicationCost)} gold.";
+                if (!hasValidTargets)
+                    detail += "\nNo valid cards right now.";
+
+                SimpleUiFactory.CreateItemTile(
+                    augmentSection,
+                    ownedAugment.Definition.icon,
+                    ownedAugment.Definition.displayName,
+                    "Stored Augment",
+                    detail,
+                    () =>
+                    {
+                        selectedRestAugmentUniqueId = uniqueAugmentId;
                         RefreshUi();
-                });
+                    },
+                    interactable: hasValidTargets);
             }
         }
 
@@ -368,10 +444,11 @@ namespace RunFlow
             SimpleUiFactory.CreateText(detailRoot, node.DisplayNameOrFallback, 28);
             SimpleUiFactory.CreateText(detailRoot, $"Gold: {coordinator.CurrentRun.gold}", 22);
 
+            RectTransform offersSection = SimpleUiFactory.CreateSection(detailRoot, "ShopOffers", 10);
             List<ShopOfferData> offers = coordinator.GetAvailableShopOffers(node.nodeId);
             if (offers.Count == 0)
             {
-                SimpleUiFactory.CreateText(detailRoot, "No offers remain. Leave when ready.", 22);
+                SimpleUiFactory.CreateText(offersSection, "No offers remain. Leave when ready.", 22);
             }
 
             for (int i = 0; i < offers.Count; i++)
@@ -380,40 +457,19 @@ namespace RunFlow
                 if (offer == null)
                     continue;
 
-                if (offer.offerType == ShopOfferType.Augment)
-                {
-                    List<OwnedCard> targets = GetAugmentTargets(coordinator.CurrentRun.deck, offer.augment);
-                    if (targets.Count == 0)
-                    {
-                        SimpleUiFactory.CreateText(detailRoot, $"{offer.GetDisplayName()} [{offer.price}] - No valid targets", 20);
-                        continue;
-                    }
-
-                    string offerId = offer.OfferId;
-                    string offerName = offer.GetDisplayName();
-                    int offerPrice = offer.price;
-                    for (int targetIndex = 0; targetIndex < targets.Count; targetIndex++)
-                    {
-                        OwnedCard target = targets[targetIndex];
-                        string targetId = target.UniqueId;
-                        string targetName = target.CurrentDefinition.displayName;
-                        SimpleUiFactory.CreateButton(detailRoot, $"{offerName} -> {targetName} [{offerPrice}]", () =>
-                        {
-                            if (coordinator.TryPurchaseShopOffer(node.nodeId, offerId, targetId))
-                                RefreshUi();
-                        });
-                    }
-
-                    continue;
-                }
-
                 string purchaseOfferId = offer.OfferId;
-                string buttonLabel = $"{offer.GetDisplayName()} [{offer.price}]";
-                SimpleUiFactory.CreateButton(detailRoot, buttonLabel, () =>
-                {
-                    if (coordinator.TryPurchaseShopOffer(node.nodeId, purchaseOfferId))
-                        RefreshUi();
-                });
+                SimpleUiFactory.CreateItemTile(
+                    offersSection,
+                    GetOfferIcon(offer),
+                    offer.GetDisplayName(),
+                    GetOfferSubtitle(offer),
+                    GetOfferDetail(offer),
+                    () =>
+                    {
+                        if (coordinator.TryPurchaseShopOffer(node.nodeId, purchaseOfferId))
+                            RefreshUi();
+                    },
+                    interactable: coordinator.CurrentRun.gold >= offer.price);
             }
 
             SimpleUiFactory.CreateButton(detailRoot, "Leave Shop", () =>
@@ -423,20 +479,163 @@ namespace RunFlow
             });
         }
 
-        private static List<OwnedCard> GetAugmentTargets(List<OwnedCard> deck, CardAugmentDef augment)
+        private void ShowRestAugmentTargetPanel(RunCoordinator coordinator, RunMapNodeData node, OwnedAugment selectedAugment)
         {
-            List<OwnedCard> targets = new();
-            if (deck == null || augment == null)
-                return targets;
+            int applicationCost = Mathf.Max(0, selectedAugment.Definition.applicationCost);
+            bool canAfford = coordinator.CurrentRun.gold >= applicationCost;
 
-            for (int i = 0; i < deck.Count; i++)
+            SimpleUiFactory.CreateText(detailRoot, "Selected Augment", 24);
+            SimpleUiFactory.CreateItemTile(
+                detailRoot,
+                selectedAugment.Definition.icon,
+                selectedAugment.Definition.displayName,
+                "Choose a compatible card",
+                $"{selectedAugment.Definition.description}\nApply for {applicationCost} gold.",
+                null,
+                interactable: false);
+
+            if (!canAfford)
+                SimpleUiFactory.CreateText(detailRoot, $"You need {applicationCost} gold to apply this augment.", 20);
+
+            SimpleUiFactory.CreateButton(detailRoot, "Back", () =>
             {
-                OwnedCard card = deck[i];
-                if (card != null && card.CanApplyAugment(augment))
-                    targets.Add(card);
+                selectedRestAugmentUniqueId = null;
+                RefreshUi();
+            });
+
+            RectTransform targetsSection = SimpleUiFactory.CreateSection(detailRoot, "AugmentTargets", 10);
+            List<OwnedCard> targets = coordinator.GetValidAugmentTargets(selectedAugment.UniqueId);
+            if (targets.Count == 0)
+            {
+                SimpleUiFactory.CreateText(targetsSection, "No cards can take this augment right now.", 20);
+                return;
             }
 
-            return targets;
+            for (int i = 0; i < targets.Count; i++)
+            {
+                OwnedCard card = targets[i];
+                if (card?.CurrentDefinition == null)
+                    continue;
+
+                string cardId = card.UniqueId;
+                string augmentId = selectedAugment.UniqueId;
+                SimpleUiFactory.CreateItemTile(
+                    targetsSection,
+                    card.CurrentDefinition.icon,
+                    card.CurrentDefinition.displayName,
+                    "Compatible Card",
+                    GetCardRestDetail(card),
+                    () =>
+                    {
+                        if (coordinator.ApplyRestAugment(node.nodeId, augmentId, cardId))
+                        {
+                            selectedRestAugmentUniqueId = null;
+                            RefreshUi();
+                        }
+                    },
+                    interactable: canAfford);
+            }
+        }
+
+        private bool TryGetRewardPresentation(PendingRewardEntry rewardEntry, out Sprite icon, out string title, out string subtitle, out string detail)
+        {
+            icon = null;
+            title = null;
+            subtitle = null;
+            detail = null;
+
+            if (rewardEntry == null || GameFlowRoot.Instance == null)
+                return false;
+
+            RunContentRepository contentRepository = GameFlowRoot.Instance.ContentRepository;
+            switch (rewardEntry.rewardType)
+            {
+                case RunRewardType.Card:
+                    CardDef card = contentRepository.GetCardById(rewardEntry.contentId);
+                    if (card == null)
+                        return false;
+
+                    icon = card.icon;
+                    title = card.displayName;
+                    subtitle = "Card Reward";
+                    detail = GetCardRewardDetail(card);
+                    return true;
+
+                case RunRewardType.Augment:
+                    CardAugmentDef augment = contentRepository.GetAugmentById(rewardEntry.contentId);
+                    if (augment == null)
+                        return false;
+
+                    icon = augment.icon;
+                    title = augment.displayName;
+                    subtitle = "Augment Reward";
+                    detail = GetAugmentRewardDetail(augment);
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static Sprite GetOfferIcon(ShopOfferData offer)
+        {
+            return offer?.offerType switch
+            {
+                ShopOfferType.Card => offer.card != null ? offer.card.icon : null,
+                ShopOfferType.Augment => offer.augment != null ? offer.augment.icon : null,
+                _ => null
+            };
+        }
+
+        private static string GetOfferSubtitle(ShopOfferData offer)
+        {
+            return offer?.offerType switch
+            {
+                ShopOfferType.Card => "Card Offer",
+                ShopOfferType.Augment => "Augment Offer",
+                ShopOfferType.Heal => "Shop Service",
+                _ => "Offer"
+            };
+        }
+
+        private static string GetOfferDetail(ShopOfferData offer)
+        {
+            if (offer == null)
+                return string.Empty;
+
+            return offer.offerType switch
+            {
+                ShopOfferType.Card when offer.card != null =>
+                    $"{offer.card.description}\nBuy for {offer.price} gold.",
+                ShopOfferType.Augment when offer.augment != null =>
+                    $"{offer.augment.description}\nBuy for {offer.price} gold. Apply later for {Mathf.Max(0, offer.augment.applicationCost)} gold.",
+                ShopOfferType.Heal =>
+                    $"Recover {offer.healAmount} health for {offer.price} gold.",
+                _ => $"{offer.price} gold"
+            };
+        }
+
+        private static string GetCardRewardDetail(CardDef card)
+        {
+            if (card == null)
+                return string.Empty;
+
+            return $"{card.description}\nMana Cost {card.baseManaCost}";
+        }
+
+        private static string GetAugmentRewardDetail(CardAugmentDef augment)
+        {
+            if (augment == null)
+                return string.Empty;
+
+            return $"{augment.description}\nApply later for {Mathf.Max(0, augment.applicationCost)} gold.";
+        }
+
+        private static string GetCardRestDetail(OwnedCard card)
+        {
+            if (card?.CurrentDefinition == null)
+                return string.Empty;
+
+            return $"Augments {card.AppliedAugments.Count}/{card.GetTotalAugmentSlots()}\n{card.CurrentDefinition.description}";
         }
 
         private static RectTransform CreateLayer(Transform parent, string name)

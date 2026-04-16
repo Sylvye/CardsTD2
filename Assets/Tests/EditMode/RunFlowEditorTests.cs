@@ -9,6 +9,7 @@ using RunFlow;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 public class RunFlowEditorTests
 {
@@ -67,7 +68,8 @@ public class RunFlowEditorTests
         RunMapGenerator generator = new(contentRepository);
         RunMapStateData mapState = generator.Generate(template, 12345);
 
-        OwnedCard firstCard = new(template.startingDeck[0]);
+        CardAugmentDef compatibleAugment = FindCompatibleAugment(template.startingDeck[0]);
+        OwnedCard firstCard = new OwnedCard(template.startingDeck[0], "owned-card-1", compatibleAugment != null ? new[] { compatibleAugment } : null);
         RunSaveData run = new()
         {
             runId = "edit-run",
@@ -75,16 +77,36 @@ public class RunFlowEditorTests
             maxHealth = 20,
             gold = 21,
             deck = new List<OwnedCard> { firstCard },
+            ownedAugments = compatibleAugment != null
+                ? new List<OwnedAugment> { new OwnedAugment(compatibleAugment, "owned-augment-1") }
+                : new List<OwnedAugment>(),
             currentNodeId = mapState.startNodeId,
             completedNodeIds = new List<string> { mapState.startNodeId },
             mapState = mapState,
             pendingReward = new PendingRewardData
             {
                 sourceNodeId = "node-c1-l0",
-                offeredCardIds = new List<string> { contentRepository.GetCardId(template.startingDeck[0]) }
+                entries = new List<PendingRewardEntry>
+                {
+                    new() { rewardType = RunRewardType.Card, contentId = contentRepository.GetCardId(template.startingDeck[0]) }
+                },
+                offeredCardIds = compatibleAugment != null
+                    ? new List<string> { contentRepository.GetCardId(template.startingDeck[0]) }
+                    : new List<string>()
             },
+            queuedNextMapTemplateId = "act_2",
+            endRunAfterPendingReward = false,
             seed = 12345
         };
+
+        if (compatibleAugment != null)
+        {
+            run.pendingReward.entries.Add(new PendingRewardEntry
+            {
+                rewardType = RunRewardType.Augment,
+                contentId = contentRepository.GetAugmentId(compatibleAugment)
+            });
+        }
 
         saveService.SaveRun(run);
         RunSaveData loadedRun = saveService.LoadRun("edit-run");
@@ -99,7 +121,120 @@ public class RunFlowEditorTests
         Assert.That(loadedRun.mapState.nodes[0].nextNodeIds.Count, Is.EqualTo(mapState.nodes[0].nextNodeIds.Count));
         Assert.That(loadedRun.deck.Count, Is.EqualTo(1));
         Assert.That(loadedRun.deck[0].CurrentDefinition, Is.EqualTo(template.startingDeck[0]));
-        Assert.That(loadedRun.pendingReward.offeredCardIds.Count, Is.EqualTo(1));
+        Assert.That(loadedRun.deck[0].AppliedAugments.Count, Is.EqualTo(compatibleAugment != null ? 1 : 0));
+        Assert.That(loadedRun.ownedAugments.Count, Is.EqualTo(compatibleAugment != null ? 1 : 0));
+        Assert.That(loadedRun.pendingReward.entries.Count, Is.EqualTo(compatibleAugment != null ? 2 : 1));
+        Assert.That(loadedRun.queuedNextMapTemplateId, Is.EqualTo("act_2"));
+        Assert.That(loadedRun.endRunAfterPendingReward, Is.False);
+    }
+
+    [Test]
+    public void SaveService_MigratesLegacyCardOnlyRewardsIntoPendingEntries()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        MapTemplateDef template = CreateTemplate();
+        RunMapGenerator generator = new(contentRepository);
+        RunMapStateData mapState = generator.Generate(template, 321);
+
+        RunSaveData run = new()
+        {
+            runId = "legacy-run",
+            currentHealth = 18,
+            maxHealth = 20,
+            gold = 14,
+            deck = new List<OwnedCard> { new(template.startingDeck[0]) },
+            currentNodeId = mapState.startNodeId,
+            completedNodeIds = new List<string> { mapState.startNodeId },
+            mapState = mapState,
+            pendingReward = new PendingRewardData
+            {
+                sourceNodeId = "legacy-node",
+                offeredCardIds = new List<string> { contentRepository.GetCardId(template.startingDeck[0]) }
+            },
+            seed = 321
+        };
+
+        saveService.SaveRun(run);
+        RunSaveData loadedRun = saveService.LoadRun("legacy-run");
+
+        Assert.NotNull(loadedRun.pendingReward);
+        Assert.That(loadedRun.pendingReward.entries.Count, Is.EqualTo(1));
+        Assert.That(loadedRun.pendingReward.entries[0].rewardType, Is.EqualTo(RunRewardType.Card));
+        Assert.That(loadedRun.pendingReward.entries[0].contentId, Is.EqualTo(contentRepository.GetCardId(template.startingDeck[0])));
+    }
+
+    [Test]
+    public void CardRewardPoolDef_ReturnsMixedCardAndAugmentChoices()
+    {
+        MapTemplateDef template = CreateTemplate();
+        CardAugmentDef compatibleAugment = FindCompatibleAugment(template.startingDeck[0]);
+        Assert.NotNull(compatibleAugment);
+
+        CardRewardPoolDef rewardPool = ScriptableObject.CreateInstance<CardRewardPoolDef>();
+        rewardPool.cards = new List<WeightedCardRewardEntry>
+        {
+            new() { card = template.startingDeck[0], weight = 1 }
+        };
+        rewardPool.augments = new List<WeightedAugmentRewardEntry>
+        {
+            new() { augment = compatibleAugment, weight = 1 }
+        };
+        rewardPool.choiceCount = 2;
+
+        List<PendingRewardEntry> choices = rewardPool.GetRandomChoices(11, "mixed-reward");
+        Assert.That(choices.Count, Is.EqualTo(2));
+        Assert.That(choices.Exists(entry => entry.rewardType == RunRewardType.Card && entry.contentId == contentRepository.GetCardId(template.startingDeck[0])), Is.True);
+        Assert.That(choices.Exists(entry => entry.rewardType == RunRewardType.Augment && entry.contentId == contentRepository.GetAugmentId(compatibleAugment)), Is.True);
+    }
+
+    [Test]
+    public void CardRewardPoolDef_IgnoresInvalidEntriesAndAvoidsDuplicateRewards()
+    {
+        MapTemplateDef template = CreateTemplate();
+        CardDef card = template.startingDeck[0];
+        CardAugmentDef compatibleAugment = FindCompatibleAugment(card);
+        Assert.NotNull(compatibleAugment);
+
+        CardRewardPoolDef rewardPool = ScriptableObject.CreateInstance<CardRewardPoolDef>();
+        rewardPool.cards = new List<WeightedCardRewardEntry>
+        {
+            new() { card = card, weight = 10 },
+            new() { card = card, weight = 30 },
+            new() { card = null, weight = 5 },
+            new() { card = template.startingDeck.Count > 1 ? template.startingDeck[1] : null, weight = 0 }
+        };
+        rewardPool.augments = new List<WeightedAugmentRewardEntry>
+        {
+            new() { augment = compatibleAugment, weight = 1 },
+            new() { augment = null, weight = 4 },
+            new() { augment = compatibleAugment, weight = -1 }
+        };
+        rewardPool.choiceCount = 3;
+
+        List<PendingRewardEntry> choices = rewardPool.GetRandomChoices(7, "dedupe");
+        Assert.That(choices.Count, Is.EqualTo(2));
+        Assert.That(CountRewards(choices, RunRewardType.Card, contentRepository.GetCardId(card)), Is.EqualTo(1));
+        Assert.That(CountRewards(choices, RunRewardType.Augment, contentRepository.GetAugmentId(compatibleAugment)), Is.EqualTo(1));
+    }
+
+    [Test]
+    public void ShopInventoryDef_GetRandomOffers_IsDeterministicAndIgnoresZeroWeightOffers()
+    {
+        ShopInventoryDef inventory = ScriptableObject.CreateInstance<ShopInventoryDef>();
+        inventory.choiceCount = 2;
+        inventory.offers = new List<ShopOfferData>
+        {
+            new() { id = "card", displayName = "Card", offerType = ShopOfferType.Card, price = 10, weight = 5 },
+            new() { id = "augment", displayName = "Augment", offerType = ShopOfferType.Augment, price = 12, weight = 1 },
+            new() { id = "heal", displayName = "Heal", offerType = ShopOfferType.Heal, price = 8, healAmount = 4, weight = 0 }
+        };
+
+        List<ShopOfferData> firstRoll = inventory.GetRandomOffers(123, "shop-a");
+        List<ShopOfferData> secondRoll = inventory.GetRandomOffers(123, "shop-a");
+
+        Assert.That(firstRoll.Count, Is.EqualTo(2));
+        CollectionAssert.AreEqual(firstRoll.ConvertAll(offer => offer.OfferId), secondRoll.ConvertAll(offer => offer.OfferId));
+        Assert.That(firstRoll.Exists(offer => offer.OfferId == "heal"), Is.False);
     }
 
     [Test]
@@ -256,6 +391,86 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void RunFlowContent_MapTemplatesLoadFromActsFolderAndHaveUniqueIds()
+    {
+        MapTemplateDef[] templates = Resources.LoadAll<MapTemplateDef>("RunFlow");
+        Dictionary<string, string> namesById = new();
+        int defaultTemplateCount = 0;
+
+        Assert.That(templates.Length, Is.GreaterThanOrEqualTo(3));
+        for (int i = 0; i < templates.Length; i++)
+        {
+            MapTemplateDef template = templates[i];
+            Assert.NotNull(template);
+
+            string templateId = template.TemplateId;
+            Assert.That(string.IsNullOrWhiteSpace(templateId), Is.False, $"Map template '{template.name}' is missing an id.");
+
+            if (namesById.TryGetValue(templateId, out string existingName))
+                Assert.Fail($"Duplicate map template id '{templateId}' found on '{existingName}' and '{template.name}'.");
+
+            namesById[templateId] = template.name;
+            defaultTemplateCount += template.isDefaultStartTemplate ? 1 : 0;
+        }
+
+        Assert.That(defaultTemplateCount, Is.EqualTo(1));
+
+        MapTemplateDef act1 = contentRepository.GetMapTemplateById("act_1");
+        MapTemplateDef act2 = contentRepository.GetMapTemplateById("act_2");
+        MapTemplateDef act3 = contentRepository.GetMapTemplateById("act_3");
+
+        Assert.NotNull(act1);
+        Assert.NotNull(act2);
+        Assert.NotNull(act3);
+        Assert.That(AssetDatabase.GetAssetPath(act1), Does.Contain("Assets/Resources/RunFlow/Acts/"));
+        Assert.That(AssetDatabase.GetAssetPath(act2), Does.Contain("Assets/Resources/RunFlow/Acts/"));
+        Assert.That(AssetDatabase.GetAssetPath(act3), Does.Contain("Assets/Resources/RunFlow/Acts/"));
+        Assert.That(act1.nextActTemplate, Is.EqualTo(act2));
+        Assert.That(act2.nextActTemplate, Is.EqualTo(act3));
+        Assert.That(act3.nextActTemplate, Is.Null);
+    }
+
+    [Test]
+    public void RunContentRepository_GetDefaultMapTemplate_PrefersExplicitDefaultTemplate()
+    {
+        MapTemplateDef defaultTemplate = contentRepository.GetDefaultMapTemplate();
+
+        Assert.NotNull(defaultTemplate);
+        Assert.That(defaultTemplate.TemplateId, Is.EqualTo("act_1"));
+        Assert.That(defaultTemplate.displayName, Is.EqualTo("Act 1"));
+        Assert.True(defaultTemplate.isDefaultStartTemplate);
+    }
+
+    [Test]
+    public void RunContentRepository_SelectDefaultMapTemplate_FallsBackDeterministicallyWhenNoTemplateIsMarkedDefault()
+    {
+        MapTemplateDef laterTemplate = CreateRuntimeTemplate("z_template", "Later Template");
+        MapTemplateDef earlierTemplate = CreateRuntimeTemplate("a_template", "Earlier Template");
+
+        LogAssert.Expect(LogType.Warning, "No map template is marked as the default start template. Using 'a_template'.");
+        MapTemplateDef selectedTemplate = InvokeSelectDefaultMapTemplate(new List<MapTemplateDef> { laterTemplate, earlierTemplate });
+
+        Assert.That(selectedTemplate, Is.EqualTo(earlierTemplate));
+    }
+
+    [Test]
+    public void RunContentRepository_Refresh_WarnsOnDuplicateTemplateIdsAndKeepsDeterministicFirstTemplate()
+    {
+        CreateMapTemplateAsset("AA Duplicate Map Template", "duplicate_map_template", "Duplicate Alpha");
+        CreateMapTemplateAsset("ZZ Duplicate Map Template", "duplicate_map_template", "Duplicate Omega");
+
+        LogAssert.Expect(LogType.Warning, "Duplicate map template id 'duplicate_map_template' found on 'ZZ Duplicate Map Template'. Existing template 'AA Duplicate Map Template' will be kept. Map template ids must be unique.");
+
+        RunContentRepository repository = new();
+        repository.Refresh();
+
+        MapTemplateDef duplicateTemplate = repository.GetMapTemplateById("duplicate_map_template");
+        Assert.NotNull(duplicateTemplate);
+        Assert.That(duplicateTemplate.name, Is.EqualTo("AA Duplicate Map Template"));
+        Assert.That(duplicateTemplate.displayName, Is.EqualTo("Duplicate Alpha"));
+    }
+
+    [Test]
     public void RunMapGenerator_EveryRouteCanReachBoss()
     {
         RunMapGenerator generator = new(contentRepository);
@@ -342,6 +557,114 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void RunCoordinator_BossVictory_QueuesRewardsBeforeTransitioningToNextAct()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        ProfileSaveData profile = new() { activeRunId = "boss-next-act" };
+        saveService.SaveProfile(profile);
+
+        MapTemplateDef act1 = contentRepository.GetMapTemplateById("act_1");
+        Assert.NotNull(act1);
+        Assert.NotNull(act1.nextActTemplate);
+
+        CardDef rewardCard = GetFirstCard();
+        RunSaveData run = CreateBossRun("boss-next-act", act1.TemplateId);
+        int deckCountBeforeReward = run.deck.Count;
+        saveService.SaveRun(run);
+
+        string loadedScene = null;
+        RunCoordinator coordinator = new(saveService, contentRepository, sceneName => loadedScene = sceneName);
+        EncounterDef bossEncounter = CreateBossEncounterWithCardReward(rewardCard, goldReward: 11, metaCurrencyReward: 3);
+
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", bossEncounter, true, 15));
+
+        Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
+        Assert.NotNull(coordinator.CurrentRun);
+        Assert.That(coordinator.CurrentMapTemplate.TemplateId, Is.EqualTo("act_1"));
+        Assert.NotNull(coordinator.CurrentRun.pendingReward);
+        Assert.That(coordinator.CurrentRun.queuedNextMapTemplateId, Is.EqualTo("act_2"));
+        Assert.That(coordinator.CurrentRun.endRunAfterPendingReward, Is.False);
+
+        PendingRewardEntry reward = coordinator.GetPendingRewards()[0];
+        Assert.True(coordinator.ClaimPendingReward(reward.rewardType, reward.contentId));
+
+        Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
+        Assert.NotNull(coordinator.CurrentRun);
+        Assert.That(coordinator.CurrentMapTemplate.TemplateId, Is.EqualTo("act_2"));
+        Assert.That(coordinator.CurrentRun.mapState.mapTemplateId, Is.EqualTo("act_2"));
+        Assert.That(coordinator.CurrentRun.currentHealth, Is.EqualTo(15));
+        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(21));
+        Assert.That(coordinator.CurrentRun.pendingReward, Is.Null);
+        Assert.That(coordinator.CurrentRun.queuedNextMapTemplateId, Is.Null);
+        Assert.That(coordinator.CurrentRun.endRunAfterPendingReward, Is.False);
+        Assert.That(coordinator.CurrentRun.completedNodeIds.Count, Is.EqualTo(1));
+        Assert.That(coordinator.CurrentRun.deck.Count, Is.EqualTo(deckCountBeforeReward + (reward.rewardType == RunRewardType.Card ? 1 : 0)));
+    }
+
+    [Test]
+    public void RunCoordinator_SkipPendingBossReward_AfterReload_TransitionsToNextAct()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        ProfileSaveData profile = new() { activeRunId = "boss-reload" };
+        saveService.SaveProfile(profile);
+
+        MapTemplateDef act1 = contentRepository.GetMapTemplateById("act_1");
+        Assert.NotNull(act1);
+
+        RunSaveData run = CreateBossRun("boss-reload", act1.TemplateId);
+        saveService.SaveRun(run);
+
+        string loadedScene = null;
+        RunCoordinator coordinator = new(saveService, contentRepository, sceneName => loadedScene = sceneName);
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", CreateBossEncounterWithCardReward(GetFirstCard()), true, 16));
+
+        RunCoordinator reloadedCoordinator = new(saveService, contentRepository, sceneName => loadedScene = sceneName);
+        Assert.NotNull(reloadedCoordinator.CurrentRun);
+        Assert.NotNull(reloadedCoordinator.CurrentRun.pendingReward);
+        Assert.That(reloadedCoordinator.CurrentRun.queuedNextMapTemplateId, Is.EqualTo("act_2"));
+
+        reloadedCoordinator.SkipPendingReward();
+
+        Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
+        Assert.NotNull(reloadedCoordinator.CurrentRun);
+        Assert.That(reloadedCoordinator.CurrentMapTemplate.TemplateId, Is.EqualTo("act_2"));
+        Assert.That(reloadedCoordinator.CurrentRun.mapState.mapTemplateId, Is.EqualTo("act_2"));
+        Assert.That(reloadedCoordinator.CurrentRun.pendingReward, Is.Null);
+        Assert.That(reloadedCoordinator.CurrentRun.queuedNextMapTemplateId, Is.Null);
+        Assert.That(reloadedCoordinator.CurrentRun.endRunAfterPendingReward, Is.False);
+    }
+
+    [Test]
+    public void RunCoordinator_FinalBossVictory_WaitsForRewardThenEndsRun()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        ProfileSaveData profile = new() { activeRunId = "boss-final" };
+        saveService.SaveProfile(profile);
+
+        RunSaveData run = CreateBossRun("boss-final", "act_3");
+        string runId = run.runId;
+        saveService.SaveRun(run);
+
+        string loadedScene = null;
+        RunCoordinator coordinator = new(saveService, contentRepository, sceneName => loadedScene = sceneName);
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", CreateBossEncounterWithCardReward(GetFirstCard(), goldReward: 7), true, 12));
+
+        Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
+        Assert.NotNull(coordinator.CurrentRun);
+        Assert.NotNull(coordinator.CurrentRun.pendingReward);
+        Assert.That(coordinator.CurrentRun.queuedNextMapTemplateId, Is.Null);
+        Assert.That(coordinator.CurrentRun.endRunAfterPendingReward, Is.True);
+
+        coordinator.SkipPendingReward();
+
+        Assert.That(loadedScene, Is.EqualTo(SceneNames.MainMenu));
+        Assert.IsNull(coordinator.CurrentRun);
+        Assert.IsNull(saveService.LoadRun(runId));
+        Assert.That(coordinator.Profile.activeRunId, Is.Null);
+        Assert.True(coordinator.Profile.HasUnlock("unlock.first_run_clear"));
+    }
+
+    [Test]
     public void RunFlowProjectSetup_CreateEncounter_PreservesExistingSpawnBatches()
     {
         const string displayName = "Editor Test Encounter";
@@ -355,7 +678,7 @@ public class RunFlowEditorTests
         Assert.NotNull(createEncounter);
 
         GameObject pathPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/RunFlow/Paths/StarterCombatPath 1.prefab");
-        CardRewardPoolDef rewardPool = AssetDatabase.LoadAssetAtPath<CardRewardPoolDef>("Assets/Resources/RunFlow/Rewards/StarterRewardPool.asset");
+        CardRewardPoolDef rewardPool = AssetDatabase.LoadAssetAtPath<CardRewardPoolDef>("Assets/Resources/RunFlow/Rewards/Act 1 Rewards.asset");
         EnemyDef enemyA = AssetDatabase.LoadAssetAtPath<EnemyDef>("Assets/Resources/Combat/Enemies/Definitions/Enemy A.asset");
         EnemyDef enemyB = AssetDatabase.LoadAssetAtPath<EnemyDef>("Assets/Resources/Combat/Enemies/Definitions/Enemy B.asset");
 
@@ -547,6 +870,113 @@ public class RunFlowEditorTests
         return template;
     }
 
+    private string CreateMapTemplateAsset(string assetName, string templateId, string displayName, bool isDefaultStartTemplate = false, MapTemplateDef nextActTemplate = null)
+    {
+        MapTemplateDef template = ScriptableObject.CreateInstance<MapTemplateDef>();
+        template.name = assetName;
+        template.id = templateId;
+        template.displayName = displayName;
+        template.isDefaultStartTemplate = isDefaultStartTemplate;
+        template.nextActTemplate = nextActTemplate;
+        template.totalPlayableNodes = 8;
+        template.maxActivePaths = 3;
+        template.minColumns = 5;
+        template.maxColumns = 6;
+
+        string assetPath = $"Assets/Resources/RunFlow/{assetName}.asset";
+        createdAssetPaths.Add(assetPath);
+        AssetDatabase.CreateAsset(template, assetPath);
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        return assetPath;
+    }
+
+    private static MapTemplateDef CreateRuntimeTemplate(string templateId, string templateName, bool isDefaultStartTemplate = false)
+    {
+        MapTemplateDef template = ScriptableObject.CreateInstance<MapTemplateDef>();
+        template.name = templateName;
+        template.id = templateId;
+        template.displayName = templateName;
+        template.isDefaultStartTemplate = isDefaultStartTemplate;
+        return template;
+    }
+
+    private CardDef GetFirstCard()
+    {
+        foreach (CardDef card in contentRepository.Cards)
+        {
+            if (card != null)
+                return card;
+        }
+
+        Assert.Fail("Expected at least one card definition.");
+        return null;
+    }
+
+    private RunSaveData CreateBossRun(string runId, string templateId)
+    {
+        CardDef card = GetFirstCard();
+        return new RunSaveData
+        {
+            runId = runId,
+            currentHealth = 20,
+            maxHealth = 20,
+            gold = 10,
+            deck = new List<OwnedCard> { new OwnedCard(card, "boss-card-1", null) },
+            ownedAugments = new List<OwnedAugment>(),
+            currentNodeId = "boss-node",
+            completedNodeIds = new List<string>(),
+            mapState = CreateSingleBossMapState(templateId),
+            pendingReward = null,
+            queuedNextMapTemplateId = null,
+            endRunAfterPendingReward = false,
+            seed = 123
+        };
+    }
+
+    private EncounterDef CreateBossEncounterWithCardReward(CardDef rewardCard, int goldReward = 0, int metaCurrencyReward = 0)
+    {
+        CardRewardPoolDef rewardPool = ScriptableObject.CreateInstance<CardRewardPoolDef>();
+        rewardPool.choiceCount = 1;
+        rewardPool.cards = new List<WeightedCardRewardEntry>
+        {
+            new() { card = rewardCard, weight = 1 }
+        };
+
+        EncounterDef encounter = ScriptableObject.CreateInstance<EncounterDef>();
+        encounter.id = "test-boss";
+        encounter.displayName = "Test Boss";
+        encounter.encounterKind = EncounterKind.Boss;
+        encounter.rewardPool = rewardPool;
+        encounter.goldReward = goldReward;
+        encounter.metaCurrencyReward = metaCurrencyReward;
+        return encounter;
+    }
+
+    private CardAugmentDef FindCompatibleAugment(CardDef card)
+    {
+        foreach (CardAugmentDef augment in contentRepository.Augments)
+        {
+            if (augment != null && augment.IsCompatible(card))
+                return augment;
+        }
+
+        return null;
+    }
+
+    private static int CountRewards(List<PendingRewardEntry> rewards, RunRewardType rewardType, string contentId)
+    {
+        int count = 0;
+        for (int i = 0; i < rewards.Count; i++)
+        {
+            PendingRewardEntry reward = rewards[i];
+            if (reward != null && reward.rewardType == rewardType && reward.contentId == contentId)
+                count++;
+        }
+
+        return count;
+    }
+
     private static int CountNodes(RunMapStateData mapState, MapNodeType nodeType)
     {
         int count = 0;
@@ -625,6 +1055,27 @@ public class RunFlowEditorTests
         };
     }
 
+    private static RunMapStateData CreateSingleBossMapState(string templateId)
+    {
+        return new RunMapStateData
+        {
+            mapTemplateId = templateId,
+            startNodeId = "boss-node",
+            nodes = new List<RunMapNodeData>
+            {
+                new()
+                {
+                    nodeId = "boss-node",
+                    displayName = "Boss",
+                    nodeType = MapNodeType.Boss,
+                    column = 0,
+                    lane = 0,
+                    nextNodeIds = new List<string>()
+                }
+            }
+        };
+    }
+
     private static RunMapNodeData AdvanceUntilCombatNode(RunCoordinator coordinator)
     {
         for (int i = 0; i < 12; i++)
@@ -659,5 +1110,12 @@ public class RunFlowEditorTests
         FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
         Assert.NotNull(field, $"Missing field '{fieldName}' on {target.GetType().Name}.");
         return (T)field.GetValue(target);
+    }
+
+    private static MapTemplateDef InvokeSelectDefaultMapTemplate(IReadOnlyList<MapTemplateDef> templates)
+    {
+        MethodInfo method = typeof(RunContentRepository).GetMethod("SelectDefaultMapTemplate", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        return (MapTemplateDef)method.Invoke(null, new object[] { templates });
     }
 }

@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bcac6ccd0c50864cac0d63614e899a9, type: 3}
+  m_Name: Act 1 Shop
+  m_EditorClassIdentifier: Assembly-CSharp::RunFlow.ShopInventoryDef
+  id: act_1_shop
+  displayName: Act 1 Shop
+  choiceCount: 3
+  offers:
+  - id: basic_turret
+    displayName: Buy Basic Turret
+    offerType: 0
+    price: 10
+    card: {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
+    augment: {fileID: 0}
+    healAmount: 0
+    weight: 3
+  - id: basic_turret_PLUS
+    displayName: Buy Basic Turret+
+    offerType: 0
+    price: 25
+    card: {fileID: 11400000, guid: 9597b314491050c4a8d5d3bc6bf627a2, type: 2}
+    augment: {fileID: 0}
+    healAmount: 0
+    weight: 1
+  - id: shotgun_turret
+    displayName: Buy Shotgun Turret
+    offerType: 0
+    price: 10
+    card: {fileID: 11400000, guid: fa75b8567bd9cc34e801c436a36de52e, type: 2}
+    augment: {fileID: 0}
+    healAmount: 0
+    weight: 3
+  - id: shotgun_turret_PLUS
+    displayName: Buy Shotgun Turret+
+    offerType: 0
+    price: 25
+    card: {fileID: 11400000, guid: ecdf9eccd6ca02541bffd4ad1a4fc0a1, type: 2}
+    augment: {fileID: 0}
+    healAmount: 0
+    weight: 1
+  - id: tesla
+    displayName: Buy Tesla
+    offerType: 0
+    price: 10
+    card: {fileID: 11400000, guid: d5f9933d13facd74da7a14618c88b329, type: 2}
+    augment: {fileID: 0}
+    healAmount: 0
+    weight: 3
+  - id: tesla_PLUS
+    displayName: Buy Tesla+
+    offerType: 0
+    price: 25
+    card: {fileID: 11400000, guid: 531c69a24aa7e49e1a2a2700babf351c, type: 2}
+    augment: {fileID: 0}
+    healAmount: 0
+    weight: 1
+  - id: turret_summoner
+    displayName: Buy Turret Summoner
+    offerType: 0
+    price: 15
+    card: {fileID: 11400000, guid: 941482cdfeb3f21408567eb408f47c4d, type: 2}
+    augment: {fileID: 0}
+    healAmount: 0
+    weight: 2

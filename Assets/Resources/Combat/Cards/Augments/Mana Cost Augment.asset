@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: Mana Cost Augment
   description: Card costs -1 mana
   icon: {fileID: 0}
+  applicationCost: 6
   manaCostDelta: -1
   extraAugmentSlots: 0
   additionalCardEffects: []

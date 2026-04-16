@@ -10,9 +10,74 @@ namespace RunFlow
     {
         public string id;
         public string displayName;
+        public int choiceCount = 3;
         public List<ShopOfferData> offers = new();
 
         public string InventoryId => string.IsNullOrWhiteSpace(id) ? name : id;
+
+        public List<ShopOfferData> GetRandomOffers(int seed, string salt)
+        {
+            List<ShopOfferData> availableOffers = GetValidOffers();
+            List<ShopOfferData> selectedOffers = new();
+
+            int desiredCount = Mathf.Clamp(choiceCount, 0, availableOffers.Count);
+            if (desiredCount <= 0)
+                return selectedOffers;
+
+            System.Random random = new(seed ^ (salt != null ? salt.GetHashCode() : 0));
+            for (int i = 0; i < desiredCount; i++)
+            {
+                int selectedIndex = SelectWeightedIndex(availableOffers, random);
+                if (selectedIndex < 0)
+                    break;
+
+                selectedOffers.Add(availableOffers[selectedIndex]);
+                availableOffers.RemoveAt(selectedIndex);
+            }
+
+            return selectedOffers;
+        }
+
+        private List<ShopOfferData> GetValidOffers()
+        {
+            List<ShopOfferData> validOffers = new();
+            if (offers == null)
+                return validOffers;
+
+            for (int i = 0; i < offers.Count; i++)
+            {
+                ShopOfferData offer = offers[i];
+                if (offer != null &&
+                    offer.weight > 0 &&
+                    !string.IsNullOrWhiteSpace(offer.OfferId))
+                {
+                    validOffers.Add(offer);
+                }
+            }
+
+            return validOffers;
+        }
+
+        private static int SelectWeightedIndex(List<ShopOfferData> offers, System.Random random)
+        {
+            int totalWeight = 0;
+            for (int i = 0; i < offers.Count; i++)
+                totalWeight += Mathf.Max(0, offers[i].weight);
+
+            if (totalWeight <= 0)
+                return -1;
+
+            int selectedWeight = random.Next(totalWeight);
+            int runningWeight = 0;
+            for (int i = 0; i < offers.Count; i++)
+            {
+                runningWeight += Mathf.Max(0, offers[i].weight);
+                if (selectedWeight < runningWeight)
+                    return i;
+            }
+
+            return offers.Count - 1;
+        }
     }
 
     [Serializable]
@@ -25,6 +90,7 @@ namespace RunFlow
         public CardDef card;
         public CardAugmentDef augment;
         public int healAmount;
+        public int weight = 1;
 
         public string OfferId => string.IsNullOrWhiteSpace(id) ? displayName : id;
 
@@ -36,7 +102,7 @@ namespace RunFlow
             return offerType switch
             {
                 ShopOfferType.Card when card != null => $"Buy {card.displayName}",
-                ShopOfferType.Augment when augment != null => $"Apply {augment.displayName}",
+                ShopOfferType.Augment when augment != null => $"Buy {augment.displayName}",
                 ShopOfferType.Heal => $"Heal {healAmount}",
                 _ => "Offer"
             };

@@ -95,10 +95,13 @@ namespace RunFlow
                 completedNodeIds = run.completedNodeIds ?? new List<string>(),
                 mapState = run.mapState ?? new RunMapStateData(),
                 pendingReward = run.pendingReward,
+                queuedNextMapTemplateId = run.queuedNextMapTemplateId,
+                endRunAfterPendingReward = run.endRunAfterPendingReward,
                 seed = run.seed
             };
 
             fileData.deck = new List<OwnedCardFileData>();
+            fileData.ownedAugments = new List<OwnedAugmentFileData>();
             if (run.deck != null)
             {
                 for (int i = 0; i < run.deck.Count; i++)
@@ -127,6 +130,26 @@ namespace RunFlow
                 }
             }
 
+            if (run.ownedAugments != null)
+            {
+                for (int i = 0; i < run.ownedAugments.Count; i++)
+                {
+                    OwnedAugment ownedAugment = run.ownedAugments[i];
+                    if (ownedAugment?.Definition == null)
+                        continue;
+
+                    string augmentId = contentRepository.GetAugmentId(ownedAugment.Definition);
+                    if (string.IsNullOrWhiteSpace(augmentId))
+                        continue;
+
+                    fileData.ownedAugments.Add(new OwnedAugmentFileData
+                    {
+                        uniqueId = ownedAugment.UniqueId,
+                        augmentId = augmentId
+                    });
+                }
+            }
+
             return fileData;
         }
 
@@ -142,8 +165,11 @@ namespace RunFlow
                 completedNodeIds = fileData.completedNodeIds ?? new List<string>(),
                 mapState = fileData.mapState ?? new RunMapStateData(),
                 pendingReward = fileData.pendingReward,
+                queuedNextMapTemplateId = fileData.queuedNextMapTemplateId,
+                endRunAfterPendingReward = fileData.endRunAfterPendingReward,
                 seed = fileData.seed,
-                deck = new List<OwnedCard>()
+                deck = new List<OwnedCard>(),
+                ownedAugments = new List<OwnedAugment>()
             };
 
             if (fileData.deck != null)
@@ -173,6 +199,24 @@ namespace RunFlow
                 }
             }
 
+            if (fileData.ownedAugments != null)
+            {
+                for (int i = 0; i < fileData.ownedAugments.Count; i++)
+                {
+                    OwnedAugmentFileData augmentFileData = fileData.ownedAugments[i];
+                    if (augmentFileData == null)
+                        continue;
+
+                    CardAugmentDef definition = contentRepository.GetAugmentById(augmentFileData.augmentId);
+                    if (definition == null)
+                        continue;
+
+                    run.ownedAugments.Add(new OwnedAugment(definition, augmentFileData.uniqueId));
+                }
+            }
+
+            run.pendingReward?.MigrateLegacyEntries();
+
             return run;
         }
 
@@ -184,10 +228,13 @@ namespace RunFlow
             public int maxHealth;
             public int gold;
             public List<OwnedCardFileData> deck = new();
+            public List<OwnedAugmentFileData> ownedAugments = new();
             public string currentNodeId;
             public List<string> completedNodeIds = new();
             public RunMapStateData mapState = new();
             public PendingRewardData pendingReward;
+            public string queuedNextMapTemplateId;
+            public bool endRunAfterPendingReward;
             public int seed;
         }
 
@@ -197,6 +244,13 @@ namespace RunFlow
             public string uniqueId;
             public string cardId;
             public List<string> augmentIds = new();
+        }
+
+        [Serializable]
+        private class OwnedAugmentFileData
+        {
+            public string uniqueId;
+            public string augmentId;
         }
     }
 }

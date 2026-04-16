@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Cards;
 using UnityEngine;
@@ -9,6 +10,7 @@ namespace RunFlow
         private readonly Dictionary<string, CardDef> cardsById = new();
         private readonly Dictionary<string, CardAugmentDef> augmentsById = new();
         private readonly Dictionary<string, MapTemplateDef> mapTemplatesById = new();
+        private readonly List<MapTemplateDef> mapTemplates = new();
         private readonly Dictionary<string, EncounterDef> encountersById = new();
         private readonly Dictionary<string, EncounterPoolDef> encounterPoolsById = new();
         private readonly Dictionary<string, CardRewardPoolDef> rewardPoolsById = new();
@@ -17,12 +19,14 @@ namespace RunFlow
         private bool isLoaded;
 
         public IReadOnlyCollection<CardDef> Cards => cardsById.Values;
+        public IReadOnlyCollection<CardAugmentDef> Augments => augmentsById.Values;
 
         public void Refresh()
         {
             cardsById.Clear();
             augmentsById.Clear();
             mapTemplatesById.Clear();
+            mapTemplates.Clear();
             encountersById.Clear();
             encounterPoolsById.Clear();
             rewardPoolsById.Clear();
@@ -78,14 +82,7 @@ namespace RunFlow
         public MapTemplateDef GetDefaultMapTemplate()
         {
             EnsureLoaded();
-
-            if (mapTemplatesById.TryGetValue("starter-map", out MapTemplateDef starterMap))
-                return starterMap;
-
-            foreach (MapTemplateDef template in mapTemplatesById.Values)
-                return template;
-
-            return null;
+            return SelectDefaultMapTemplate(mapTemplates);
         }
 
         public string GetCardId(CardDef card)
@@ -117,7 +114,7 @@ namespace RunFlow
         {
             EnsureLoaded();
 
-            if (shopInventoriesById.TryGetValue("starter-shop", out ShopInventoryDef starterShop))
+            if (shopInventoriesById.TryGetValue("act_1_shop", out ShopInventoryDef starterShop))
                 return starterShop;
 
             foreach (ShopInventoryDef inventory in shopInventoriesById.Values)
@@ -172,13 +169,32 @@ namespace RunFlow
 
         private void LoadMapTemplates()
         {
-            MapTemplateDef[] templates = Resources.LoadAll<MapTemplateDef>("RunFlow/Maps");
+            MapTemplateDef[] templates = Resources.LoadAll<MapTemplateDef>("RunFlow");
+            Array.Sort(templates, CompareMapTemplates);
             for (int i = 0; i < templates.Length; i++)
             {
                 MapTemplateDef template = templates[i];
-                if (template != null)
-                    mapTemplatesById[template.TemplateId] = template;
+                if (template == null)
+                    continue;
+
+                string templateId = template.TemplateId;
+                if (string.IsNullOrWhiteSpace(templateId))
+                {
+                    Debug.LogWarning($"Map template '{template.name}' is missing an id and will be ignored. Map template ids must be set explicitly.");
+                    continue;
+                }
+
+                if (mapTemplatesById.TryGetValue(templateId, out MapTemplateDef existingTemplate))
+                {
+                    Debug.LogWarning($"Duplicate map template id '{templateId}' found on '{template.name}'. Existing template '{existingTemplate.name}' will be kept. Map template ids must be unique.");
+                    continue;
+                }
+
+                mapTemplatesById[templateId] = template;
+                mapTemplates.Add(template);
             }
+
+            mapTemplates.Sort(CompareMapTemplates);
         }
 
         private void LoadEncounters()
@@ -247,6 +263,63 @@ namespace RunFlow
                 if (inventory != null)
                     shopInventoriesById[inventory.InventoryId] = inventory;
             }
+        }
+
+        private static MapTemplateDef SelectDefaultMapTemplate(IReadOnlyList<MapTemplateDef> templates)
+        {
+            if (templates == null || templates.Count == 0)
+                return null;
+
+            List<MapTemplateDef> sortedTemplates = new();
+            for (int i = 0; i < templates.Count; i++)
+            {
+                if (templates[i] != null)
+                    sortedTemplates.Add(templates[i]);
+            }
+
+            if (sortedTemplates.Count == 0)
+                return null;
+
+            sortedTemplates.Sort(CompareMapTemplates);
+
+            List<MapTemplateDef> defaultTemplates = new();
+            for (int i = 0; i < sortedTemplates.Count; i++)
+            {
+                MapTemplateDef template = sortedTemplates[i];
+                if (template.isDefaultStartTemplate)
+                    defaultTemplates.Add(template);
+            }
+
+            if (defaultTemplates.Count == 1)
+                return defaultTemplates[0];
+
+            if (defaultTemplates.Count > 1)
+            {
+                defaultTemplates.Sort(CompareMapTemplates);
+                Debug.LogWarning($"Multiple map templates are marked as default start templates. Using '{defaultTemplates[0].TemplateId}'.");
+                return defaultTemplates[0];
+            }
+
+            Debug.LogWarning($"No map template is marked as the default start template. Using '{sortedTemplates[0].TemplateId}'.");
+            return sortedTemplates[0];
+        }
+
+        private static int CompareMapTemplates(MapTemplateDef left, MapTemplateDef right)
+        {
+            if (ReferenceEquals(left, right))
+                return 0;
+
+            if (left == null)
+                return 1;
+
+            if (right == null)
+                return -1;
+
+            int idComparison = string.Compare(left.TemplateId, right.TemplateId, StringComparison.Ordinal);
+            if (idComparison != 0)
+                return idComparison;
+
+            return string.Compare(left.name, right.name, StringComparison.Ordinal);
         }
     }
 }

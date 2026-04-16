@@ -12,10 +12,13 @@ namespace RunFlow
         public int maxHealth;
         public int gold;
         public List<OwnedCard> deck = new();
+        public List<OwnedAugment> ownedAugments = new();
         public string currentNodeId;
         public List<string> completedNodeIds = new();
         public RunMapStateData mapState = new();
         public PendingRewardData pendingReward;
+        public string queuedNextMapTemplateId;
+        public bool endRunAfterPendingReward;
         public int seed;
 
         public bool HasCompletedNode(string nodeId)
@@ -117,6 +120,39 @@ namespace RunFlow
     public class PendingRewardData
     {
         public string sourceNodeId;
+        public List<PendingRewardEntry> entries = new();
         public List<string> offeredCardIds = new();
+
+        public void MigrateLegacyEntries()
+        {
+            entries ??= new List<PendingRewardEntry>();
+            if (entries.Count > 0 || offeredCardIds == null || offeredCardIds.Count == 0)
+                return;
+
+            for (int i = 0; i < offeredCardIds.Count; i++)
+            {
+                if (string.IsNullOrWhiteSpace(offeredCardIds[i]))
+                    continue;
+
+                entries.Add(new PendingRewardEntry
+                {
+                    rewardType = RunRewardType.Card,
+                    contentId = offeredCardIds[i]
+                });
+            }
+        }
+    }
+
+    [Serializable]
+    public class PendingRewardEntry
+    {
+        public RunRewardType rewardType;
+        public string contentId;
+    }
+
+    public enum RunRewardType
+    {
+        Card = 0,
+        Augment = 1
     }
 }

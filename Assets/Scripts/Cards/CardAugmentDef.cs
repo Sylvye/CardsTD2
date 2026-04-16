@@ -14,6 +14,7 @@ namespace Cards
         public Sprite icon;
 
         [Header("Card Modifiers")]
+        public int applicationCost = 6;
         public int manaCostDelta;
         public int extraAugmentSlots;
         public List<CardEffectData> additionalCardEffects = new();

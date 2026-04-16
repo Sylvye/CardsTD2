@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3a4d538d0fe4fd0a1a30b0ce6895f55, type: 3}
   m_Name: Boss Pool
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.EncounterPoolDef
-  id: starter-boss-pool
-  displayName: Boss Pool
+  id: act_1_bosses
+  displayName: Act 1 Bosses
   encounters:
   - encounter: {fileID: 11400000, guid: 7c5a4f1b6a9d42a5941fe9d8d78e2a44, type: 2}
     weight: 1

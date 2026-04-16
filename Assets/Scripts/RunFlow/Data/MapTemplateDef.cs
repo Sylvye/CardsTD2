@@ -9,7 +9,9 @@ namespace RunFlow
     public class MapTemplateDef : ScriptableObject
     {
         public string id;
+        public bool isDefaultStartTemplate;
         public string displayName;
+        public MapTemplateDef nextActTemplate;
         public MapNodeDef startNode;
         public List<MapNodeDef> nodes = new();
         public List<CardDef> startingDeck = new();
@@ -26,7 +28,7 @@ namespace RunFlow
         public List<NodeTypeGenerationRule> nodeTypeRules = new();
         public List<NodeEncounterPoolBinding> nodeEncounterPools = new();
 
-        public string TemplateId => string.IsNullOrWhiteSpace(id) ? name : id;
+        public string TemplateId => string.IsNullOrWhiteSpace(id) ? null : id.Trim();
 
         public MapNodeDef FindNode(string nodeId)
         {
@@ -75,6 +77,7 @@ namespace RunFlow
 
         private void OnValidate()
         {
+            id = string.IsNullOrWhiteSpace(id) ? string.Empty : id.Trim();
             totalPlayableNodes = Mathf.Max(1, totalPlayableNodes);
             maxActivePaths = Mathf.Max(1, maxActivePaths);
             minColumns = Mathf.Max(1, minColumns);

@@ -39,7 +39,7 @@ public static class RunFlowProjectSetup
         if (upgradedStarterCard != null && !cards.Contains(upgradedStarterCard))
             cards.Add(upgradedStarterCard);
 
-        CardRewardPoolDef rewardPool = CreateRewardPool(cards);
+        CardRewardPoolDef rewardPool = CreateRewardPool(cards, augments);
         ShopInventoryDef shopInventory = CreateShopInventory(cards, augments);
         EncounterDef regularFightA = CreateEncounter("regular-fight-a", "Regular Fight I", EncounterKind.RegularFight, pathPrefab, enemies, rewardPool, 10, 1, 4, 0);
         EncounterDef regularFightB = CreateEncounter("regular-fight-b", "Regular Fight II", EncounterKind.RegularFight, pathPrefab, enemies, rewardPool, 12, 1, 6, 0);
@@ -112,13 +112,45 @@ public static class RunFlowProjectSetup
         return assets;
     }
 
-    private static CardRewardPoolDef CreateRewardPool(List<CardDef> cards)
+    private static CardRewardPoolDef CreateRewardPool(List<CardDef> cards, List<CardAugmentDef> augments)
     {
         CardRewardPoolDef rewardPool = LoadOrCreateAsset<CardRewardPoolDef>($"{RewardsPath}/StarterRewardPool.asset");
         rewardPool.id = "starter-reward-pool";
         rewardPool.displayName = "Starter Reward Pool";
-        rewardPool.choiceCount = Mathf.Min(3, cards.Count);
-        rewardPool.cards = new List<CardDef>(cards);
+        rewardPool.choiceCount = Mathf.Min(3, (cards?.Count ?? 0) + (augments?.Count ?? 0));
+        rewardPool.cards = new List<WeightedCardRewardEntry>();
+        rewardPool.augments = new List<WeightedAugmentRewardEntry>();
+
+        if (cards != null)
+        {
+            for (int i = 0; i < cards.Count; i++)
+            {
+                if (cards[i] == null)
+                    continue;
+
+                rewardPool.cards.Add(new WeightedCardRewardEntry
+                {
+                    card = cards[i],
+                    weight = 1
+                });
+            }
+        }
+
+        if (augments != null)
+        {
+            for (int i = 0; i < augments.Count; i++)
+            {
+                if (augments[i] == null)
+                    continue;
+
+                rewardPool.augments.Add(new WeightedAugmentRewardEntry
+                {
+                    augment = augments[i],
+                    weight = 1
+                });
+            }
+        }
+
         EditorUtility.SetDirty(rewardPool);
         return rewardPool;
     }
@@ -128,6 +160,7 @@ public static class RunFlowProjectSetup
         ShopInventoryDef shop = LoadOrCreateAsset<ShopInventoryDef>($"{ShopsPath}/StarterShop.asset");
         shop.id = "starter-shop";
         shop.displayName = "Starter Shop";
+        shop.choiceCount = 3;
         shop.offers = new List<ShopOfferData>();
 
         CardDef cardOffer = cards.Count > 0 ? cards[cards.Count - 1] : null;
@@ -139,16 +172,18 @@ public static class RunFlowProjectSetup
             displayName = cardOffer != null ? $"Buy {cardOffer.displayName}" : "Buy Card",
             offerType = ShopOfferType.Card,
             price = 18,
-            card = cardOffer
+            card = cardOffer,
+            weight = 1
         });
 
         shop.offers.Add(new ShopOfferData
         {
             id = "shop-augment",
-            displayName = augmentOffer != null ? $"Apply {augmentOffer.displayName}" : "Apply Augment",
+            displayName = augmentOffer != null ? $"Buy {augmentOffer.displayName}" : "Buy Augment",
             offerType = ShopOfferType.Augment,
             price = 12,
-            augment = augmentOffer
+            augment = augmentOffer,
+            weight = 1
         });
 
         shop.offers.Add(new ShopOfferData
@@ -157,7 +192,8 @@ public static class RunFlowProjectSetup
             displayName = "Recover 6 Health",
             offerType = ShopOfferType.Heal,
             price = 8,
-            healAmount = 6
+            healAmount = 6,
+            weight = 1
         });
 
         EditorUtility.SetDirty(shop);

@@ -10,10 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 445e8968b62d55a4abcd70f27fb1b343, type: 3}
-  m_Name: StarterMap
+  m_Name: Act 2
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.MapTemplateDef
-  id: starter-map
-  displayName: Starter Act
+  id: act_2
+  isDefaultStartTemplate: 0
+  displayName: Act 2
+  nextActTemplate: {fileID: 11400000, guid: 044d24d52bef34d36adace1a1c8673b7, type: 2}
   startNode: {fileID: 11400000, guid: 57f1f9052a042a0469aff2b198f37db7, type: 2}
   nodes: []
   startingDeck:
@@ -26,33 +28,33 @@ MonoBehaviour:
   startingHealth: 20
   maxHealth: 20
   startingGold: 0
-  totalPlayableNodes: 24
-  maxActivePaths: 5
-  minColumns: 8
+  totalPlayableNodes: 36
+  maxActivePaths: 4
+  minColumns: 10
   maxColumns: 12
-  branchChance: 0.6
-  mergeChance: 0.6
+  branchChance: 0.5
+  mergeChance: 0.5
   defaultShopInventory: {fileID: 11400000, guid: 4aa76f3f89e7fde4a9bd0b6e57e177f6, type: 2}
   nodeTypeRules:
   - nodeType: 1
-    weight: 60
-    minCount: 0
+    weight: 10
+    minCount: 12
     maxCount: -1
   - nodeType: 3
-    weight: 20
-    minCount: 1
-    maxCount: 2
+    weight: 6
+    minCount: 4
+    maxCount: 8
   - nodeType: 2
-    weight: 15
-    minCount: 1
-    maxCount: 2
+    weight: 3
+    minCount: 2
+    maxCount: 3
   - nodeType: 4
-    weight: 5
+    weight: 3
     minCount: 1
-    maxCount: 1
+    maxCount: 5
   nodeEncounterPools:
   - nodeType: 1
-    encounterPool: {fileID: 11400000, guid: 6b0e9a0dbf954c17a44d5bc6614ee111, type: 2}
+    encounterPool: {fileID: 11400000, guid: 4dd41b9f48b5afe4a89e4e6418d8ae1e, type: 2}
   - nodeType: 4
     encounterPool: {fileID: 11400000, guid: 44820f7f707841c6a9e03df7a6e98b22, type: 2}
   - nodeType: 6

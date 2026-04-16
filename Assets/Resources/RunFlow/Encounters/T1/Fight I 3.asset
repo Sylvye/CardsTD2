@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0983a4d4b8c710e4eb72b596083f89d3, type: 3}
   m_Name: Fight I 3
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.EncounterDef
-  id: regular-fight-a-3
+  id: fight_1c
   displayName: Regular Fight I
   encounterKind: 0
   pathPrefab: {fileID: 222235461983059477, guid: 9d6ce8af8ce7d504d95214d8c07e1612, type: 3}
@@ -34,5 +34,5 @@ MonoBehaviour:
     spawnInterval: 1
     waitTime: 1
   rewardPool: {fileID: 11400000, guid: 6f5304e7a01c79941b946c59023f100c, type: 2}
-  goldReward: 15
+  goldReward: 10
   metaCurrencyReward: 1

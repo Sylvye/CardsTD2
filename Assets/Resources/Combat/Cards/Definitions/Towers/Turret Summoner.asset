@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d2fe7064acd5794c94ba169cf2a4e68, type: 3}
   m_Name: Turret Summoner
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardDef
-  id: F
+  id: turret_summoner
   displayName: Turret Summoner
   icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
   type: 0

@@ -10,19 +10,30 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 00f136f54bd014d68a6cd8bdb9d37b1e, type: 3}
-  m_Name: Attack Speed Augment
+  m_Name: Projectile Augment
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardAugmentDef
-  id: attack_speed_aug
-  displayName: Attack Speed Augment
-  description: Makes towers attack faster
+  id: projectile_aug
+  displayName: Projectile Augment
+  description: Adds +1 projectile
   icon: {fileID: 0}
   applicationCost: 6
   manaCostDelta: 0
   extraAugmentSlots: 0
   additionalCardEffects: []
-  additionalTowerModifiers:
-  - {fileID: 11400000, guid: 8248dc53ce966bf4288aa6fb75f661ce, type: 2}
-  towerAttackModifiers: []
+  additionalTowerModifiers: []
+  towerAttackModifiers:
+  - attackNameContains: 
+    projectileCountDelta: 1
+    damageBonusDelta: 0
+    pierceDelta: 0
+    degreesSpreadDelta: 0
+    projectileSpeedDelta: 0
+    projectileLifetimeDelta: 0
+    flatDamageBonusDelta: 0
+    damageMultiplierDelta: 0
+    maxActiveSummonsDelta: 0
+    spawnRadiusDelta: 0
+    summonLifetimeDelta: 0
   additionalSpellEffects: []
   allowedCardTypes: 00000000
   allowedFamilyIds: []

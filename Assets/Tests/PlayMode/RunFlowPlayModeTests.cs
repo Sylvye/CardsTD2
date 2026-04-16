@@ -52,7 +52,7 @@ public class RunFlowPlayModeTests
         yield return WaitForScene(SceneNames.RunMap);
 
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
-        Assert.That(coordinator.GetPendingRewardCards().Count, Is.GreaterThan(0));
+        Assert.That(coordinator.GetPendingRewards().Count, Is.GreaterThan(0));
     }
 
     [UnityTest]
@@ -95,12 +95,62 @@ public class RunFlowPlayModeTests
         ShopOfferData offer = offers.Find(candidate => candidate.offerType != ShopOfferType.Augment);
         Assert.NotNull(offer);
 
+        coordinator.CurrentRun.gold = Mathf.Max(coordinator.CurrentRun.gold, offer.price);
         int goldBefore = coordinator.CurrentRun.gold;
         Assert.True(coordinator.TryPurchaseShopOffer(shopNode.nodeId, offer.OfferId));
         Assert.Less(coordinator.CurrentRun.gold, goldBefore);
 
         yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
         Assert.That(coordinator.GetAvailableShopOffers(shopNode.nodeId).Count, Is.EqualTo(offers.Count - 1));
+    }
+
+    [UnityTest]
+    public IEnumerator ShopOffers_AreDeterministicAndRespectConfiguredSubset()
+    {
+        yield return ConfigureRuntime("ShopSubsetDeterminism");
+
+        RunCoordinator coordinator = GameFlowRoot.Instance.Coordinator;
+        RunContentRepository repository = GameFlowRoot.Instance.ContentRepository;
+        coordinator.StartNewRun();
+        yield return WaitForScene(SceneNames.RunMap);
+
+        RunMapNodeData shopNode = null;
+        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Shop, node => shopNode = node);
+        Assert.NotNull(shopNode);
+
+        ShopInventoryDef inventory = repository.GetShopInventoryById(shopNode.shopInventoryId);
+        Assert.NotNull(inventory);
+
+        int originalChoiceCount = inventory.choiceCount;
+        List<ShopOfferData> originalOffers = new(inventory.offers);
+
+        try
+        {
+            ShopOfferData originalCard = FindFirstCardOffer(originalOffers);
+            ShopOfferData originalAugment = FindFirstAugmentOffer(originalOffers);
+            Assert.NotNull(originalCard);
+            Assert.NotNull(originalAugment);
+
+            inventory.choiceCount = 2;
+            inventory.offers = new List<ShopOfferData>
+            {
+                new() { id = "weighted-card", displayName = "Weighted Card", offerType = ShopOfferType.Card, price = 9, card = originalCard.card, weight = 10 },
+                new() { id = "weighted-augment", displayName = "Weighted Augment", offerType = ShopOfferType.Augment, price = 11, augment = originalAugment.augment, weight = 3 },
+                new() { id = "weighted-heal", displayName = "Weighted Heal", offerType = ShopOfferType.Heal, price = 7, healAmount = 5, weight = 0 }
+            };
+
+            List<ShopOfferData> firstRoll = coordinator.GetAvailableShopOffers(shopNode.nodeId);
+            List<ShopOfferData> secondRoll = coordinator.GetAvailableShopOffers(shopNode.nodeId);
+
+            Assert.That(firstRoll.Count, Is.EqualTo(2));
+            CollectionAssert.AreEqual(firstRoll.ConvertAll(offer => offer.OfferId), secondRoll.ConvertAll(offer => offer.OfferId));
+            Assert.That(firstRoll.Exists(offer => offer.OfferId == "weighted-heal"), Is.False);
+        }
+        finally
+        {
+            inventory.choiceCount = originalChoiceCount;
+            inventory.offers = originalOffers;
+        }
     }
 
     [UnityTest]
@@ -135,23 +185,254 @@ public class RunFlowPlayModeTests
     }
 
     [UnityTest]
-    public IEnumerator BossVictory_EndsRunAtMainMenu()
+    public IEnumerator ShopAugmentPurchase_AddsOwnedAugmentAndPersistsAcrossSceneReload()
     {
-        yield return ConfigureRuntime("BossVictory");
+        yield return ConfigureRuntime("ShopAugmentPersistence");
 
         RunCoordinator coordinator = GameFlowRoot.Instance.Coordinator;
         coordinator.StartNewRun();
         yield return WaitForScene(SceneNames.RunMap);
 
-        RunMapNodeData bossNode = null;
-        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Boss, node => bossNode = node);
-        Assert.NotNull(bossNode);
+        RunMapNodeData shopNode = null;
+        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Shop, node => shopNode = node);
+        Assert.NotNull(shopNode);
 
-        coordinator.SelectNode(bossNode.nodeId);
+        coordinator.SelectNode(shopNode.nodeId);
+        yield return null;
+
+        List<ShopOfferData> offers = coordinator.GetAvailableShopOffers(shopNode.nodeId);
+        ShopOfferData augmentOffer = offers.Find(candidate => candidate.offerType == ShopOfferType.Augment);
+        Assert.NotNull(augmentOffer);
+
+        coordinator.CurrentRun.gold = Mathf.Max(coordinator.CurrentRun.gold, augmentOffer.price);
+        int goldBefore = coordinator.CurrentRun.gold;
+        int ownedAugmentCountBefore = coordinator.GetOwnedAugments().Count;
+        Assert.True(coordinator.TryPurchaseShopOffer(shopNode.nodeId, augmentOffer.OfferId));
+        Assert.That(coordinator.GetOwnedAugments().Count, Is.EqualTo(ownedAugmentCountBefore + 1));
+        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(goldBefore - augmentOffer.price));
+
+        yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
+        Assert.That(coordinator.GetOwnedAugments().Count, Is.EqualTo(ownedAugmentCountBefore + 1));
+    }
+
+    [UnityTest]
+    public IEnumerator ShopPurchase_RejectsOffersOutsideRolledSubset()
+    {
+        yield return ConfigureRuntime("ShopRejectsHiddenOffer");
+
+        RunCoordinator coordinator = GameFlowRoot.Instance.Coordinator;
+        RunContentRepository repository = GameFlowRoot.Instance.ContentRepository;
+        coordinator.StartNewRun();
+        yield return WaitForScene(SceneNames.RunMap);
+
+        RunMapNodeData shopNode = null;
+        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Shop, node => shopNode = node);
+        Assert.NotNull(shopNode);
+
+        ShopInventoryDef inventory = repository.GetShopInventoryById(shopNode.shopInventoryId);
+        Assert.NotNull(inventory);
+
+        int originalChoiceCount = inventory.choiceCount;
+        List<ShopOfferData> originalOffers = new(inventory.offers);
+
+        try
+        {
+            ShopOfferData originalCard = FindFirstCardOffer(originalOffers);
+            ShopOfferData originalAugment = FindFirstAugmentOffer(originalOffers);
+            Assert.NotNull(originalCard);
+            Assert.NotNull(originalAugment);
+
+            inventory.choiceCount = 1;
+            inventory.offers = new List<ShopOfferData>
+            {
+                new()
+                {
+                    id = "visible-offer",
+                    displayName = "Visible Offer",
+                    offerType = ShopOfferType.Card,
+                    price = 18,
+                    card = originalCard.card,
+                    weight = 100
+                },
+                new()
+                {
+                    id = "hidden-offer",
+                    displayName = "Hidden Offer",
+                    offerType = ShopOfferType.Augment,
+                    price = 12,
+                    augment = originalAugment.augment,
+                    weight = 1
+                }
+            };
+
+            coordinator.SelectNode(shopNode.nodeId);
+            yield return null;
+
+            List<ShopOfferData> offers = coordinator.GetAvailableShopOffers(shopNode.nodeId);
+            Assert.That(offers.Count, Is.EqualTo(1));
+            Assert.That(offers[0].OfferId, Is.EqualTo("visible-offer"));
+
+            coordinator.CurrentRun.gold = Mathf.Max(coordinator.CurrentRun.gold, 100);
+            Assert.False(coordinator.TryPurchaseShopOffer(shopNode.nodeId, "hidden-offer"));
+            Assert.True(coordinator.TryPurchaseShopOffer(shopNode.nodeId, "visible-offer"));
+        }
+        finally
+        {
+            inventory.choiceCount = originalChoiceCount;
+            inventory.offers = originalOffers;
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator ClaimPendingAugmentReward_AddsOwnedAugment()
+    {
+        yield return ConfigureRuntime("PendingAugmentReward");
+
+        RunCoordinator coordinator = GameFlowRoot.Instance.Coordinator;
+        RunContentRepository repository = GameFlowRoot.Instance.ContentRepository;
+        coordinator.StartNewRun();
+        yield return WaitForScene(SceneNames.RunMap);
+
+        CardAugmentDef augment = FindCompatibleAugment(repository, coordinator.CurrentRun.deck, out _);
+        Assert.NotNull(augment);
+
+        string augmentId = repository.GetAugmentId(augment);
+        coordinator.CurrentRun.pendingReward = new PendingRewardData
+        {
+            sourceNodeId = "test-node",
+            entries = new List<PendingRewardEntry>
+            {
+                new() { rewardType = RunRewardType.Augment, contentId = augmentId }
+            }
+        };
+
+        Assert.True(coordinator.ClaimPendingReward(RunRewardType.Augment, augmentId));
+        Assert.That(coordinator.GetOwnedAugments().Exists(entry => entry.Definition == augment), Is.True);
+    }
+
+    [UnityTest]
+    public IEnumerator RestAugmentApplication_PersistsAcrossSceneReload()
+    {
+        yield return ConfigureRuntime("RestAugmentPersistence");
+
+        RunCoordinator coordinator = GameFlowRoot.Instance.Coordinator;
+        RunContentRepository repository = GameFlowRoot.Instance.ContentRepository;
+        coordinator.StartNewRun();
+        yield return WaitForScene(SceneNames.RunMap);
+
+        RunMapNodeData restNode = null;
+        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Rest, node => restNode = node);
+        Assert.NotNull(restNode);
+
+        coordinator.SelectNode(restNode.nodeId);
+        yield return null;
+
+        CardAugmentDef augment = FindCompatibleAugment(repository, coordinator.CurrentRun.deck, out OwnedCard targetCard);
+        Assert.NotNull(augment);
+        Assert.NotNull(targetCard);
+
+        coordinator.CurrentRun.gold = Mathf.Max(coordinator.CurrentRun.gold, augment.applicationCost + 1);
+        OwnedAugment ownedAugment = new OwnedAugment(augment, "rest-augment-1");
+        coordinator.CurrentRun.ownedAugments.Add(ownedAugment);
+
+        int goldBefore = coordinator.CurrentRun.gold;
+        Assert.True(coordinator.ApplyRestAugment(restNode.nodeId, ownedAugment.UniqueId, targetCard.UniqueId));
+
+        yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
+
+        OwnedCard persistedCard = coordinator.CurrentRun.deck.Find(entry => entry.UniqueId == targetCard.UniqueId);
+        Assert.NotNull(persistedCard);
+        Assert.That(HasAppliedAugment(persistedCard, augment), Is.True);
+        Assert.That(coordinator.GetOwnedAugments().Exists(entry => entry.UniqueId == ownedAugment.UniqueId), Is.False);
+        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(goldBefore - augment.applicationCost));
+    }
+
+    [UnityTest]
+    public IEnumerator BossVictory_WithLinkedNextAct_TransitionsAfterRewardResolution()
+    {
+        yield return ConfigureRuntime("BossVictoryNextAct");
+
+        GameFlowRoot root = GameFlowRoot.Instance;
+        RunContentRepository repository = root.ContentRepository;
+        SaveService saveService = root.SaveService;
+
+        MapTemplateDef act1 = repository.GetMapTemplateById("act_1");
+        MapTemplateDef act2 = repository.GetMapTemplateById("act_2");
+        EncounterDef bossEncounter = repository.GetEncountersByKind(EncounterKind.Boss)[0];
+        OwnedCard card = new(GetFirstRuntimeCard(repository), "linked-boss-card", null);
+        CardAugmentDef augment = FindCompatibleAugment(repository, new List<OwnedCard> { card }, out _);
+        RunSaveData run = CreateSingleBossRun("linked-boss-run", act1.TemplateId, bossEncounter.EncounterId, card, augment != null ? new OwnedAugment(augment, "linked-boss-augment") : null);
+        saveService.SaveProfile(new ProfileSaveData { activeRunId = run.runId });
+        saveService.SaveRun(run);
+
+        RunCoordinator coordinator = new(saveService, repository, root.LoadScene);
+        root.OverrideServices(repository, saveService, coordinator);
+        yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
+        yield return WaitForScene(SceneNames.RunMap);
+
+        coordinator.CurrentRun.currentHealth = 14;
+        coordinator.CurrentRun.gold = 37;
+        int deckCountBefore = coordinator.CurrentRun.deck.Count;
+        int augmentCountBefore = coordinator.GetOwnedAugments().Count;
+        int goldBeforeCombat = coordinator.CurrentRun.gold;
+
+        coordinator.SelectNode("boss-node");
         yield return WaitForScene(SceneNames.Combat);
         Assert.That(coordinator.CurrentCombatRequest.encounter.encounterKind, Is.EqualTo(EncounterKind.Boss));
 
-        coordinator.HandleCombatResult(new CombatSceneResult(bossNode.nodeId, coordinator.CurrentCombatRequest.encounter, true, coordinator.CurrentRun.currentHealth));
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", coordinator.CurrentCombatRequest.encounter, true, 13));
+        yield return WaitForScene(SceneNames.RunMap);
+
+        Assert.NotNull(coordinator.CurrentRun);
+        Assert.That(coordinator.CurrentMapTemplate.TemplateId, Is.EqualTo("act_1"));
+        Assert.NotNull(coordinator.CurrentRun.pendingReward);
+        Assert.That(coordinator.CurrentRun.queuedNextMapTemplateId, Is.EqualTo("act_2"));
+
+        coordinator.SkipPendingReward();
+        yield return null;
+
+        Assert.NotNull(coordinator.CurrentRun);
+        Assert.That(coordinator.CurrentMapTemplate, Is.EqualTo(act2));
+        Assert.That(coordinator.CurrentRun.mapState.mapTemplateId, Is.EqualTo("act_2"));
+        Assert.That(coordinator.CurrentRun.currentHealth, Is.EqualTo(13));
+        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(goldBeforeCombat + bossEncounter.goldReward));
+        Assert.That(coordinator.CurrentRun.deck.Count, Is.EqualTo(deckCountBefore));
+        Assert.That(coordinator.GetOwnedAugments().Count, Is.EqualTo(augmentCountBefore));
+        Assert.That(coordinator.CurrentRun.runId, Is.EqualTo("linked-boss-run"));
+        Assert.That(coordinator.CurrentRun.pendingReward, Is.Null);
+    }
+
+    [UnityTest]
+    public IEnumerator FinalBossVictory_EndsAfterRewardResolution()
+    {
+        yield return ConfigureRuntime("BossVictoryFinalAct");
+
+        GameFlowRoot root = GameFlowRoot.Instance;
+        RunContentRepository repository = root.ContentRepository;
+        SaveService saveService = root.SaveService;
+
+        MapTemplateDef act3 = repository.GetMapTemplateById("act_3");
+        EncounterDef bossEncounter = repository.GetEncountersByKind(EncounterKind.Boss)[0];
+        RunSaveData run = CreateSingleBossRun("final-boss-run", act3.TemplateId, bossEncounter.EncounterId, new OwnedCard(GetFirstRuntimeCard(repository), "final-boss-card", null));
+        saveService.SaveProfile(new ProfileSaveData { activeRunId = run.runId });
+        saveService.SaveRun(run);
+
+        RunCoordinator coordinator = new(saveService, repository, root.LoadScene);
+        root.OverrideServices(repository, saveService, coordinator);
+        yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
+        yield return WaitForScene(SceneNames.RunMap);
+
+        coordinator.SelectNode("boss-node");
+        yield return WaitForScene(SceneNames.Combat);
+
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", coordinator.CurrentCombatRequest.encounter, true, 18));
+        yield return WaitForScene(SceneNames.RunMap);
+
+        Assert.NotNull(coordinator.CurrentRun);
+        Assert.NotNull(coordinator.CurrentRun.pendingReward);
+        Assert.That(coordinator.CurrentRun.endRunAfterPendingReward, Is.True);
+
+        coordinator.SkipPendingReward();
         yield return WaitForScene(SceneNames.MainMenu);
 
         Assert.IsNull(coordinator.CurrentRun);
@@ -282,5 +563,100 @@ public class RunFlowPlayModeTests
     private static bool IsCombatNode(MapNodeType nodeType)
     {
         return nodeType == MapNodeType.Fight || nodeType == MapNodeType.Miniboss || nodeType == MapNodeType.Boss;
+    }
+
+    private static ShopOfferData FindFirstCardOffer(List<ShopOfferData> offers)
+    {
+        return offers.Find(offer => offer != null && offer.offerType == ShopOfferType.Card && offer.card != null);
+    }
+
+    private static ShopOfferData FindFirstAugmentOffer(List<ShopOfferData> offers)
+    {
+        return offers.Find(offer => offer != null && offer.offerType == ShopOfferType.Augment && offer.augment != null);
+    }
+
+    private static CardAugmentDef FindCompatibleAugment(RunContentRepository repository, List<OwnedCard> deck, out OwnedCard compatibleCard)
+    {
+        compatibleCard = null;
+        foreach (CardAugmentDef augment in repository.Augments)
+        {
+            if (augment == null)
+                continue;
+
+            for (int i = 0; i < deck.Count; i++)
+            {
+                OwnedCard card = deck[i];
+                if (card != null && card.CanApplyAugment(augment))
+                {
+                    compatibleCard = card;
+                    return augment;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static bool HasAppliedAugment(OwnedCard card, CardAugmentDef augment)
+    {
+        if (card?.AppliedAugments == null || augment == null)
+            return false;
+
+        for (int i = 0; i < card.AppliedAugments.Count; i++)
+        {
+            if (card.AppliedAugments[i] == augment)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static CardDef GetFirstRuntimeCard(RunContentRepository repository)
+    {
+        foreach (CardDef card in repository.Cards)
+        {
+            if (card != null)
+                return card;
+        }
+
+        Assert.Fail("Expected at least one runtime card.");
+        return null;
+    }
+
+    private static RunSaveData CreateSingleBossRun(string runId, string templateId, string encounterId, OwnedCard card, OwnedAugment ownedAugment = null)
+    {
+        return new RunSaveData
+        {
+            runId = runId,
+            currentHealth = 20,
+            maxHealth = 20,
+            gold = 10,
+            deck = new List<OwnedCard> { card },
+            ownedAugments = ownedAugment != null ? new List<OwnedAugment> { ownedAugment } : new List<OwnedAugment>(),
+            currentNodeId = "boss-node",
+            completedNodeIds = new List<string>(),
+            mapState = new RunMapStateData
+            {
+                mapTemplateId = templateId,
+                startNodeId = "boss-node",
+                nodes = new List<RunMapNodeData>
+                {
+                    new()
+                    {
+                        nodeId = "boss-node",
+                        displayName = "Boss",
+                        nodeType = MapNodeType.Boss,
+                        encounterId = encounterId,
+                        column = 0,
+                        lane = 0,
+                        nextNodeIds = new List<string>()
+                    }
+                }
+            },
+            pendingReward = null,
+            queuedNextMapTemplateId = null,
+            endRunAfterPendingReward = false,
+            seed = 456
+        };
     }
 }

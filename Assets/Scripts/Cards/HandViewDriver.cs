@@ -36,6 +36,7 @@ namespace Cards
 
         public void Initialize(IReadOnlyList<OwnedCard> deck, int drawCost, IPlayerEffects overridePlayerEffects = null)
         {
+            print("Initializing deck in HandViewDriver");
             if (handController != null)
                 return;
 

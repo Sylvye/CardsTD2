@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3a4d538d0fe4fd0a1a30b0ce6895f55, type: 3}
   m_Name: Fight Pool II
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.EncounterPoolDef
-  id: starter-fight-pool-2
-  displayName: Fight Pool II
+  id: act_2_fights
+  displayName: Act 2 Fights
   encounters:
   - encounter: {fileID: 11400000, guid: 81ceb93aba177b543ae2d4803bd257e1, type: 2}
     weight: 1

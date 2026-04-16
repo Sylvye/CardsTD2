@@ -114,10 +114,174 @@ namespace RunFlow
             return button;
         }
 
+        public static RectTransform CreateSection(Transform parent, string name, int spacing = 8)
+        {
+            GameObject sectionObject = new(name, typeof(RectTransform));
+            sectionObject.transform.SetParent(parent, false);
+            RectTransform section = sectionObject.GetComponent<RectTransform>();
+            AddVerticalLayout(section, spacing: spacing, padding: 0);
+            return section;
+        }
+
+        public static RectTransform CreateScrollContent(Transform parent, string name, int spacing = 12, int padding = 20)
+        {
+            GameObject scrollObject = new(name, typeof(RectTransform), typeof(Image), typeof(ScrollRect));
+            scrollObject.transform.SetParent(parent, false);
+
+            Image scrollBackground = scrollObject.GetComponent<Image>();
+            scrollBackground.color = new Color(1f, 1f, 1f, 0.02f);
+
+            RectTransform scrollRect = scrollObject.GetComponent<RectTransform>();
+            scrollRect.anchorMin = Vector2.zero;
+            scrollRect.anchorMax = Vector2.one;
+            scrollRect.offsetMin = Vector2.zero;
+            scrollRect.offsetMax = Vector2.zero;
+
+            GameObject viewportObject = new("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+            viewportObject.transform.SetParent(scrollObject.transform, false);
+
+            Image viewportImage = viewportObject.GetComponent<Image>();
+            viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+
+            RectTransform viewportRect = viewportObject.GetComponent<RectTransform>();
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.offsetMin = Vector2.zero;
+            viewportRect.offsetMax = Vector2.zero;
+
+            GameObject contentObject = new("Content", typeof(RectTransform));
+            contentObject.transform.SetParent(viewportObject.transform, false);
+
+            RectTransform contentRect = contentObject.GetComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0f, 1f);
+            contentRect.anchorMax = new Vector2(1f, 1f);
+            contentRect.pivot = new Vector2(0.5f, 1f);
+            contentRect.offsetMin = Vector2.zero;
+            contentRect.offsetMax = Vector2.zero;
+            AddVerticalLayout(contentRect, spacing: spacing, padding: padding);
+
+            ScrollRect scrollView = scrollObject.GetComponent<ScrollRect>();
+            scrollView.viewport = viewportRect;
+            scrollView.content = contentRect;
+            scrollView.horizontal = false;
+            scrollView.vertical = true;
+            scrollView.movementType = ScrollRect.MovementType.Clamped;
+            scrollView.scrollSensitivity = 28f;
+
+            return contentRect;
+        }
+
+        public static Button CreateItemTile(
+            Transform parent,
+            Sprite icon,
+            string title,
+            string subtitle,
+            string detail,
+            UnityAction onClick,
+            bool interactable = true)
+        {
+            GameObject tileObject = new("ItemTile", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement), typeof(HorizontalLayoutGroup));
+            tileObject.transform.SetParent(parent, false);
+
+            Image background = tileObject.GetComponent<Image>();
+            background.color = interactable
+                ? new Color(0.15f, 0.2f, 0.28f, 1f)
+                : new Color(0.1f, 0.13f, 0.18f, 0.92f);
+
+            LayoutElement layoutElement = tileObject.GetComponent<LayoutElement>();
+            layoutElement.minHeight = 92f;
+
+            HorizontalLayoutGroup layout = tileObject.GetComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(12, 12, 12, 12);
+            layout.spacing = 12f;
+            layout.childAlignment = TextAnchor.MiddleLeft;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            Button button = tileObject.GetComponent<Button>();
+            button.interactable = interactable;
+            if (onClick != null)
+                button.onClick.AddListener(onClick);
+
+            CreateIconFrame(tileObject.transform, icon, string.IsNullOrWhiteSpace(title) ? "?" : title.Substring(0, 1));
+            CreateTileTextColumn(tileObject.transform, title, subtitle, detail, interactable);
+            return button;
+        }
+
         public static void ClearChildren(Transform parent)
         {
             for (int i = parent.childCount - 1; i >= 0; i--)
                 Object.Destroy(parent.GetChild(i).gameObject);
+        }
+
+        private static void CreateIconFrame(Transform parent, Sprite icon, string fallbackText)
+        {
+            GameObject iconRoot = new("IconRoot", typeof(RectTransform), typeof(LayoutElement), typeof(Image));
+            iconRoot.transform.SetParent(parent, false);
+
+            LayoutElement layoutElement = iconRoot.GetComponent<LayoutElement>();
+            layoutElement.minWidth = 56f;
+            layoutElement.preferredWidth = 56f;
+            layoutElement.minHeight = 56f;
+            layoutElement.preferredHeight = 56f;
+
+            Image rootImage = iconRoot.GetComponent<Image>();
+            rootImage.color = new Color(0.08f, 0.1f, 0.14f, 1f);
+
+            if (icon != null)
+            {
+                GameObject iconObject = new("Icon", typeof(RectTransform), typeof(Image));
+                iconObject.transform.SetParent(iconRoot.transform, false);
+
+                Image iconImage = iconObject.GetComponent<Image>();
+                iconImage.sprite = icon;
+                iconImage.preserveAspect = true;
+
+                RectTransform iconRect = iconObject.GetComponent<RectTransform>();
+                iconRect.anchorMin = new Vector2(0.1f, 0.1f);
+                iconRect.anchorMax = new Vector2(0.9f, 0.9f);
+                iconRect.offsetMin = Vector2.zero;
+                iconRect.offsetMax = Vector2.zero;
+                return;
+            }
+
+            Text fallback = CreateText(iconRoot.transform, fallbackText, 20, TextAnchor.MiddleCenter);
+            RectTransform fallbackRect = fallback.rectTransform;
+            fallbackRect.anchorMin = Vector2.zero;
+            fallbackRect.anchorMax = Vector2.one;
+            fallbackRect.offsetMin = Vector2.zero;
+            fallbackRect.offsetMax = Vector2.zero;
+        }
+
+        private static void CreateTileTextColumn(Transform parent, string title, string subtitle, string detail, bool interactable)
+        {
+            GameObject textColumnObject = new("TextColumn", typeof(RectTransform), typeof(LayoutElement));
+            textColumnObject.transform.SetParent(parent, false);
+
+            LayoutElement layoutElement = textColumnObject.GetComponent<LayoutElement>();
+            layoutElement.minWidth = 0f;
+            layoutElement.preferredWidth = 0f;
+            layoutElement.flexibleWidth = 1f;
+
+            RectTransform textColumn = textColumnObject.GetComponent<RectTransform>();
+            AddVerticalLayout(textColumn, spacing: 4, padding: 0);
+
+            Text titleText = CreateText(textColumn, title, 24);
+            titleText.color = interactable ? Color.white : new Color(0.74f, 0.78f, 0.84f, 1f);
+
+            if (!string.IsNullOrWhiteSpace(subtitle))
+            {
+                Text subtitleText = CreateText(textColumn, subtitle, 18);
+                subtitleText.color = new Color(0.78f, 0.84f, 0.9f, 1f);
+            }
+
+            if (!string.IsNullOrWhiteSpace(detail))
+            {
+                Text detailText = CreateText(textColumn, detail, 18);
+                detailText.color = new Color(0.65f, 0.72f, 0.82f, 1f);
+            }
         }
 
         private static Font GetRuntimeFont()

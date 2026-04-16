@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: Damage Augment
   description: Adds +1 damage
   icon: {fileID: 0}
+  applicationCost: 6
   manaCostDelta: 0
   extraAugmentSlots: 0
   additionalCardEffects: []
