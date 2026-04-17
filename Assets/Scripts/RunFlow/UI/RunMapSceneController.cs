@@ -24,10 +24,12 @@ namespace RunFlow
         private RectTransform connectionLayer;
         private RectTransform nodeLayer;
         private string selectedRestAugmentUniqueId;
+        private PauseMenuController pauseMenuController;
 
         private void Start()
         {
             BuildUi();
+            EnsurePauseMenu();
             RefreshUi();
         }
 
@@ -35,6 +37,13 @@ namespace RunFlow
         {
             if (headerText != null)
                 RefreshUi();
+        }
+
+        private void EnsurePauseMenu()
+        {
+            pauseMenuController ??= gameObject.GetComponent<PauseMenuController>();
+            pauseMenuController ??= gameObject.AddComponent<PauseMenuController>();
+            pauseMenuController.Initialize(GameFlowRoot.Instance != null ? GameFlowRoot.Instance.Coordinator : null, false);
         }
 
         private void BuildUi()

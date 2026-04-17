@@ -1,4 +1,5 @@
 using Combat;
+using System;
 using UnityEngine;
 
 namespace Cards
@@ -13,15 +14,18 @@ namespace Cards
         private SelectedCardController selectedCardController;
         private PlayFieldRaycaster playFieldRaycaster;
         private CardPlacementValidator validator;
+        private Func<bool> isInputBlocked;
 
         public void Initialize(
             SelectedCardController selectedController,
             PlayFieldRaycaster raycaster,
-            CardPlacementValidator placementValidator)
+            CardPlacementValidator placementValidator,
+            Func<bool> inputBlocked = null)
         {
             selectedCardController = selectedController;
             playFieldRaycaster = raycaster;
             validator = placementValidator;
+            isInputBlocked = inputBlocked;
 
             if (selectedCardController is not null)
                 selectedCardController.OnSelectedCardChanged += HandleSelectedCardChanged;
@@ -37,7 +41,7 @@ namespace Cards
 
         private void Update()
         {
-            if (selectedCardController is null || !selectedCardController.HasSelection)
+            if (!ShouldShowPreview())
             {
                 HideAll();
                 return;
@@ -145,6 +149,16 @@ namespace Cards
                 return SpawnableColliderUtility.GetPreviewRadius(card.ResolvedData.SpawnableObject);
 
             return card.ResolvedData.SpawnableObject != null ? card.ResolvedData.SpawnableObject.effectRadius : 0f;
+        }
+
+        private bool ShouldShowPreview()
+        {
+            return !IsInputBlocked() && selectedCardController is not null && selectedCardController.HasSelection;
+        }
+
+        private bool IsInputBlocked()
+        {
+            return isInputBlocked?.Invoke() ?? false;
         }
     }
 }

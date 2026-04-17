@@ -12,5 +12,19 @@ namespace Combat
         public int MaxHealth = 20;
         public int OpeningHandSize = 5;
         public int ManualDrawCost = 2;
+
+        public CombatSessionSetup Clone()
+        {
+            return new CombatSessionSetup
+            {
+                StartingMana = StartingMana,
+                MaxMana = MaxMana,
+                ManaRegenPerSecond = ManaRegenPerSecond,
+                CurrentHealth = CurrentHealth,
+                MaxHealth = MaxHealth,
+                OpeningHandSize = OpeningHandSize,
+                ManualDrawCost = ManualDrawCost
+            };
+        }
     }
 }

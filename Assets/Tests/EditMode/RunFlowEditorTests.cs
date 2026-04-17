@@ -6,6 +6,7 @@ using Combat;
 using Enemies;
 using NUnit.Framework;
 using RunFlow;
+using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -42,6 +43,8 @@ public class RunFlowEditorTests
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
+        ClearGameFlowRoot();
+
         if (Directory.Exists(saveDirectory))
             Directory.Delete(saveDirectory, true);
     }
@@ -54,7 +57,8 @@ public class RunFlowEditorTests
         ProfileSaveData profile = new()
         {
             metaCurrency = 7,
-            activeRunId = "edit-run"
+            activeRunId = "edit-run",
+            debugUiEnabled = true
         };
         profile.AddUnlock("unlock.test");
         saveService.SaveProfile(profile);
@@ -62,6 +66,7 @@ public class RunFlowEditorTests
         ProfileSaveData loadedProfile = saveService.LoadProfile();
         Assert.That(loadedProfile.metaCurrency, Is.EqualTo(7));
         Assert.That(loadedProfile.activeRunId, Is.EqualTo("edit-run"));
+        Assert.That(loadedProfile.debugUiEnabled, Is.True);
         Assert.That(loadedProfile.unlockIds, Does.Contain("unlock.test"));
 
         MapTemplateDef template = CreateTemplate();
@@ -129,6 +134,16 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void SaveService_LoadProfile_DefaultsDebugUiDisabledWhenMissing()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+
+        ProfileSaveData loadedProfile = saveService.LoadProfile();
+
+        Assert.That(loadedProfile.debugUiEnabled, Is.False);
+    }
+
+    [Test]
     public void SaveService_MigratesLegacyCardOnlyRewardsIntoPendingEntries()
     {
         SaveService saveService = new(contentRepository, saveDirectory);
@@ -161,6 +176,36 @@ public class RunFlowEditorTests
         Assert.That(loadedRun.pendingReward.entries.Count, Is.EqualTo(1));
         Assert.That(loadedRun.pendingReward.entries[0].rewardType, Is.EqualTo(RunRewardType.Card));
         Assert.That(loadedRun.pendingReward.entries[0].contentId, Is.EqualTo(contentRepository.GetCardId(template.startingDeck[0])));
+    }
+
+    [Test]
+    public void RunCoordinator_SetDebugUiEnabled_PersistsAndNotifiesOncePerChange()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        int notificationCount = 0;
+        bool lastValue = false;
+        coordinator.DebugUiChanged += enabled =>
+        {
+            notificationCount++;
+            lastValue = enabled;
+        };
+
+        coordinator.SetDebugUiEnabled(true);
+
+        string profilePath = Path.Combine(saveDirectory, "profile.json");
+        Assert.That(File.Exists(profilePath), Is.True);
+        Assert.That(saveService.LoadProfile().debugUiEnabled, Is.True);
+        Assert.That(notificationCount, Is.EqualTo(1));
+        Assert.That(lastValue, Is.True);
+
+        System.DateTime firstWriteTime = File.GetLastWriteTimeUtc(profilePath);
+        System.Threading.Thread.Sleep(20);
+        coordinator.SetDebugUiEnabled(true);
+
+        Assert.That(notificationCount, Is.EqualTo(1));
+        Assert.That(File.GetLastWriteTimeUtc(profilePath), Is.EqualTo(firstWriteTime));
     }
 
     [Test]
@@ -741,6 +786,87 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void MainMenuSceneController_EnsurePauseMenu_CreatesSettingsOnlyMenu()
+    {
+        ConfigureGameFlowRoot();
+        GameObject controllerObject = new("MainMenu Controller");
+        MainMenuSceneController controller = controllerObject.AddComponent<MainMenuSceneController>();
+
+        InvokePrivateMethod(controller, "EnsurePauseMenu");
+
+        PauseMenuController pauseMenu = controllerObject.GetComponent<PauseMenuController>();
+        Assert.NotNull(pauseMenu);
+        Assert.That(GetPrivateField<bool>(pauseMenu, "pauseGameplay"), Is.False);
+
+        Object.DestroyImmediate(controllerObject);
+    }
+
+    [Test]
+    public void RunMapSceneController_EnsurePauseMenu_CreatesSettingsOnlyMenu()
+    {
+        ConfigureGameFlowRoot();
+        GameObject controllerObject = new("RunMap Controller");
+        RunMapSceneController controller = controllerObject.AddComponent<RunMapSceneController>();
+
+        InvokePrivateMethod(controller, "EnsurePauseMenu");
+
+        PauseMenuController pauseMenu = controllerObject.GetComponent<PauseMenuController>();
+        Assert.NotNull(pauseMenu);
+        Assert.That(GetPrivateField<bool>(pauseMenu, "pauseGameplay"), Is.False);
+
+        Object.DestroyImmediate(controllerObject);
+    }
+
+    [Test]
+    public void CombatSceneBootstrapper_EnsurePauseMenu_CreatesPauseMenuAndHooksPauseState()
+    {
+        ConfigureGameFlowRoot();
+        GameObject bootstrapperObject = new("Combat Bootstrapper");
+        CombatSceneBootstrapper bootstrapper = bootstrapperObject.AddComponent<CombatSceneBootstrapper>();
+        CombatSessionDriver combatSessionDriver = bootstrapperObject.AddComponent<CombatSessionDriver>();
+        SetPrivateField(bootstrapper, "combatSessionDriver", combatSessionDriver);
+
+        InvokePrivateMethod(bootstrapper, "EnsurePauseMenu");
+
+        PauseMenuController pauseMenu = bootstrapperObject.GetComponent<PauseMenuController>();
+        Assert.NotNull(pauseMenu);
+        Assert.That(GetPrivateField<bool>(pauseMenu, "pauseGameplay"), Is.True);
+
+        pauseMenu.OpenMenu();
+        Assert.That(combatSessionDriver.IsPaused, Is.True);
+        pauseMenu.CloseMenu();
+        Assert.That(combatSessionDriver.IsPaused, Is.False);
+
+        Object.DestroyImmediate(bootstrapperObject);
+    }
+
+    [Test]
+    public void BattleHUD_ResolvedSessionText_FollowsCoordinatorDebugFlag()
+    {
+        RunCoordinator coordinator = ConfigureGameFlowRoot();
+
+        GameObject hudObject = new("BattleHUD");
+        BattleHUD battleHUD = hudObject.AddComponent<BattleHUD>();
+        GameObject resolvedTextObject = new("ResolvedText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        resolvedTextObject.transform.SetParent(hudObject.transform, false);
+        TextMeshProUGUI resolvedText = resolvedTextObject.GetComponent<TextMeshProUGUI>();
+
+        SetPrivateField(battleHUD, "resolvedSessionText", resolvedText);
+
+        GameObject driverObject = new("CombatSessionDriver");
+        CombatSessionDriver combatSessionDriver = driverObject.AddComponent<CombatSessionDriver>();
+
+        battleHUD.Initialize(new PlayerState(), combatSessionDriver);
+        Assert.That(resolvedText.gameObject.activeSelf, Is.False);
+
+        coordinator.SetDebugUiEnabled(true);
+        Assert.That(resolvedText.gameObject.activeSelf, Is.True);
+
+        Object.DestroyImmediate(driverObject);
+        Object.DestroyImmediate(hudObject);
+    }
+
+    [Test]
     public void RunFlowProjectSetup_CreateCombatScene_ConfiguresExistingCombatScene()
     {
         MethodInfo createCombatScene = typeof(RunFlowProjectSetup).GetMethod("CreateCombatScene", BindingFlags.NonPublic | BindingFlags.Static);
@@ -792,6 +918,7 @@ public class RunFlowEditorTests
         Assert.That(GetPrivateField<EnemyManager>(outcomeWatcher, "enemyManager"), Is.EqualTo(enemyManager));
         Assert.NotNull(GetPrivateField<Object>(battleHUD, "speedButton"));
         Assert.NotNull(GetPrivateField<Object>(battleHUD, "speedButtonText"));
+        Assert.NotNull(GetPrivateField<Object>(battleHUD, "resolvedSessionText"));
         Assert.False(GetPrivateField<bool>(handViewDriver, "autoInitializeOnStart"));
         Assert.False(GetPrivateField<bool>(enemySpawner, "startOnPlay"));
     }
@@ -1117,5 +1244,40 @@ public class RunFlowEditorTests
         MethodInfo method = typeof(RunContentRepository).GetMethod("SelectDefaultMapTemplate", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(method);
         return (MapTemplateDef)method.Invoke(null, new object[] { templates });
+    }
+
+    private RunCoordinator ConfigureGameFlowRoot()
+    {
+        ClearGameFlowRoot();
+
+        SaveService saveService = new(contentRepository, saveDirectory);
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+        GameFlowRoot root = GameFlowRoot.EnsureInstance();
+        root.OverrideServices(contentRepository, saveService, coordinator);
+        return coordinator;
+    }
+
+    private static void InvokePrivateMethod(object target, string methodName)
+    {
+        MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        method.Invoke(target, null);
+    }
+
+    private static void ClearGameFlowRoot()
+    {
+        GameFlowRoot root = GameFlowRoot.Instance;
+        if (root != null)
+            Object.DestroyImmediate(root.gameObject);
+
+        FieldInfo instanceField = typeof(GameFlowRoot).GetField("instance", BindingFlags.Static | BindingFlags.NonPublic);
+        instanceField?.SetValue(null, null);
+    }
+
+    private static void SetPrivateField(object target, string fieldName, object value)
+    {
+        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        Assert.NotNull(field, $"Missing field '{fieldName}' on {target.GetType().Name}.");
+        field.SetValue(target, value);
     }
 }

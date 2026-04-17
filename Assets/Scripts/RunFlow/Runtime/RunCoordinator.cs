@@ -15,10 +15,13 @@ namespace RunFlow
         private readonly RunMapGenerator mapGenerator;
         private readonly Action<string> loadScene;
 
+        public event Action<bool> DebugUiChanged;
+
         public ProfileSaveData Profile { get; private set; }
         public RunSaveData CurrentRun { get; private set; }
         public MapTemplateDef CurrentMapTemplate { get; private set; }
         public CombatSceneRequest CurrentCombatRequest { get; private set; }
+        public bool IsDebugUiEnabled => Profile?.debugUiEnabled ?? false;
 
         public bool CanContinueRun =>
             Profile != null &&
@@ -38,7 +41,7 @@ namespace RunFlow
         public void RefreshLoadedState()
         {
             contentRepository.Refresh();
-            Profile = saveService.LoadProfile();
+            Profile = saveService.LoadProfile() ?? new ProfileSaveData();
 
             CurrentRun = null;
             CurrentMapTemplate = null;
@@ -87,6 +90,17 @@ namespace RunFlow
         {
             CurrentCombatRequest = null;
             loadScene?.Invoke(SceneNames.MainMenu);
+        }
+
+        public void SetDebugUiEnabled(bool enabled)
+        {
+            Profile ??= new ProfileSaveData();
+            if (Profile.debugUiEnabled == enabled)
+                return;
+
+            Profile.debugUiEnabled = enabled;
+            saveService.SaveProfile(Profile);
+            DebugUiChanged?.Invoke(enabled);
         }
 
         public RunMapNodeData GetNode(string nodeId)

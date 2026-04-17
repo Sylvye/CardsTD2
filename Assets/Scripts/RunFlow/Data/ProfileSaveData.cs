@@ -9,6 +9,7 @@ namespace RunFlow
         public int metaCurrency;
         public List<string> unlockIds = new();
         public string activeRunId;
+        public bool debugUiEnabled;
 
         public bool HasUnlock(string unlockId)
         {

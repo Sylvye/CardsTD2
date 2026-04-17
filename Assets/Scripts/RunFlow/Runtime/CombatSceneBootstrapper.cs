@@ -20,8 +20,12 @@ namespace RunFlow
         [SerializeField] private int debugCurrentHealth = 20;
         [SerializeField] private int debugMaxHealth = 20;
 
+        private PauseMenuController pauseMenuController;
+
         private void Start()
         {
+            EnsurePauseMenu();
+
             CombatSceneRequest request = GetRequest();
             if (request == null || request.encounter == null || request.run == null)
             {
@@ -37,20 +41,22 @@ namespace RunFlow
             }
 
             if (combatSessionDriver != null)
-            {
-                combatSessionDriver.ConfigureSession(new CombatSessionSetup
-                {
-                    StartingMana = request.startingMana,
-                    MaxMana = request.maxMana,
-                    ManaRegenPerSecond = request.manaRegenPerSecond,
-                    CurrentHealth = request.run.currentHealth,
-                    MaxHealth = request.run.maxHealth,
-                    OpeningHandSize = request.openingHandSize,
-                    ManualDrawCost = request.manualDrawCost
-                });
-            }
+                combatSessionDriver.ConfigureSession(BuildSessionSetup(request));
 
             handViewDriver?.Initialize(request.run.deck, combatSessionDriver);
+        }
+
+        private CombatSessionSetup BuildSessionSetup(CombatSceneRequest request)
+        {
+            CombatSessionSetup setup = request?.sessionOverrides?.Clone() ?? combatSessionDriver?.ConfiguredSetup ?? new CombatSessionSetup();
+
+            if (request?.run != null)
+            {
+                setup.CurrentHealth = request.run.currentHealth;
+                setup.MaxHealth = request.run.maxHealth;
+            }
+
+            return setup;
         }
 
         private CombatSceneRequest GetRequest()
@@ -74,11 +80,7 @@ namespace RunFlow
                 seed = 1
             };
 
-            CombatSceneRequest request = new("debug", debugEncounter, debugRun);
-            if (combatSessionDriver != null)
-                request.manualDrawCost = combatSessionDriver.ManualDrawCost;
-
-            return request;
+            return new CombatSceneRequest("debug", debugEncounter, debugRun);
         }
 
         private EnemyPath SpawnPath(EncounterDef encounter)
@@ -95,6 +97,20 @@ namespace RunFlow
             GameObject pathObject = Instantiate(encounter.pathPrefab, pathAnchor);
             pathObject.name = $"{encounter.DisplayNameOrFallback} Path";
             return pathObject.GetComponent<EnemyPath>();
+        }
+
+        private void EnsurePauseMenu()
+        {
+            pauseMenuController ??= gameObject.GetComponent<PauseMenuController>();
+            pauseMenuController ??= gameObject.AddComponent<PauseMenuController>();
+            pauseMenuController.Initialize(
+                GameFlowRoot.Instance != null ? GameFlowRoot.Instance.Coordinator : null,
+                true,
+                isOpen =>
+                {
+                    if (combatSessionDriver != null)
+                        combatSessionDriver.SetPaused(isOpen);
+                });
         }
     }
 }

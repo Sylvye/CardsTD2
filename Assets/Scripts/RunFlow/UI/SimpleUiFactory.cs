@@ -52,6 +52,40 @@ namespace RunFlow
             return rectTransform;
         }
 
+        public static RectTransform CreateFullscreenBlocker(Transform parent, string name, Color color)
+        {
+            GameObject overlay = new(name, typeof(RectTransform), typeof(Image));
+            overlay.transform.SetParent(parent, false);
+
+            RectTransform rectTransform = overlay.GetComponent<RectTransform>();
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+
+            Image image = overlay.GetComponent<Image>();
+            image.color = color;
+            image.raycastTarget = true;
+            return rectTransform;
+        }
+
+        public static RectTransform CreateDialogPanel(Transform parent, string name, Vector2 size)
+        {
+            GameObject panel = new(name, typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(parent, false);
+
+            RectTransform rectTransform = panel.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            rectTransform.sizeDelta = size;
+            rectTransform.anchoredPosition = Vector2.zero;
+
+            Image image = panel.GetComponent<Image>();
+            image.color = new Color(0.08f, 0.1f, 0.12f, 0.96f);
+            return rectTransform;
+        }
+
         public static VerticalLayoutGroup AddVerticalLayout(Transform target, int spacing = 12, int padding = 20)
         {
             VerticalLayoutGroup layout = target.gameObject.AddComponent<VerticalLayoutGroup>();

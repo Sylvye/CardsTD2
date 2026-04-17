@@ -1,4 +1,5 @@
 ﻿using Combat;
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,22 +13,25 @@ namespace Cards
         private HandController handController;
         private PlayerState playerState;
         private CardPlacementValidator validator;
+        private Func<bool> isInputBlocked;
 
         public void Initialize(
             SelectedCardController selectedController,
             HandController handController,
             PlayerState playerState,
-            CardPlacementValidator placementValidator)
+            CardPlacementValidator placementValidator,
+            Func<bool> inputBlocked = null)
         {
             selectedCardController = selectedController;
             this.handController = handController;
             this.playerState = playerState;
             validator = placementValidator;
+            isInputBlocked = inputBlocked;
         }
 
         private void Update()
         {
-            if (selectedCardController == null || !selectedCardController.HasSelection)
+            if (!ShouldProcessInput())
                 return;
 
             if (Mouse.current.rightButton.wasPressedThisFrame)
@@ -53,6 +57,16 @@ namespace Cards
                 return;
 
             selectedCardController.Deselect();
+        }
+
+        private bool ShouldProcessInput()
+        {
+            return !IsInputBlocked() && selectedCardController != null && selectedCardController.HasSelection;
+        }
+
+        private bool IsInputBlocked()
+        {
+            return isInputBlocked?.Invoke() ?? false;
         }
     }
 }

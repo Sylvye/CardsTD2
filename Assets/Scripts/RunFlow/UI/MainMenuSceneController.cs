@@ -7,10 +7,12 @@ namespace RunFlow
     {
         private Text metaCurrencyText;
         private Button continueButton;
+        private PauseMenuController pauseMenuController;
 
         private void Start()
         {
             BuildUi();
+            EnsurePauseMenu();
             RefreshUi();
         }
 
@@ -53,6 +55,13 @@ namespace RunFlow
         private void ContinueRun()
         {
             GameFlowRoot.Instance.Coordinator.ContinueRun();
+        }
+
+        private void EnsurePauseMenu()
+        {
+            pauseMenuController ??= gameObject.GetComponent<PauseMenuController>();
+            pauseMenuController ??= gameObject.AddComponent<PauseMenuController>();
+            pauseMenuController.Initialize(GameFlowRoot.Instance != null ? GameFlowRoot.Instance.Coordinator : null, false);
         }
     }
 }

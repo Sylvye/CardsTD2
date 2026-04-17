@@ -15,7 +15,7 @@ MonoBehaviour:
   id: starter-miniboss
   displayName: Starter Miniboss
   encounterKind: 1
-  pathPrefab: {fileID: 222235461983059477, guid: b4fa5197bbe67c7498db43b55d669109, type: 3}
+  pathPrefab: {fileID: 222235461983059477, guid: 4c451ef0132c04d5b982ab5e2ff453be, type: 3}
   spawnBatches:
   - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
     spawnCount: 12

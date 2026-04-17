@@ -9,23 +9,21 @@ namespace Combat
         private static readonly float[] SimulationSpeedMultipliers = { 1f, 2f, 4f };
 
         [Header("Player Setup")]
-        [SerializeField] private int defaultStartingMana = 0;
-        [SerializeField] private int defaultMaxMana = 20;
-        [SerializeField] private float defaultManaRegenPerSecond = 1f;
-        [FormerlySerializedAs("startingLives")]
-        [SerializeField] private int defaultCurrentHealth = 20;
-        [SerializeField] private int defaultMaxHealth = 20;
-        [SerializeField] private int defaultOpeningHandSize = 5;
-        [SerializeField] private int defaultManualDrawCost = 2;
+        [SerializeField] private CombatSessionSetup defaultSetup = new();
 
         private PlayerState playerState;
         private BattleFlowController battleFlowController;
         private CombatSessionSetup sessionSetup;
+        private CombatSessionSetup resolvedSessionSetup;
         private int currentSimulationSpeedIndex;
+        private bool isPaused;
 
         public PlayerState PlayerState => playerState;
         public float CurrentSpeedMultiplier => SimulationSpeedMultipliers[currentSimulationSpeedIndex];
-        public int ManualDrawCost => sessionSetup?.ManualDrawCost ?? defaultManualDrawCost;
+        public int ManualDrawCost => GetActiveSetup().ManualDrawCost;
+        public CombatSessionSetup ConfiguredSetup => GetConfiguredSetup().Clone();
+        public CombatSessionSetup ResolvedSetup => GetActiveSetup().Clone();
+        public bool IsPaused => isPaused;
 
         private void OnEnable()
         {
@@ -34,7 +32,8 @@ namespace Combat
 
         public void ConfigureSession(CombatSessionSetup setup)
         {
-            sessionSetup = setup;
+            sessionSetup = setup?.Clone();
+            resolvedSessionSetup = null;
         }
 
         public void InitializeSession(HandController handController)
@@ -42,7 +41,8 @@ namespace Combat
             if (handController == null)
                 return;
 
-            CombatSessionSetup setup = sessionSetup ?? BuildDefaultSetup();
+            CombatSessionSetup setup = GetActiveSetup().Clone();
+            resolvedSessionSetup = setup.Clone();
             playerState = new PlayerState(
                 setup.StartingMana,
                 setup.MaxMana,
@@ -111,29 +111,36 @@ namespace Combat
             ApplySimulationSpeed();
         }
 
-        private CombatSessionSetup BuildDefaultSetup()
+        public void SetPaused(bool paused)
         {
-            return new CombatSessionSetup
-            {
-                StartingMana = defaultStartingMana,
-                MaxMana = defaultMaxMana,
-                ManaRegenPerSecond = defaultManaRegenPerSecond,
-                CurrentHealth = defaultCurrentHealth,
-                MaxHealth = defaultMaxHealth,
-                OpeningHandSize = defaultOpeningHandSize,
-                ManualDrawCost = defaultManualDrawCost
-            };
+            if (isPaused == paused)
+                return;
+
+            isPaused = paused;
+            ApplySimulationSpeed();
+        }
+
+        private CombatSessionSetup GetConfiguredSetup()
+        {
+            defaultSetup ??= new CombatSessionSetup();
+            return defaultSetup;
+        }
+
+        private CombatSessionSetup GetActiveSetup()
+        {
+            return resolvedSessionSetup ?? sessionSetup ?? GetConfiguredSetup();
         }
 
         private void ResetSimulationSpeed()
         {
             currentSimulationSpeedIndex = 0;
+            isPaused = false;
             ApplySimulationSpeed();
         }
 
         private void ApplySimulationSpeed()
         {
-            Time.timeScale = CurrentSpeedMultiplier;
+            Time.timeScale = isPaused ? 0f : CurrentSpeedMultiplier;
         }
     }
 }

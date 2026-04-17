@@ -60,7 +60,8 @@ namespace Cards
                 cardPreviewController.Initialize(
                     selectedCardController,
                     playFieldRaycaster,
-                    cardPlacementValidator
+                    cardPlacementValidator,
+                    IsGameplayInputBlocked
                 );
             }
 
@@ -70,7 +71,8 @@ namespace Cards
                     selectedCardController,
                     handController,
                     combatSessionDriver != null ? combatSessionDriver.PlayerState : null,
-                    cardPlacementValidator
+                    cardPlacementValidator,
+                    IsGameplayInputBlocked
                 );
             }
         }
@@ -86,6 +88,11 @@ namespace Cards
                 return;
 
             combatSessionDriver.TryManualDraw(handController, GetManualDrawCost());
+        }
+
+        private bool IsGameplayInputBlocked()
+        {
+            return combatSessionDriver != null && combatSessionDriver.IsPaused;
         }
     }
 }
