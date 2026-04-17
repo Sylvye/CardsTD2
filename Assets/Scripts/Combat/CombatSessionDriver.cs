@@ -16,6 +16,7 @@ namespace Combat
         [SerializeField] private int defaultCurrentHealth = 20;
         [SerializeField] private int defaultMaxHealth = 20;
         [SerializeField] private int defaultOpeningHandSize = 5;
+        [SerializeField] private int defaultManualDrawCost = 2;
 
         private PlayerState playerState;
         private BattleFlowController battleFlowController;
@@ -24,6 +25,7 @@ namespace Combat
 
         public PlayerState PlayerState => playerState;
         public float CurrentSpeedMultiplier => SimulationSpeedMultipliers[currentSimulationSpeedIndex];
+        public int ManualDrawCost => sessionSetup?.ManualDrawCost ?? defaultManualDrawCost;
 
         private void OnEnable()
         {
@@ -118,7 +120,8 @@ namespace Combat
                 ManaRegenPerSecond = defaultManaRegenPerSecond,
                 CurrentHealth = defaultCurrentHealth,
                 MaxHealth = defaultMaxHealth,
-                OpeningHandSize = defaultOpeningHandSize
+                OpeningHandSize = defaultOpeningHandSize,
+                ManualDrawCost = defaultManualDrawCost
             };
         }
 

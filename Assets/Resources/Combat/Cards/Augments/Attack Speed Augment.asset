@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardAugmentDef
   id: attack_speed_aug
   displayName: Attack Speed Augment
-  description: Makes towers attack faster
+  description: Increases attack speed by 1.5x
   icon: {fileID: 0}
   applicationCost: 6
   manaCostDelta: 0
   extraAugmentSlots: 0
   additionalCardEffects: []
   additionalTowerModifiers:
-  - {fileID: 11400000, guid: 8248dc53ce966bf4288aa6fb75f661ce, type: 2}
+  - {fileID: 0}
   towerAttackModifiers: []
   additionalSpellEffects: []
   allowedCardTypes: 00000000

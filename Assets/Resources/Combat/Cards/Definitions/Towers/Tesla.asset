@@ -22,7 +22,7 @@ MonoBehaviour:
   cardFamilyId: tesla
   baseTier: 1
   upgradeTier: 1
-  baseAugmentSlots: 0
-  nextUpgradeDef: {fileID: 0}
+  baseAugmentSlots: 1
+  nextUpgradeDef: {fileID: 11400000, guid: 531c69a24aa7e49e1a2a2700babf351c, type: 2}
   spawnableObject: {fileID: 11400000, guid: 4de3c91fdb6bc0b46ba2b06fea4e661c, type: 2}
   effects: []

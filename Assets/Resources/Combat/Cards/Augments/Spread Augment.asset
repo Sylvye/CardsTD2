@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardAugmentDef
   id: spread_aug
   displayName: Spread Augment
-  description: Adds +1 pierce
+  description: "Reduces spread by 10\xB0"
   icon: {fileID: 0}
   applicationCost: 6
   manaCostDelta: 0

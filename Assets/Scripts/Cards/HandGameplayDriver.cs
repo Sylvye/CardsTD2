@@ -23,8 +23,7 @@ namespace Cards
         public void Initialize(
             CombatCardState combatCardState,
             HandController handController,
-            SelectedCardController selectedCardController,
-            int manualDrawCost)
+            SelectedCardController selectedCardController)
         {
             if (handController == null)
                 return;
@@ -37,9 +36,9 @@ namespace Cards
                 drawPileView.Initialize(
                     combatCardState,
                     handController,
-                    () => manualDrawCost,
-                    () => combatSessionDriver != null && combatSessionDriver.CanManuallyDraw(handController, manualDrawCost),
-                    () => TryManualDraw(handController, manualDrawCost)
+                    GetManualDrawCost,
+                    () => combatSessionDriver != null && combatSessionDriver.CanManuallyDraw(handController, GetManualDrawCost()),
+                    () => TryManualDraw(handController)
                 );
             }
 
@@ -76,12 +75,17 @@ namespace Cards
             }
         }
 
-        private void TryManualDraw(HandController handController, int drawCost)
+        private int GetManualDrawCost()
+        {
+            return combatSessionDriver != null ? combatSessionDriver.ManualDrawCost : 0;
+        }
+
+        private void TryManualDraw(HandController handController)
         {
             if (combatSessionDriver == null)
                 return;
 
-            combatSessionDriver.TryManualDraw(handController, drawCost);
+            combatSessionDriver.TryManualDraw(handController, GetManualDrawCost());
         }
     }
 }

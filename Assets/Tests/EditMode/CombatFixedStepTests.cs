@@ -46,6 +46,24 @@ public class CombatFixedStepTests
     }
 
     [Test]
+    public void CombatSessionDriver_ManualDrawCost_UsesConfiguredSessionValue()
+    {
+        GameObject gameObject = new("CombatSessionDriver Manual Draw Cost Test");
+        CombatSessionDriver driver = gameObject.AddComponent<CombatSessionDriver>();
+
+        Assert.That(driver.ManualDrawCost, Is.EqualTo(2));
+
+        driver.ConfigureSession(new CombatSessionSetup
+        {
+            ManualDrawCost = 7
+        });
+
+        Assert.That(driver.ManualDrawCost, Is.EqualTo(7));
+
+        Object.DestroyImmediate(gameObject);
+    }
+
+    [Test]
     public void BattleFlowController_FixedTick_UsesFixedDeltaForDeterministicManaRegen()
     {
         CombatCardState cardState = new();

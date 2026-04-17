@@ -16,14 +16,13 @@ MonoBehaviour:
   displayName: Basic Turret+
   icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
   type: 0
-  description: A simple turret. Can be placed. Costs one less mana than usual and
-    has improved stats.
-  baseManaCost: 3
+  description: A simple turret. Can be placed. Has improved stats.
+  baseManaCost: 5
   exhaust: 1
   cardFamilyId: basic_turret
   baseTier: 1
   upgradeTier: 2
-  baseAugmentSlots: 1
+  baseAugmentSlots: 2
   nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 11400000, guid: 650c6e3ef52c3d748beb05f07675007b, type: 2}
   effects: []

@@ -21,7 +21,7 @@ MonoBehaviour:
     maxHealth: 8
     range: 5
     fireInterval: 0.5
-    damage: 1
+    damage: 2
   defaultTargetPriority: 0
   tags: []
   defaultModifiers: []

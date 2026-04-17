@@ -45,11 +45,12 @@ namespace RunFlow
                     ManaRegenPerSecond = request.manaRegenPerSecond,
                     CurrentHealth = request.run.currentHealth,
                     MaxHealth = request.run.maxHealth,
-                    OpeningHandSize = request.openingHandSize
+                    OpeningHandSize = request.openingHandSize,
+                    ManualDrawCost = request.manualDrawCost
                 });
             }
 
-            handViewDriver?.Initialize(request.run.deck, request.manualDrawCost, combatSessionDriver);
+            handViewDriver?.Initialize(request.run.deck, combatSessionDriver);
         }
 
         private CombatSceneRequest GetRequest()
@@ -73,7 +74,11 @@ namespace RunFlow
                 seed = 1
             };
 
-            return new CombatSceneRequest("debug", debugEncounter, debugRun);
+            CombatSceneRequest request = new("debug", debugEncounter, debugRun);
+            if (combatSessionDriver != null)
+                request.manualDrawCost = combatSessionDriver.ManualDrawCost;
+
+            return request;
         }
 
         private EnemyPath SpawnPath(EncounterDef encounter)

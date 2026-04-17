@@ -11,7 +11,6 @@ namespace Cards
         [Header("Deck Setup")]
         [SerializeField] private bool autoInitializeOnStart = true;
         [SerializeField] private List<OwnedCard> startingDeck = new();
-        [SerializeField] private int manualDrawCost = 2;
 
         [Header("Gameplay")]
         [SerializeField] private TowerManager towerManager;
@@ -31,10 +30,10 @@ namespace Cards
         private void Start()
         {
             if (autoInitializeOnStart)
-                Initialize(startingDeck, manualDrawCost);
+                Initialize(startingDeck);
         }
 
-        public void Initialize(IReadOnlyList<OwnedCard> deck, int drawCost, IPlayerEffects overridePlayerEffects = null)
+        public void Initialize(IReadOnlyList<OwnedCard> deck, IPlayerEffects overridePlayerEffects = null)
         {
             print("Initializing deck in HandViewDriver");
             if (handController != null)
@@ -54,8 +53,7 @@ namespace Cards
             handGameplayDriver?.Initialize(
                 combatCardState,
                 handController,
-                handCardsPresenter.SelectedCardController,
-                drawCost
+                handCardsPresenter.SelectedCardController
             );
         }
 

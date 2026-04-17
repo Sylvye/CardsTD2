@@ -24,7 +24,7 @@ MonoBehaviour:
   cardFamilyId: turret_summoner
   baseTier: 1
   upgradeTier: 1
-  baseAugmentSlots: 0
+  baseAugmentSlots: 1
   nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 11400000, guid: 881ca22033db06644bbaa1747f74c57d, type: 2}
   effects: []

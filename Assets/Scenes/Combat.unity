@@ -755,11 +755,7 @@ MonoBehaviour:
   enemyPath: {fileID: 0}
   playerEffectsSource: {fileID: 962809201}
   enemyParent: {fileID: 287364996}
-  spawnQueue:
-  - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
-    spawnCount: 12
-    spawnInterval: 1
-    waitTime: 2
+  spawnQueue: []
   startOnPlay: 0
 --- !u!1 &424905218
 GameObject:
@@ -1023,7 +1019,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.HandViewDriver
   autoInitializeOnStart: 0
   startingDeck: []
-  manualDrawCost: 5
   towerManager: {fileID: 284558777}
   enemyManager: {fileID: 751640687}
   playerEffectsSource: {fileID: 962809201}
@@ -1719,12 +1714,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f0a8b4f7cc14f2a9d2f3e4b8a9c1d55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combat.CombatSessionDriver
-  defaultStartingMana: 0
+  defaultStartingMana: 10
   defaultMaxMana: 20
   defaultManaRegenPerSecond: 1
-  defaultCurrentHealth: 100
+  defaultCurrentHealth: 20
   defaultMaxHealth: 20
   defaultOpeningHandSize: 5
+  defaultManualDrawCost: 5
 --- !u!4 &962809202
 Transform:
   m_ObjectHideFlags: 0

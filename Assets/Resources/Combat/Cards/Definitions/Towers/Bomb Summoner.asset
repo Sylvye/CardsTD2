@@ -23,7 +23,7 @@ MonoBehaviour:
   cardFamilyId: bomb_summoner
   baseTier: 1
   upgradeTier: 1
-  baseAugmentSlots: 0
+  baseAugmentSlots: 1
   nextUpgradeDef: {fileID: 0}
   spawnableObject: {fileID: 11400000, guid: bb4c106db5226d14281fb1686f4d1cef, type: 2}
   effects: []
