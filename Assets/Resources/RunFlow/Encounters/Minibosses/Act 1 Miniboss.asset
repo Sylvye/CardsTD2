@@ -10,21 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0983a4d4b8c710e4eb72b596083f89d3, type: 3}
-  m_Name: Miniboss
+  m_Name: Act 1 Miniboss
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.EncounterDef
-  id: starter-miniboss
-  displayName: Starter Miniboss
+  id: act_1_miniboss
+  displayName: Act 1 Miniboss
   encounterKind: 1
   pathPrefab: {fileID: 222235461983059477, guid: 4c451ef0132c04d5b982ab5e2ff453be, type: 3}
   spawnBatches:
   - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
     spawnCount: 12
     spawnInterval: 0.5
-    waitTime: 1
+    waitTime: 3
   - enemyDef: {fileID: 11400000, guid: ef2726eebcc4d2045b4d906b5b3b6e25, type: 2}
     spawnCount: 4
     spawnInterval: 2
     waitTime: 1.25
-  rewardPool: {fileID: 11400000, guid: 6f5304e7a01c79941b946c59023f100c, type: 2}
+  rewardPool: {fileID: 11400000, guid: f6241c2e7602c4a499aab9caceed5ecb, type: 2}
   goldReward: 20
   metaCurrencyReward: 2

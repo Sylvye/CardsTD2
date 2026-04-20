@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardAugmentDef
   id: spread_aug
   displayName: Spread Augment
-  description: "Reduces spread by 10\xB0"
+  description: "Reduces projectile spacing by 5\xB0 per projectile"
   icon: {fileID: 0}
   applicationCost: 6
   manaCostDelta: 0
@@ -26,7 +26,7 @@ MonoBehaviour:
     projectileCountDelta: 0
     damageBonusDelta: 0
     pierceDelta: 0
-    degreesSpreadDelta: -10
+    degreesSpreadDelta: -5
     projectileSpeedDelta: 0
     projectileLifetimeDelta: 0
     flatDamageBonusDelta: 0

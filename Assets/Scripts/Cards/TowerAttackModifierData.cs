@@ -45,7 +45,7 @@ namespace Cards
                 projectileAttack.projectileCount = Mathf.Max(1, projectileAttack.projectileCount + projectileCountDelta);
                 projectileAttack.damageBonus = Mathf.Max(0f, projectileAttack.damageBonus + damageBonusDelta);
                 projectileAttack.pierceCount = Mathf.Max(0, projectileAttack.pierceCount + pierceDelta);
-                projectileAttack.degreesSpread = Mathf.Max(0f, projectileAttack.degreesSpread + degreesSpreadDelta);
+                projectileAttack.AdjustDegreesSpread(degreesSpreadDelta);
                 projectileAttack.projectileSpeed = Mathf.Max(0.01f, projectileAttack.projectileSpeed + projectileSpeedDelta);
                 projectileAttack.projectileLifetime = Mathf.Max(0.01f, projectileAttack.projectileLifetime + projectileLifetimeDelta);
                 return;

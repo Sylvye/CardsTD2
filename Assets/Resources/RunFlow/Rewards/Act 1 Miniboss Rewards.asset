@@ -10,40 +10,40 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bc3b236fd2de8b44992e27bf9b56d4c1, type: 3}
-  m_Name: Act 1 Rewards
+  m_Name: Act 1 Miniboss Rewards
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.CardRewardPoolDef
-  id: act_1_miniboss_rewards
-  displayName: Act 1 Miniboss Rewards
+  id: act_1_rewards
+  displayName: Act 1 Rewards
   cards:
   - card: {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
-    weight: 5
+    weight: 3
   - card: {fileID: 11400000, guid: fa75b8567bd9cc34e801c436a36de52e, type: 2}
-    weight: 5
+    weight: 3
   - card: {fileID: 11400000, guid: d5f9933d13facd74da7a14618c88b329, type: 2}
-    weight: 5
+    weight: 3
   - card: {fileID: 11400000, guid: 531c69a24aa7e49e1a2a2700babf351c, type: 2}
-    weight: 1
+    weight: 2
   - card: {fileID: 11400000, guid: 9597b314491050c4a8d5d3bc6bf627a2, type: 2}
-    weight: 1
+    weight: 2
   - card: {fileID: 11400000, guid: ecdf9eccd6ca02541bffd4ad1a4fc0a1, type: 2}
-    weight: 1
+    weight: 2
   - card: {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
     weight: 2
   - card: {fileID: 11400000, guid: 7616c717da96d44498a586eaeaa0de0c, type: 2}
     weight: 2
   augments:
   - augment: {fileID: 11400000, guid: 8f0ef76124d3941599d1cdaca3178b07, type: 2}
-    weight: 1
+    weight: 2
   - augment: {fileID: 11400000, guid: 50bfb9f36a13c4390904df753cc28b79, type: 2}
-    weight: 1
+    weight: 2
   - augment: {fileID: 11400000, guid: fb8df54920f7b48d7ade71871aba0a26, type: 2}
-    weight: 1
+    weight: 2
   - augment: {fileID: 11400000, guid: 9d47f90df2c594d17ab487b902c5f3f4, type: 2}
-    weight: 1
+    weight: 2
   - augment: {fileID: 11400000, guid: b5404553f7de34dbcb778632797b45f5, type: 2}
-    weight: 1
+    weight: 2
   - augment: {fileID: 11400000, guid: 102641357c263443dae9735ed7d122f4, type: 2}
-    weight: 1
+    weight: 2
   - augment: {fileID: 11400000, guid: 9a0867a3aff1f4914a4bc63c4bcd06e5, type: 2}
-    weight: 1
+    weight: 2
   choiceCount: 3

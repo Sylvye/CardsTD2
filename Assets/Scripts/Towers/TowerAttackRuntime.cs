@@ -92,15 +92,12 @@ namespace Towers
             }
 
             targetDirection.Normalize();
-            float spreadDegrees = Mathf.Max(0f, attackDef.degreesSpread);
-            float centerIndex = (projectileCount - 1) * 0.5f;
+            float spreadDegrees = attackDef.DegreesSpread;
 
             for (int i = 0; i < projectileCount; i++)
             {
                 TowerProjectile projectile = CreateProjectile();
-                float angleOffset = projectileCount > 1
-                    ? ((i - centerIndex) / centerIndex) * spreadDegrees * 0.5f
-                    : 0f;
+                float angleOffset = ProjectileSpreadUtility.GetAngleOffsetDegrees(i, projectileCount, spreadDegrees);
                 Vector3 projectileDirection = Quaternion.Euler(0f, 0f, angleOffset) * targetDirection;
                 projectile.transform.position = firePosition;
                 projectile.Initialize(

@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 2178568902523289953}
   - component: {fileID: 2527287468994929050}
   m_Layer: 0
-  m_Name: StarterCombatPath 5
+  m_Name: Path 5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

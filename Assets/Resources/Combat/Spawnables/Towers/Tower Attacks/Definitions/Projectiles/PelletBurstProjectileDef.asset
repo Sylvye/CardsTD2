@@ -19,6 +19,7 @@ MonoBehaviour:
   projectileSpeed: 16
   projectileLifetime: 0.75
   pierceCount: 0
-  degreesSpread: 45
+  degreesSpread: 15
+  minimumDegreesSpread: 2
   fireOffset: {x: 0, y: 0, z: 0}
   followTarget: 0
