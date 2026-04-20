@@ -69,8 +69,11 @@ namespace Combat
 
             if (resolvedSessionText is not null)
             {
-                resolvedSessionText.text = BuildResolvedSessionText();
-                resolvedSessionText.gameObject.SetActive(IsDebugUiEnabled());
+                bool isDebugUiEnabled = IsDebugUiEnabled();
+                resolvedSessionText.gameObject.SetActive(isDebugUiEnabled);
+
+                if (isDebugUiEnabled)
+                    resolvedSessionText.text = BuildResolvedSessionText();
             }
 
             if (speedButtonText is not null)

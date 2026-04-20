@@ -47,7 +47,7 @@ namespace RunFlow.Editor
             }
 
             EditorGUILayout.HelpBox(
-                $"Wave summary: {encounter.spawnBatches.Count} batches, {encounter.TotalSpawnCount} total enemies, ~{encounter.EstimatedDurationSeconds:0.##} seconds before the final wait completes.",
+                $"Wave summary: {encounter.spawnBatches.Count} batches, {encounter.TotalSpawnCount} total enemies, ~{encounter.EstimatedDurationSeconds:0.##} seconds until all batches have spawned.",
                 MessageType.None
             );
 

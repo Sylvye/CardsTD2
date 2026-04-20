@@ -57,7 +57,8 @@ namespace Enemies
 
                 if (waitTimer <= 0f)
                 {
-                    AdvanceToNextBatch();
+                    waitTimer = 0f;
+                    isWaitingBetweenBatches = false;
                 }
 
                 return;
@@ -68,7 +69,7 @@ namespace Enemies
             if (currentBatch == null || currentBatch.enemyDef == null || currentBatch.enemyDef.prefab == null)
             {
                 Debug.LogWarning($"EnemySpawner: invalid batch at index {currentBatchIndex}, skipping.");
-                FinishCurrentBatchAndWait(0f);
+                AdvanceToNextBatch();
                 return;
             }
 
@@ -81,7 +82,7 @@ namespace Enemies
 
                 if (spawnedInCurrentBatch >= currentBatch.spawnCount)
                 {
-                    FinishCurrentBatchAndWait(currentBatch.waitTime);
+                    AdvanceToNextBatch();
                 }
                 else
                 {
@@ -135,16 +136,11 @@ namespace Enemies
             if (batchIndex < 0 || batchIndex >= spawnQueue.Count)
                 return;
 
+            SpawnBatch batch = spawnQueue[batchIndex];
             spawnedInCurrentBatch = 0;
             spawnTimer = 0f;
-            waitTimer = 0f;
-            isWaitingBetweenBatches = false;
-        }
-
-        private void FinishCurrentBatchAndWait(float waitTime)
-        {
-            isWaitingBetweenBatches = true;
-            waitTimer = waitTime;
+            waitTimer = batch != null ? Mathf.Max(0f, batch.waitTime) : 0f;
+            isWaitingBetweenBatches = waitTimer > 0f;
         }
 
         private void AdvanceToNextBatch()

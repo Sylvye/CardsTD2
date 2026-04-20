@@ -775,6 +775,55 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void EnemySpawner_BatchDelay_IsAppliedBeforeBatchStarts()
+    {
+        GameObject spawnerObject = new("EnemySpawner Timing Test");
+        EnemySpawner spawner = spawnerObject.AddComponent<EnemySpawner>();
+        EncounterDef encounter = ScriptableObject.CreateInstance<EncounterDef>();
+        encounter.spawnBatches = new List<SpawnBatch>
+        {
+            new()
+            {
+                spawnCount = 1,
+                spawnInterval = 0f,
+                waitTime = 0.5f
+            },
+            new()
+            {
+                spawnCount = 1,
+                spawnInterval = 0f,
+                waitTime = 1f
+            }
+        };
+
+        spawner.ConfigureEncounter(encounter, null);
+        spawner.Begin();
+
+        Assert.That(GetPrivateField<int>(spawner, "currentBatchIndex"), Is.EqualTo(0));
+        Assert.That(GetPrivateField<bool>(spawner, "isWaitingBetweenBatches"), Is.True);
+        Assert.That(GetPrivateField<float>(spawner, "waitTimer"), Is.EqualTo(0.5f).Within(0.001f));
+
+        MethodInfo fixedUpdate = typeof(EnemySpawner).GetMethod("FixedUpdate", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(fixedUpdate);
+
+        LogAssert.Expect(LogType.Warning, "EnemySpawner: invalid batch at index 0, skipping.");
+
+        for (int i = 0; i < 40; i++)
+        {
+            fixedUpdate.Invoke(spawner, null);
+            if (GetPrivateField<int>(spawner, "currentBatchIndex") == 1)
+                break;
+        }
+
+        Assert.That(GetPrivateField<int>(spawner, "currentBatchIndex"), Is.EqualTo(1));
+        Assert.That(GetPrivateField<bool>(spawner, "isWaitingBetweenBatches"), Is.True);
+        Assert.That(GetPrivateField<float>(spawner, "waitTimer"), Is.EqualTo(1f).Within(0.001f));
+
+        Object.DestroyImmediate(encounter);
+        Object.DestroyImmediate(spawnerObject);
+    }
+
+    [Test]
     public void RunFlowProjectSetup_LoadDefaultPathPrefab_ReturnsStarterCombatPath()
     {
         MethodInfo loadDefaultPathPrefab = typeof(RunFlowProjectSetup).GetMethod("LoadDefaultPathPrefab", BindingFlags.NonPublic | BindingFlags.Static);
