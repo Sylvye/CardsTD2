@@ -566,6 +566,100 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void RunCoordinator_RestAugmentKeepsRestNodeActiveUntilUpgrade()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        ProfileSaveData profile = new() { activeRunId = "rest-augment-run" };
+        saveService.SaveProfile(profile);
+
+        MapTemplateDef template = contentRepository.GetDefaultMapTemplate();
+        List<OwnedCard> deck = CreateOwnedDeckFromTemplateCards();
+        RunSaveData run = new()
+        {
+            runId = "rest-augment-run",
+            currentHealth = 20,
+            maxHealth = 20,
+            gold = 10,
+            currentNodeId = "node-start",
+            completedNodeIds = new List<string> { "node-start" },
+            mapState = CreateBranchingMapState(template.TemplateId),
+            seed = 1,
+            deck = deck,
+            ownedAugments = new List<OwnedAugment>()
+        };
+        saveService.SaveRun(run);
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+        coordinator.SelectNode("node-rest-a");
+
+        Assert.True(TryFindCompatibleAugmentTarget(coordinator.CurrentRun.deck, out CardAugmentDef augment, out OwnedCard targetCard));
+        coordinator.CurrentRun.gold = Mathf.Max(coordinator.CurrentRun.gold, augment.applicationCost + 1);
+        OwnedAugment ownedAugment = new(augment, "rest-augment-1");
+        coordinator.CurrentRun.ownedAugments.Add(ownedAugment);
+
+        Assert.True(coordinator.ApplyRestAugment("node-rest-a", ownedAugment.UniqueId, targetCard.UniqueId));
+        Assert.False(coordinator.CurrentRun.HasCompletedNode("node-rest-a"));
+        Assert.That(coordinator.CurrentRun.currentNodeId, Is.EqualTo("node-rest-a"));
+
+        List<RunMapNodeData> availableNodes = coordinator.GetAvailableNodes();
+        Assert.That(availableNodes.Count, Is.EqualTo(1));
+        Assert.That(availableNodes[0].nodeId, Is.EqualTo("node-rest-a"));
+
+        List<OwnedCard> upgradeableCards = coordinator.GetUpgradeableCards();
+        Assert.IsNotEmpty(upgradeableCards);
+        Assert.True(coordinator.ApplyRestUpgrade("node-rest-a", upgradeableCards[0].UniqueId));
+        Assert.True(coordinator.CurrentRun.HasCompletedNode("node-rest-a"));
+
+        availableNodes = coordinator.GetAvailableNodes();
+        Assert.That(availableNodes.Count, Is.EqualTo(1));
+        Assert.That(availableNodes[0].nodeId, Is.EqualTo("node-merge"));
+    }
+
+    [Test]
+    public void RunCoordinator_RestActionsRequireActiveIncompleteRestNode()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        ProfileSaveData profile = new() { activeRunId = "rest-validation-run" };
+        saveService.SaveProfile(profile);
+
+        MapTemplateDef template = contentRepository.GetDefaultMapTemplate();
+        List<OwnedCard> deck = CreateOwnedDeckFromTemplateCards();
+        RunSaveData run = new()
+        {
+            runId = "rest-validation-run",
+            currentHealth = 20,
+            maxHealth = 20,
+            gold = 10,
+            currentNodeId = "node-start",
+            completedNodeIds = new List<string> { "node-start" },
+            mapState = CreateBranchingMapState(template.TemplateId),
+            seed = 1,
+            deck = deck,
+            ownedAugments = new List<OwnedAugment>()
+        };
+        saveService.SaveRun(run);
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+        coordinator.SelectNode("node-rest-a");
+
+        int healthBefore = coordinator.CurrentRun.currentHealth;
+        Assert.True(TryFindCompatibleAugmentTarget(coordinator.CurrentRun.deck, out CardAugmentDef augment, out OwnedCard targetCard));
+
+        List<OwnedCard> upgradeableCards = coordinator.GetUpgradeableCards();
+        Assert.IsNotEmpty(upgradeableCards);
+
+        OwnedAugment ownedAugment = new(augment, "rest-augment-2");
+        coordinator.CurrentRun.ownedAugments.Add(ownedAugment);
+
+        Assert.False(coordinator.ApplyRestHeal("node-rest-b"));
+        Assert.False(coordinator.ApplyRestUpgrade("node-rest-b", upgradeableCards[0].UniqueId));
+        Assert.False(coordinator.ApplyRestAugment("node-rest-b", ownedAugment.UniqueId, targetCard.UniqueId));
+        Assert.That(coordinator.CurrentRun.currentHealth, Is.EqualTo(healthBefore));
+        Assert.False(coordinator.CurrentRun.HasCompletedNode("node-rest-b"));
+        Assert.That(coordinator.GetOwnedAugments().Exists(entry => entry.UniqueId == ownedAugment.UniqueId), Is.True);
+    }
+
+    [Test]
     public void RunCoordinator_TransitionsThroughCombatAndFailure()
     {
         SaveService saveService = new(contentRepository, saveDirectory);
@@ -1089,6 +1183,18 @@ public class RunFlowEditorTests
         return null;
     }
 
+    private List<OwnedCard> CreateOwnedDeckFromTemplateCards()
+    {
+        List<OwnedCard> deck = new();
+        foreach (CardDef card in contentRepository.Cards)
+        {
+            if (card != null)
+                deck.Add(new OwnedCard(card));
+        }
+
+        return deck;
+    }
+
     private RunSaveData CreateBossRun(string runId, string templateId)
     {
         CardDef card = GetFirstCard();
@@ -1138,6 +1244,34 @@ public class RunFlowEditorTests
         }
 
         return null;
+    }
+
+    private bool TryFindCompatibleAugmentTarget(List<OwnedCard> deck, out CardAugmentDef augment, out OwnedCard targetCard)
+    {
+        augment = null;
+        targetCard = null;
+
+        if (deck == null)
+            return false;
+
+        foreach (CardAugmentDef candidate in contentRepository.Augments)
+        {
+            if (candidate == null)
+                continue;
+
+            for (int i = 0; i < deck.Count; i++)
+            {
+                OwnedCard card = deck[i];
+                if (card != null && card.CanApplyAugment(candidate))
+                {
+                    augment = candidate;
+                    targetCard = card;
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static int CountRewards(List<PendingRewardEntry> rewards, RunRewardType rewardType, string contentId)

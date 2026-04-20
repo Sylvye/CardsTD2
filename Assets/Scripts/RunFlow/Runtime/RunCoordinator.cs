@@ -369,7 +369,7 @@ namespace RunFlow
 
         public bool ApplyRestHeal(string nodeId)
         {
-            if (CurrentRun == null)
+            if (!CanApplyRestAction(nodeId))
                 return false;
 
             CurrentRun.currentHealth = Mathf.Min(CurrentRun.maxHealth, CurrentRun.currentHealth + GetRestHealAmount());
@@ -433,6 +433,9 @@ namespace RunFlow
 
         public bool ApplyRestUpgrade(string nodeId, string uniqueCardId)
         {
+            if (!CanApplyRestAction(nodeId))
+                return false;
+
             OwnedCard card = FindCardByUniqueId(uniqueCardId);
             if (card == null || !card.TryUpgrade())
                 return false;
@@ -443,7 +446,7 @@ namespace RunFlow
 
         public bool ApplyRestAugment(string nodeId, string uniqueAugmentId, string uniqueCardId)
         {
-            if (CurrentRun == null)
+            if (!CanApplyRestAction(nodeId))
                 return false;
 
             OwnedAugment ownedAugment = FindOwnedAugmentByUniqueId(uniqueAugmentId);
@@ -457,7 +460,7 @@ namespace RunFlow
 
             CurrentRun.gold -= applicationCost;
             CurrentRun.ownedAugments.Remove(ownedAugment);
-            CompleteNode(nodeId);
+            SaveCurrentRun();
             return true;
         }
 
@@ -621,6 +624,19 @@ namespace RunFlow
                 return new List<ShopOfferData>();
 
             return shopInventory.GetRandomOffers(CurrentRun.seed, nodeId);
+        }
+
+        private bool CanApplyRestAction(string nodeId)
+        {
+            if (CurrentRun == null || string.IsNullOrWhiteSpace(nodeId))
+                return false;
+
+            RunMapNodeData node = GetNode(nodeId);
+            return node != null &&
+                   node.nodeType == MapNodeType.Rest &&
+                   CurrentRun.currentNodeId == nodeId &&
+                   !CurrentRun.HasCompletedNode(nodeId) &&
+                   IsNodeAvailable(nodeId);
         }
 
         private void CompleteNode(string nodeId, bool saveAfterComplete = true)

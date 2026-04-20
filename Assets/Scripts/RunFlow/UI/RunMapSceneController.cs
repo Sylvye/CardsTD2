@@ -358,7 +358,7 @@ namespace RunFlow
         {
             SimpleUiFactory.ClearChildren(detailRoot);
             SimpleUiFactory.CreateText(detailRoot, node.DisplayNameOrFallback, 28);
-            SimpleUiFactory.CreateText(detailRoot, "Choose exactly one rest action.", 22);
+            SimpleUiFactory.CreateText(detailRoot, "Apply any number of augments. Heal or upgrade a card to end this rest stop.", 22);
             SimpleUiFactory.CreateText(detailRoot, $"Gold: {coordinator.CurrentRun.gold}", 20);
 
             OwnedAugment selectedAugment = coordinator.GetOwnedAugment(selectedRestAugmentUniqueId);
@@ -401,7 +401,7 @@ namespace RunFlow
                         card.CurrentDefinition.icon,
                         card.CurrentDefinition.displayName,
                         "Upgrade Card",
-                        GetCardRestDetail(card),
+                        $"{GetCardRestDetail(card)}\nUpgrading ends this rest stop.",
                         () =>
                         {
                             if (coordinator.ApplyRestUpgrade(node.nodeId, uniqueId))

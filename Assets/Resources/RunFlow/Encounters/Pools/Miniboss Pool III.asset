@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3a4d538d0fe4fd0a1a30b0ce6895f55, type: 3}
   m_Name: Miniboss Pool III
   m_EditorClassIdentifier: Assembly-CSharp::RunFlow.EncounterPoolDef
-  id: act_1_minibosses
-  displayName: Act 1 Miniboss Pool
+  id: act_3_minibosses
+  displayName: Act 3 Miniboss Pool
   encounters:
   - encounter: {fileID: 11400000, guid: 3c3abe4f5e0c944c9b96ecad2f570e17, type: 2}
     weight: 1

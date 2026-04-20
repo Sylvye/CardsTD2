@@ -345,6 +345,45 @@ public class RunFlowPlayModeTests
         Assert.That(HasAppliedAugment(persistedCard, augment), Is.True);
         Assert.That(coordinator.GetOwnedAugments().Exists(entry => entry.UniqueId == ownedAugment.UniqueId), Is.False);
         Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(goldBefore - augment.applicationCost));
+        Assert.That(coordinator.CurrentRun.currentNodeId, Is.EqualTo(restNode.nodeId));
+        Assert.False(coordinator.CurrentRun.HasCompletedNode(restNode.nodeId));
+
+        List<RunMapNodeData> availableNodes = coordinator.GetAvailableNodes();
+        Assert.That(availableNodes.Count, Is.EqualTo(1));
+        Assert.That(availableNodes[0].nodeId, Is.EqualTo(restNode.nodeId));
+    }
+
+    [UnityTest]
+    public IEnumerator RestHeal_AfterApplyingAugment_EndsRestStop()
+    {
+        yield return ConfigureRuntime("RestHealAfterAugment");
+
+        RunCoordinator coordinator = GameFlowRoot.Instance.Coordinator;
+        RunContentRepository repository = GameFlowRoot.Instance.ContentRepository;
+        coordinator.StartNewRun();
+        yield return WaitForScene(SceneNames.RunMap);
+
+        RunMapNodeData restNode = null;
+        yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Rest, node => restNode = node);
+        Assert.NotNull(restNode);
+
+        coordinator.SelectNode(restNode.nodeId);
+        yield return null;
+
+        CardAugmentDef augment = FindCompatibleAugment(repository, coordinator.CurrentRun.deck, out OwnedCard targetCard);
+        Assert.NotNull(augment);
+        Assert.NotNull(targetCard);
+
+        coordinator.CurrentRun.gold = Mathf.Max(coordinator.CurrentRun.gold, augment.applicationCost + 1);
+        coordinator.CurrentRun.ownedAugments.Add(new OwnedAugment(augment, "rest-augment-heal-1"));
+
+        Assert.True(coordinator.ApplyRestAugment(restNode.nodeId, "rest-augment-heal-1", targetCard.UniqueId));
+        Assert.True(coordinator.ApplyRestHeal(restNode.nodeId));
+
+        yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
+
+        Assert.True(coordinator.CurrentRun.HasCompletedNode(restNode.nodeId));
+        Assert.That(coordinator.GetAvailableNodes().Exists(node => node.nodeId == restNode.nodeId), Is.False);
     }
 
     [UnityTest]

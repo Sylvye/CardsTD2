@@ -18,11 +18,11 @@ MonoBehaviour:
   pathPrefab: {fileID: 222235461983059477, guid: b342ef7bf0e289f4aa9603bc43a64690, type: 3}
   spawnBatches:
   - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
-    spawnCount: 10
+    spawnCount: 20
     spawnInterval: 0.6
     waitTime: 3
   - enemyDef: {fileID: 11400000, guid: 51db1df6295d8674c93e869256508871, type: 2}
-    spawnCount: 2
+    spawnCount: 4
     spawnInterval: 0.2
     waitTime: 1
   rewardPool: {fileID: 11400000, guid: 6f5304e7a01c79941b946c59023f100c, type: 2}
