@@ -10,6 +10,7 @@ namespace Cards
         public string DisplayName { get; }
         public string Description { get; }
         public Sprite Icon { get; }
+        public IReadOnlyList<Sprite> AugmentIcons { get; }
         public CardType Type { get; }
         public int ManaCost { get; }
         public int Tier { get; }
@@ -26,6 +27,7 @@ namespace Cards
             string displayName,
             string description,
             Sprite icon,
+            IReadOnlyList<Sprite> augmentIcons,
             CardType type,
             int manaCost,
             int tier,
@@ -41,6 +43,7 @@ namespace Cards
             DisplayName = displayName;
             Description = description;
             Icon = icon;
+            AugmentIcons = augmentIcons;
             Type = type;
             ManaCost = manaCost;
             Tier = tier;

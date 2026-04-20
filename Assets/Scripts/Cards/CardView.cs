@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -13,12 +14,15 @@ namespace Cards
         [SerializeField] private TMP_Text manaCostText;
         [SerializeField] private TMP_Text descriptionText;
         [SerializeField] private Image iconImage;
+        [SerializeField] private RectTransform augmentBadgeContainer;
+        [SerializeField] private Image augmentBadgeTemplate;
         [SerializeField] private Button playButton;
         
         [Header("Motion")]
         [SerializeField] private float vertOffset = 0f;
         [SerializeField] private float hoverRaiseAmount = 30f;
         [SerializeField] private float moveSpeed = 12f;
+        [SerializeField] private float augmentBadgeVerticalSpacing = 6f;
 
         private CardInstance boundCard;
         private Action<CardInstance> onClicked;
@@ -26,6 +30,7 @@ namespace Cards
         private Vector2 baseLocalPosition;
         private bool isHovered;
         private bool isSelected;
+        private readonly List<Image> augmentBadgePool = new();
 
         public CardInstance BoundCard => boundCard;
         
@@ -33,6 +38,9 @@ namespace Cards
         {
             rectTransform = GetComponent<RectTransform>();
             baseLocalPosition = rectTransform.localPosition;
+
+            if (augmentBadgeTemplate != null && !augmentBadgePool.Contains(augmentBadgeTemplate))
+                augmentBadgePool.Add(augmentBadgeTemplate);
         }
 
         private void Update()
@@ -77,6 +85,8 @@ namespace Cards
                 if (nameText is not null) nameText.text = "NULL";
                 if (manaCostText is not null) manaCostText.text = "-";
                 if (descriptionText is not null) descriptionText.text = "";
+                if (iconImage is not null) iconImage.sprite = null;
+                HideAllAugmentBadges();
                 return;
             }
 
@@ -91,6 +101,8 @@ namespace Cards
             
             if  (iconImage is not null)
                 iconImage.sprite = boundCard.Icon;
+
+            RefreshAugmentBadges();
         }
         
         public void SetSelected(bool selected)
@@ -114,6 +126,74 @@ namespace Cards
                 return;
             
             onClicked?.Invoke(boundCard);
+        }
+
+        private void RefreshAugmentBadges()
+        {
+            if (augmentBadgeTemplate is null)
+                return;
+
+            HideAllAugmentBadges();
+
+            IReadOnlyList<Sprite> augmentIcons = boundCard != null ? boundCard.AugmentIcons : null;
+            if (augmentIcons == null)
+                return;
+
+            for (int i = 0; i < augmentIcons.Count; i++)
+            {
+                Sprite icon = augmentIcons[i];
+                if (icon == null)
+                    continue;
+
+                Image badge = GetOrCreateAugmentBadge(i);
+                badge.sprite = icon;
+                badge.enabled = true;
+                badge.gameObject.SetActive(true);
+                PositionBadge(badge.rectTransform, i);
+            }
+        }
+
+        private Image GetOrCreateAugmentBadge(int index)
+        {
+            while (augmentBadgePool.Count <= index)
+            {
+                Image badge = augmentBadgePool.Count == 0
+                    ? augmentBadgeTemplate
+                    : Instantiate(augmentBadgeTemplate, augmentBadgeTemplate.transform.parent);
+
+                badge.name = $"AugmentBadge{augmentBadgePool.Count}";
+                badge.raycastTarget = false;
+                augmentBadgePool.Add(badge);
+            }
+
+            return augmentBadgePool[index];
+        }
+
+        private void HideAllAugmentBadges()
+        {
+            if (augmentBadgeTemplate != null && !augmentBadgePool.Contains(augmentBadgeTemplate))
+                augmentBadgePool.Add(augmentBadgeTemplate);
+
+            for (int i = 0; i < augmentBadgePool.Count; i++)
+            {
+                if (augmentBadgePool[i] == null)
+                    continue;
+
+                augmentBadgePool[i].gameObject.SetActive(false);
+                augmentBadgePool[i].sprite = null;
+            }
+
+            if (augmentBadgeContainer != null)
+                augmentBadgeContainer.gameObject.SetActive(true);
+        }
+
+        private void PositionBadge(RectTransform badgeRect, int index)
+        {
+            if (badgeRect == null)
+                return;
+
+            float badgeHeight = badgeRect.sizeDelta.y;
+            badgeRect.anchoredPosition = new Vector2(0f, -(badgeHeight + augmentBadgeVerticalSpacing) * index);
         }
     }
 }

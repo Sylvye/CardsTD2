@@ -1,6 +1,7 @@
 namespace Cards
 {
     using System;
+    using System.Collections.Generic;
     using UnityEngine;
 
     [Serializable]
@@ -26,6 +27,7 @@ namespace Cards
         public CardType Type => resolvedData != null ? resolvedData.Type : default;
         public string Description => resolvedData != null ? resolvedData.Description : "";
         public Sprite Icon => resolvedData != null ? resolvedData.Icon : null;
+        public IReadOnlyList<Sprite> AugmentIcons => resolvedData != null ? resolvedData.AugmentIcons : System.Array.Empty<Sprite>();
 
         public CardInstance(CardDef definition, int runtimeId)
             : this(definition != null ? new OwnedCard(definition) : null, runtimeId)

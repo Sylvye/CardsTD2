@@ -15,6 +15,7 @@ namespace Cards
             int manaCost = definition.baseManaCost;
             int augmentSlots = definition.GetBaseAugmentSlots();
             List<CardEffectData> effects = CloneCardEffects(definition.effects);
+            List<Sprite> augmentIcons = new();
             List<TowerStatModifierDef> towerModifiers = new();
             List<TowerAttackModifierData> towerAttackModifiers = new();
             List<SpellTriggeredEffect> spellEffects = null;
@@ -25,6 +26,9 @@ namespace Cards
                 CardAugmentDef augment = augments[i];
                 if (augment == null)
                     continue;
+
+                if (augment.icon != null)
+                    augmentIcons.Add(augment.icon);
 
                 manaCost += augment.manaCostDelta;
                 augmentSlots += augment.extraAugmentSlots;
@@ -75,6 +79,7 @@ namespace Cards
                 definition.displayName,
                 definition.description,
                 definition.icon,
+                augmentIcons,
                 definition.type,
                 manaCost,
                 definition.GetUpgradeTier(),
