@@ -15,7 +15,7 @@ MonoBehaviour:
   id: projectile_aug
   displayName: Projectile Augment
   description: Adds +1 projectile
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 3147b27b30fa041b7a5cd1c5ab423781, type: 3}
   applicationCost: 6
   manaCostDelta: 0
   extraAugmentSlots: 0

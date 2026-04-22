@@ -15,7 +15,7 @@ MonoBehaviour:
   id: mana_gain_aug
   displayName: Mana Gain Augment
   description: Gain 1 mana on play
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 72f034594a3dc448f926b380ab3dfdc8, type: 3}
   applicationCost: 6
   manaCostDelta: 0
   extraAugmentSlots: 0

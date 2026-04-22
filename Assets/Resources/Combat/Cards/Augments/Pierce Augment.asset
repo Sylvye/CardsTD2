@@ -15,7 +15,7 @@ MonoBehaviour:
   id: pierce_aug
   displayName: Pierce Augment
   description: Adds +1 pierce
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 06a63347071604d8a803a787af7a027c, type: 3}
   applicationCost: 6
   manaCostDelta: 0
   extraAugmentSlots: 0

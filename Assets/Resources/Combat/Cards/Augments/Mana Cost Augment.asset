@@ -15,7 +15,7 @@ MonoBehaviour:
   id: mana_cost_aug
   displayName: Mana Cost Augment
   description: Card costs -1 mana
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 4877354ba55944bd5820f8dba187fb58, type: 3}
   applicationCost: 6
   manaCostDelta: -1
   extraAugmentSlots: 0

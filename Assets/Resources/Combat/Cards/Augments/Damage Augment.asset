@@ -15,7 +15,7 @@ MonoBehaviour:
   id: damage_aug
   displayName: Damage Augment
   description: Adds +1 damage
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 6f53366cafc8a46f9908c21e95b77064, type: 3}
   applicationCost: 6
   manaCostDelta: 0
   extraAugmentSlots: 0
