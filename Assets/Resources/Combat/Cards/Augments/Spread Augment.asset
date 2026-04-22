@@ -14,13 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardAugmentDef
   id: spread_aug
   displayName: Spread Augment
-  description: "Reduces projectile spacing by 5\xB0 per projectile"
+  description: "Reduces projectile spacing by 5\xB0 per projectile AND increases
+    range by +0.5"
   icon: {fileID: 21300000, guid: 551aec3d461af409aa24125636b9293f, type: 3}
   applicationCost: 6
   manaCostDelta: 0
   extraAugmentSlots: 0
   additionalCardEffects: []
-  additionalTowerModifiers: []
+  additionalTowerModifiers:
+  - {fileID: 11400000, guid: b63d12b96e6a61a4d8be1da0ddcc6c1f, type: 2}
   towerAttackModifiers:
   - attackNameContains: 
     projectileCountDelta: 0

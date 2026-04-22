@@ -20,7 +20,7 @@ MonoBehaviour:
   baseStats:
     maxHealth: 10
     range: 2
-    fireInterval: 1
+    fireInterval: 0.8
     damage: 1
   defaultTargetPriority: 2
   tags: []
