@@ -358,13 +358,14 @@ namespace RunFlow
         {
             SimpleUiFactory.ClearChildren(detailRoot);
             SimpleUiFactory.CreateText(detailRoot, node.DisplayNameOrFallback, 28);
-            SimpleUiFactory.CreateText(detailRoot, "Apply any number of augments. Heal or upgrade a card to end this rest stop.", 22);
+            bool canUseMainAction = coordinator.CanUseRestMainAction(node.nodeId);
+            SimpleUiFactory.CreateText(detailRoot, "Apply any number of augments. Use one heal or one upgrade, then leave when ready.", 22);
             SimpleUiFactory.CreateText(detailRoot, $"Gold: {coordinator.CurrentRun.gold}", 20);
 
             OwnedAugment selectedAugment = coordinator.GetOwnedAugment(selectedRestAugmentUniqueId);
             if (selectedAugment?.Definition != null)
             {
-                ShowRestAugmentTargetPanel(coordinator, node, selectedAugment);
+                ShowRestAugmentTargetPanel(coordinator, node, selectedAugment, canUseMainAction);
                 return;
             }
 
@@ -377,36 +378,46 @@ namespace RunFlow
                 null,
                 $"Heal {healAmount}",
                 "Rest Action",
-                "Recover health and end this rest stop.",
+                canUseMainAction
+                    ? "Recover health. You can still apply augments before leaving."
+                    : "Main rest action already used.",
                 () =>
                 {
-                    coordinator.ApplyRestHeal(node.nodeId);
-                    RefreshUi();
-                });
+                    if (coordinator.ApplyRestHeal(node.nodeId))
+                        RefreshUi();
+                },
+                interactable: canUseMainAction);
 
-            List<OwnedCard> upgradeableCards = coordinator.GetUpgradeableCards();
-            if (upgradeableCards.Count > 0)
+            if (!canUseMainAction)
             {
-                SimpleUiFactory.CreateText(detailRoot, "Upgradeable Cards", 24);
-                RectTransform upgradeSection = SimpleUiFactory.CreateSection(detailRoot, "UpgradeableCards", 10);
-                for (int i = 0; i < upgradeableCards.Count; i++)
+                SimpleUiFactory.CreateText(actionSection, "Main rest action already used. You can still apply augments, then leave when ready.", 20);
+            }
+            else
+            {
+                List<OwnedCard> upgradeableCards = coordinator.GetUpgradeableCards();
+                if (upgradeableCards.Count > 0)
                 {
-                    OwnedCard card = upgradeableCards[i];
-                    if (card?.CurrentDefinition == null)
-                        continue;
+                    SimpleUiFactory.CreateText(detailRoot, "Upgradeable Cards", 24);
+                    RectTransform upgradeSection = SimpleUiFactory.CreateSection(detailRoot, "UpgradeableCards", 10);
+                    for (int i = 0; i < upgradeableCards.Count; i++)
+                    {
+                        OwnedCard card = upgradeableCards[i];
+                        if (card?.CurrentDefinition == null)
+                            continue;
 
-                    string uniqueId = card.UniqueId;
-                    SimpleUiFactory.CreateItemTile(
-                        upgradeSection,
-                        card.CurrentDefinition.icon,
-                        card.CurrentDefinition.displayName,
-                        "Upgrade Card",
-                        $"{GetCardRestDetail(card)}\nUpgrading ends this rest stop.",
-                        () =>
-                        {
-                            if (coordinator.ApplyRestUpgrade(node.nodeId, uniqueId))
-                                RefreshUi();
-                        });
+                        string uniqueId = card.UniqueId;
+                        SimpleUiFactory.CreateItemTile(
+                            upgradeSection,
+                            card.CurrentDefinition.icon,
+                            card.CurrentDefinition.displayName,
+                            "Upgrade Card",
+                            $"{GetCardRestDetail(card)}\nUses your one main rest action.",
+                            () =>
+                            {
+                                if (coordinator.ApplyRestUpgrade(node.nodeId, uniqueId))
+                                    RefreshUi();
+                            });
+                    }
                 }
             }
 
@@ -416,35 +427,42 @@ namespace RunFlow
             if (ownedAugments.Count == 0)
             {
                 SimpleUiFactory.CreateText(augmentSection, "No augments stored yet.", 20);
-                return;
             }
-
-            for (int i = 0; i < ownedAugments.Count; i++)
+            else
             {
-                OwnedAugment ownedAugment = ownedAugments[i];
-                if (ownedAugment?.Definition == null)
-                    continue;
+                for (int i = 0; i < ownedAugments.Count; i++)
+                {
+                    OwnedAugment ownedAugment = ownedAugments[i];
+                    if (ownedAugment?.Definition == null)
+                        continue;
 
-                string uniqueAugmentId = ownedAugment.UniqueId;
-                List<OwnedCard> validTargets = coordinator.GetValidAugmentTargets(uniqueAugmentId);
-                bool hasValidTargets = validTargets.Count > 0;
-                string detail = $"{ownedAugment.Definition.description}\nApply for {Mathf.Max(0, ownedAugment.Definition.applicationCost)} gold.";
-                if (!hasValidTargets)
-                    detail += "\nNo valid cards right now.";
+                    string uniqueAugmentId = ownedAugment.UniqueId;
+                    List<OwnedCard> validTargets = coordinator.GetValidAugmentTargets(uniqueAugmentId);
+                    bool hasValidTargets = validTargets.Count > 0;
+                    string detail = $"{ownedAugment.Definition.description}\nApply for {Mathf.Max(0, ownedAugment.Definition.applicationCost)} gold.";
+                    if (!hasValidTargets)
+                        detail += "\nNo valid cards right now.";
 
-                SimpleUiFactory.CreateItemTile(
-                    augmentSection,
-                    ownedAugment.Definition.icon,
-                    ownedAugment.Definition.displayName,
-                    "Stored Augment",
-                    detail,
-                    () =>
-                    {
-                        selectedRestAugmentUniqueId = uniqueAugmentId;
-                        RefreshUi();
-                    },
-                    interactable: hasValidTargets);
+                    SimpleUiFactory.CreateItemTile(
+                        augmentSection,
+                        ownedAugment.Definition.icon,
+                        ownedAugment.Definition.displayName,
+                        "Stored Augment",
+                        detail,
+                        () =>
+                        {
+                            selectedRestAugmentUniqueId = uniqueAugmentId;
+                            RefreshUi();
+                        },
+                        interactable: hasValidTargets);
+                }
             }
+
+            SimpleUiFactory.CreateButton(detailRoot, "Leave Rest", () =>
+            {
+                coordinator.LeaveRest(node.nodeId);
+                RefreshUi();
+            });
         }
 
         private void ShowShopPanel(RunCoordinator coordinator, RunMapNodeData node)
@@ -488,7 +506,7 @@ namespace RunFlow
             });
         }
 
-        private void ShowRestAugmentTargetPanel(RunCoordinator coordinator, RunMapNodeData node, OwnedAugment selectedAugment)
+        private void ShowRestAugmentTargetPanel(RunCoordinator coordinator, RunMapNodeData node, OwnedAugment selectedAugment, bool canUseMainAction)
         {
             int applicationCost = Mathf.Max(0, selectedAugment.Definition.applicationCost);
             bool canAfford = coordinator.CurrentRun.gold >= applicationCost;
@@ -509,6 +527,16 @@ namespace RunFlow
             SimpleUiFactory.CreateButton(detailRoot, "Back", () =>
             {
                 selectedRestAugmentUniqueId = null;
+                RefreshUi();
+            });
+
+            if (!canUseMainAction)
+                SimpleUiFactory.CreateText(detailRoot, "Main rest action already used. You can still apply augments or leave.", 20);
+
+            SimpleUiFactory.CreateButton(detailRoot, "Leave Rest", () =>
+            {
+                selectedRestAugmentUniqueId = null;
+                coordinator.LeaveRest(node.nodeId);
                 RefreshUi();
             });
 

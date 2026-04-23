@@ -536,6 +536,7 @@ public class RunFlowEditorTests
         saveService.SaveProfile(profile);
 
         MapTemplateDef template = contentRepository.GetDefaultMapTemplate();
+        List<OwnedCard> deck = CreateOwnedDeckFromTemplateCards();
         RunSaveData run = new()
         {
             runId = "branch-run",
@@ -546,7 +547,8 @@ public class RunFlowEditorTests
             completedNodeIds = new List<string> { "node-start" },
             mapState = CreateBranchingMapState(template.TemplateId),
             seed = 1,
-            deck = new List<OwnedCard>()
+            deck = deck,
+            ownedAugments = new List<OwnedAugment>()
         };
         saveService.SaveRun(run);
 
@@ -559,6 +561,28 @@ public class RunFlowEditorTests
         Assert.That(coordinator.CurrentRun.currentNodeId, Is.EqualTo("node-rest-a"));
 
         Assert.True(coordinator.ApplyRestHeal("node-rest-a"));
+        Assert.False(coordinator.CurrentRun.HasCompletedNode("node-rest-a"));
+        Assert.That(coordinator.CurrentRun.currentNodeId, Is.EqualTo("node-rest-a"));
+        Assert.False(coordinator.CanUseRestMainAction("node-rest-a"));
+
+        availableNodes = coordinator.GetAvailableNodes();
+        Assert.That(availableNodes.Count, Is.EqualTo(1));
+        Assert.That(availableNodes[0].nodeId, Is.EqualTo("node-rest-a"));
+
+        Assert.False(coordinator.ApplyRestHeal("node-rest-a"));
+        List<OwnedCard> upgradeableCards = coordinator.GetUpgradeableCards();
+        Assert.IsNotEmpty(upgradeableCards);
+        Assert.False(coordinator.ApplyRestUpgrade("node-rest-a", upgradeableCards[0].UniqueId));
+
+        Assert.True(TryFindCompatibleAugmentTarget(coordinator.CurrentRun.deck, out CardAugmentDef augment, out OwnedCard targetCard));
+        coordinator.CurrentRun.gold = Mathf.Max(coordinator.CurrentRun.gold, augment.applicationCost);
+        OwnedAugment ownedAugment = new(augment, "rest-augment-after-heal");
+        coordinator.CurrentRun.ownedAugments.Add(ownedAugment);
+
+        Assert.True(coordinator.ApplyRestAugment("node-rest-a", ownedAugment.UniqueId, targetCard.UniqueId));
+        Assert.False(coordinator.CurrentRun.HasCompletedNode("node-rest-a"));
+
+        coordinator.LeaveRest("node-rest-a");
         availableNodes = coordinator.GetAvailableNodes();
         Assert.That(availableNodes.Count, Is.EqualTo(1));
         Assert.That(availableNodes[0].nodeId, Is.EqualTo("node-merge"));
@@ -566,7 +590,7 @@ public class RunFlowEditorTests
     }
 
     [Test]
-    public void RunCoordinator_RestAugmentKeepsRestNodeActiveUntilUpgrade()
+    public void RunCoordinator_RestAugmentAndUpgradeKeepRestNodeActiveUntilLeave()
     {
         SaveService saveService = new(contentRepository, saveDirectory);
         ProfileSaveData profile = new() { activeRunId = "rest-augment-run" };
@@ -608,6 +632,16 @@ public class RunFlowEditorTests
         List<OwnedCard> upgradeableCards = coordinator.GetUpgradeableCards();
         Assert.IsNotEmpty(upgradeableCards);
         Assert.True(coordinator.ApplyRestUpgrade("node-rest-a", upgradeableCards[0].UniqueId));
+        Assert.False(coordinator.CurrentRun.HasCompletedNode("node-rest-a"));
+        Assert.That(coordinator.CurrentRun.currentNodeId, Is.EqualTo("node-rest-a"));
+        Assert.False(coordinator.CanUseRestMainAction("node-rest-a"));
+        Assert.False(coordinator.ApplyRestHeal("node-rest-a"));
+
+        availableNodes = coordinator.GetAvailableNodes();
+        Assert.That(availableNodes.Count, Is.EqualTo(1));
+        Assert.That(availableNodes[0].nodeId, Is.EqualTo("node-rest-a"));
+
+        coordinator.LeaveRest("node-rest-a");
         Assert.True(coordinator.CurrentRun.HasCompletedNode("node-rest-a"));
 
         availableNodes = coordinator.GetAvailableNodes();

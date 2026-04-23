@@ -362,18 +362,32 @@ namespace RunFlow
             CompleteNode(nodeId);
         }
 
+        public void LeaveRest(string nodeId)
+        {
+            if (!CanApplyRestAction(nodeId))
+                return;
+
+            CompleteNode(nodeId);
+        }
+
         public int GetRestHealAmount()
         {
             return CurrentRun == null ? 0 : Mathf.Max(1, Mathf.CeilToInt(CurrentRun.maxHealth * 0.3f));
         }
 
+        public bool CanUseRestMainAction(string nodeId)
+        {
+            return CanApplyRestAction(nodeId) && !IsRestMainActionUsed(nodeId);
+        }
+
         public bool ApplyRestHeal(string nodeId)
         {
-            if (!CanApplyRestAction(nodeId))
+            if (!CanUseRestMainAction(nodeId))
                 return false;
 
             CurrentRun.currentHealth = Mathf.Min(CurrentRun.maxHealth, CurrentRun.currentHealth + GetRestHealAmount());
-            CompleteNode(nodeId);
+            MarkRestMainActionUsed(nodeId);
+            SaveCurrentRun();
             return true;
         }
 
@@ -433,14 +447,15 @@ namespace RunFlow
 
         public bool ApplyRestUpgrade(string nodeId, string uniqueCardId)
         {
-            if (!CanApplyRestAction(nodeId))
+            if (!CanUseRestMainAction(nodeId))
                 return false;
 
             OwnedCard card = FindCardByUniqueId(uniqueCardId);
             if (card == null || !card.TryUpgrade())
                 return false;
 
-            CompleteNode(nodeId);
+            MarkRestMainActionUsed(nodeId);
+            SaveCurrentRun();
             return true;
         }
 
@@ -637,6 +652,29 @@ namespace RunFlow
                    CurrentRun.currentNodeId == nodeId &&
                    !CurrentRun.HasCompletedNode(nodeId) &&
                    IsNodeAvailable(nodeId);
+        }
+
+        private bool IsRestMainActionUsed(string nodeId)
+        {
+            if (CurrentRun?.mapState?.restStopStates == null || string.IsNullOrWhiteSpace(nodeId))
+                return false;
+
+            for (int i = 0; i < CurrentRun.mapState.restStopStates.Count; i++)
+            {
+                RestStopStateData state = CurrentRun.mapState.restStopStates[i];
+                if (state != null && state.nodeId == nodeId)
+                    return state.mainActionUsed;
+            }
+
+            return false;
+        }
+
+        private void MarkRestMainActionUsed(string nodeId)
+        {
+            if (CurrentRun?.mapState == null || string.IsNullOrWhiteSpace(nodeId))
+                return;
+
+            CurrentRun.mapState.GetOrCreateRestStopState(nodeId).mainActionUsed = true;
         }
 
         private void CompleteNode(string nodeId, bool saveAfterComplete = true)

@@ -154,7 +154,7 @@ public class RunFlowPlayModeTests
     }
 
     [UnityTest]
-    public IEnumerator RestUpgrade_PersistsAcrossSceneReload()
+    public IEnumerator RestUpgrade_PersistsAcrossSceneReloadWithoutAutoCompletingRestStop()
     {
         yield return ConfigureRuntime("RestUpgradePersistence");
 
@@ -182,6 +182,11 @@ public class RunFlowPlayModeTests
         OwnedCard persistedCard = coordinator.CurrentRun.deck.Find(entry => entry.UniqueId == cardId);
         Assert.NotNull(persistedCard);
         Assert.AreNotEqual(originalDefinition, persistedCard.CurrentDefinition);
+        Assert.That(coordinator.CurrentRun.currentNodeId, Is.EqualTo(restNode.nodeId));
+        Assert.False(coordinator.CurrentRun.HasCompletedNode(restNode.nodeId));
+        Assert.False(coordinator.CanUseRestMainAction(restNode.nodeId));
+        Assert.That(coordinator.GetAvailableNodes().Count, Is.EqualTo(1));
+        Assert.That(coordinator.GetAvailableNodes()[0].nodeId, Is.EqualTo(restNode.nodeId));
     }
 
     [UnityTest]
@@ -354,7 +359,7 @@ public class RunFlowPlayModeTests
     }
 
     [UnityTest]
-    public IEnumerator RestHeal_AfterApplyingAugment_EndsRestStop()
+    public IEnumerator RestHeal_AfterApplyingAugment_KeepsRestStopActiveUntilLeave()
     {
         yield return ConfigureRuntime("RestHealAfterAugment");
 
@@ -382,6 +387,13 @@ public class RunFlowPlayModeTests
 
         yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
 
+        Assert.False(coordinator.CurrentRun.HasCompletedNode(restNode.nodeId));
+        Assert.That(coordinator.CurrentRun.currentNodeId, Is.EqualTo(restNode.nodeId));
+        Assert.False(coordinator.CanUseRestMainAction(restNode.nodeId));
+        Assert.That(coordinator.GetAvailableNodes().Count, Is.EqualTo(1));
+        Assert.That(coordinator.GetAvailableNodes()[0].nodeId, Is.EqualTo(restNode.nodeId));
+
+        coordinator.LeaveRest(restNode.nodeId);
         Assert.True(coordinator.CurrentRun.HasCompletedNode(restNode.nodeId));
         Assert.That(coordinator.GetAvailableNodes().Exists(node => node.nodeId == restNode.nodeId), Is.False);
     }
@@ -561,7 +573,7 @@ public class RunFlowPlayModeTests
                     yield break;
                 }
 
-                coordinator.ApplyRestHeal(nextNode.nodeId);
+                coordinator.LeaveRest(nextNode.nodeId);
             }
 
             yield return null;

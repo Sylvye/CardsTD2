@@ -44,6 +44,7 @@ namespace RunFlow
         public string startNodeId;
         public List<RunMapNodeData> nodes = new();
         public List<ShopPurchaseStateData> shopPurchaseStates = new();
+        public List<RestStopStateData> restStopStates = new();
 
         public RunMapNodeData FindNode(string nodeId)
         {
@@ -73,6 +74,22 @@ namespace RunFlow
 
             ShopPurchaseStateData created = new() { nodeId = nodeId };
             shopPurchaseStates.Add(created);
+            return created;
+        }
+
+        public RestStopStateData GetOrCreateRestStopState(string nodeId)
+        {
+            restStopStates ??= new List<RestStopStateData>();
+
+            for (int i = 0; i < restStopStates.Count; i++)
+            {
+                RestStopStateData state = restStopStates[i];
+                if (state != null && state.nodeId == nodeId)
+                    return state;
+            }
+
+            RestStopStateData created = new() { nodeId = nodeId };
+            restStopStates.Add(created);
             return created;
         }
     }
@@ -114,6 +131,13 @@ namespace RunFlow
             if (!purchasedOfferIds.Contains(offerId))
                 purchasedOfferIds.Add(offerId);
         }
+    }
+
+    [Serializable]
+    public class RestStopStateData
+    {
+        public string nodeId;
+        public bool mainActionUsed;
     }
 
     [Serializable]
