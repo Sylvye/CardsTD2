@@ -15,11 +15,15 @@ namespace RunFlow
         private readonly Dictionary<string, EncounterPoolDef> encounterPoolsById = new();
         private readonly Dictionary<string, CardRewardPoolDef> rewardPoolsById = new();
         private readonly Dictionary<string, ShopInventoryDef> shopInventoriesById = new();
+        private readonly Dictionary<string, MetaUnlockEntry> metaUnlocksById = new();
+        private readonly Dictionary<string, List<MetaUnlockEntry>> cardMetaUnlocksByCardId = new();
+        private readonly List<MetaUnlockEntry> metaUnlocks = new();
 
         private bool isLoaded;
 
         public IReadOnlyCollection<CardDef> Cards => cardsById.Values;
         public IReadOnlyCollection<CardAugmentDef> Augments => augmentsById.Values;
+        public IReadOnlyList<MetaUnlockEntry> MetaUnlocks => metaUnlocks;
 
         public void Refresh()
         {
@@ -31,9 +35,13 @@ namespace RunFlow
             encounterPoolsById.Clear();
             rewardPoolsById.Clear();
             shopInventoriesById.Clear();
+            metaUnlocksById.Clear();
+            cardMetaUnlocksByCardId.Clear();
+            metaUnlocks.Clear();
 
             LoadCards();
             LoadAugments();
+            LoadMetaUnlockCatalogs();
             LoadMapTemplates();
             LoadEncounters();
             LoadEncounterPools();
@@ -77,6 +85,37 @@ namespace RunFlow
         {
             EnsureLoaded();
             return !string.IsNullOrWhiteSpace(id) && shopInventoriesById.TryGetValue(id, out ShopInventoryDef inventory) ? inventory : null;
+        }
+
+        public MetaUnlockEntry GetMetaUnlockById(string id)
+        {
+            EnsureLoaded();
+            return !string.IsNullOrWhiteSpace(id) && metaUnlocksById.TryGetValue(id, out MetaUnlockEntry unlock) ? unlock : null;
+        }
+
+        public List<MetaUnlockEntry> GetMetaUnlocks()
+        {
+            EnsureLoaded();
+            return new List<MetaUnlockEntry>(metaUnlocks);
+        }
+
+        public MetaUnlockEntry GetMetaUnlockForCard(CardDef card)
+        {
+            EnsureLoaded();
+            string cardId = GetCardId(card);
+            if (string.IsNullOrWhiteSpace(cardId) || !cardMetaUnlocksByCardId.TryGetValue(cardId, out List<MetaUnlockEntry> unlocks) || unlocks.Count == 0)
+                return null;
+
+            return unlocks[0];
+        }
+
+        public List<MetaUnlockEntry> GetMetaUnlocksForCard(CardDef card)
+        {
+            EnsureLoaded();
+            string cardId = GetCardId(card);
+            return !string.IsNullOrWhiteSpace(cardId) && cardMetaUnlocksByCardId.TryGetValue(cardId, out List<MetaUnlockEntry> unlocks)
+                ? new List<MetaUnlockEntry>(unlocks)
+                : new List<MetaUnlockEntry>();
         }
 
         public MapTemplateDef GetDefaultMapTemplate()
@@ -165,6 +204,96 @@ namespace RunFlow
                 if (!string.IsNullOrWhiteSpace(id))
                     augmentsById[id] = augment;
             }
+        }
+
+        private void LoadMetaUnlockCatalogs()
+        {
+            MetaUnlockCatalogDef[] catalogs = Resources.LoadAll<MetaUnlockCatalogDef>("RunFlow/Unlocks");
+            Array.Sort(catalogs, CompareMetaUnlockCatalogs);
+
+            for (int catalogIndex = 0; catalogIndex < catalogs.Length; catalogIndex++)
+            {
+                MetaUnlockCatalogDef catalog = catalogs[catalogIndex];
+                if (catalog?.unlocks == null)
+                    continue;
+
+                for (int unlockIndex = 0; unlockIndex < catalog.unlocks.Count; unlockIndex++)
+                {
+                    MetaUnlockEntry unlock = catalog.unlocks[unlockIndex];
+                    if (unlock == null)
+                        continue;
+
+                    string unlockId = unlock.UnlockId;
+                    if (string.IsNullOrWhiteSpace(unlockId))
+                    {
+                        Debug.LogWarning($"Meta unlock catalog '{catalog.name}' has an entry without an id and it will be ignored.");
+                        continue;
+                    }
+
+                    if (metaUnlocksById.ContainsKey(unlockId))
+                    {
+                        Debug.LogWarning($"Duplicate meta unlock id '{unlockId}' found in '{catalog.name}'. The first entry will be kept.");
+                        continue;
+                    }
+
+                    metaUnlocksById[unlockId] = unlock;
+                    metaUnlocks.Add(unlock);
+                }
+            }
+
+            for (int i = 0; i < metaUnlocks.Count; i++)
+                IndexCardsForUnlock(metaUnlocks[i]);
+        }
+
+        private void IndexCardsForUnlock(MetaUnlockEntry unlock)
+        {
+            if (unlock == null)
+                return;
+
+            string unlockId = unlock.UnlockId;
+            if (string.IsNullOrWhiteSpace(unlockId))
+                return;
+
+            if (unlock.type == MetaUnlockType.Card)
+                IndexCardForUnlock(unlock.card, unlock, $"Card meta unlock '{unlockId}'");
+
+            if (unlock.type == MetaUnlockType.UnlockGroup)
+            {
+                if (unlock.contents == null || unlock.contents.Count == 0)
+                {
+                    Debug.LogWarning($"Unlock group '{unlockId}' has no contained unlock content and will not gate card content.");
+                    return;
+                }
+
+                for (int i = 0; i < unlock.contents.Count; i++)
+                {
+                    MetaUnlockContent content = unlock.contents[i];
+                    if (content == null)
+                        continue;
+
+                    if (content.type == MetaUnlockType.Card)
+                        IndexCardForUnlock(content.card, unlock, $"Contained card unlock '{content.GetDisplayName()}' in group '{unlockId}'");
+                }
+            }
+        }
+
+        private void IndexCardForUnlock(CardDef card, MetaUnlockEntry ownerUnlock, string context)
+        {
+            string cardId = GetCardId(card);
+            if (string.IsNullOrWhiteSpace(cardId))
+            {
+                Debug.LogWarning($"{context} is missing a card and will not gate card content.");
+                return;
+            }
+
+            if (!cardMetaUnlocksByCardId.TryGetValue(cardId, out List<MetaUnlockEntry> unlocks))
+            {
+                unlocks = new List<MetaUnlockEntry>();
+                cardMetaUnlocksByCardId[cardId] = unlocks;
+            }
+
+            if (!unlocks.Contains(ownerUnlock))
+                unlocks.Add(ownerUnlock);
         }
 
         private void LoadMapTemplates()
@@ -316,6 +445,24 @@ namespace RunFlow
                 return -1;
 
             int idComparison = string.Compare(left.TemplateId, right.TemplateId, StringComparison.Ordinal);
+            if (idComparison != 0)
+                return idComparison;
+
+            return string.Compare(left.name, right.name, StringComparison.Ordinal);
+        }
+
+        private static int CompareMetaUnlockCatalogs(MetaUnlockCatalogDef left, MetaUnlockCatalogDef right)
+        {
+            if (ReferenceEquals(left, right))
+                return 0;
+
+            if (left == null)
+                return 1;
+
+            if (right == null)
+                return -1;
+
+            int idComparison = string.Compare(left.CatalogId, right.CatalogId, StringComparison.Ordinal);
             if (idComparison != 0)
                 return idComparison;
 

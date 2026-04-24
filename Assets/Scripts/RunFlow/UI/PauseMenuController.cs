@@ -11,9 +11,13 @@ namespace RunFlow
         private bool pauseGameplay;
         private Action<bool> onMenuOpenChanged;
         private RectTransform overlayRoot;
+        private RectTransform debugConsoleRoot;
         private Text titleText;
         private Text debugToggleText;
         private Text closeButtonText;
+        private Text debugResultText;
+        private InputField debugCommandInputField;
+        private DebugConsoleCommandProcessor debugConsoleCommandProcessor;
 
         public bool IsOpen => overlayRoot != null && overlayRoot.gameObject.activeSelf;
 
@@ -35,6 +39,15 @@ namespace RunFlow
 
         private void Update()
         {
+            if (IsOpen && debugCommandInputField != null && debugCommandInputField.isFocused)
+            {
+                if (Keyboard.current?.enterKey.wasPressedThisFrame == true || Keyboard.current?.numpadEnterKey.wasPressedThisFrame == true)
+                {
+                    ExecuteDebugCommand();
+                    return;
+                }
+            }
+
             if (Keyboard.current?.escapeKey.wasPressedThisFrame != true)
                 return;
 
@@ -87,7 +100,7 @@ namespace RunFlow
                 "PauseMenuOverlay",
                 new Color(0f, 0f, 0f, 0.72f));
 
-            RectTransform panel = SimpleUiFactory.CreateDialogPanel(overlayRoot, "PauseMenuPanel", new Vector2(520f, 320f));
+            RectTransform panel = SimpleUiFactory.CreateDialogPanel(overlayRoot, "PauseMenuPanel", new Vector2(640f, 460f));
             SimpleUiFactory.AddVerticalLayout(panel, spacing: 18, padding: 24);
 
             titleText = SimpleUiFactory.CreateText(panel, string.Empty, 34, TextAnchor.MiddleCenter);
@@ -98,6 +111,8 @@ namespace RunFlow
 
             Button closeButton = SimpleUiFactory.CreateButton(panel, string.Empty, CloseMenu);
             closeButtonText = closeButton.GetComponentInChildren<Text>();
+
+            BuildDebugConsole(panel);
 
             overlayRoot.gameObject.SetActive(false);
         }
@@ -112,6 +127,12 @@ namespace RunFlow
 
             if (closeButtonText != null)
                 closeButtonText.text = pauseGameplay ? "Resume" : "Close";
+
+            if (debugConsoleRoot != null)
+                debugConsoleRoot.gameObject.SetActive(IsDebugUiEnabled());
+
+            if (debugResultText != null && string.IsNullOrWhiteSpace(debugResultText.text) && IsDebugUiEnabled())
+                debugResultText.text = "Enter a debug command.";
         }
 
         private void ToggleDebugUi()
@@ -133,6 +154,43 @@ namespace RunFlow
             RefreshMenu();
         }
 
+        private void BuildDebugConsole(RectTransform panel)
+        {
+            debugConsoleRoot = SimpleUiFactory.CreateSection(panel, "DebugConsole", 10);
+
+            Text headerText = SimpleUiFactory.CreateText(debugConsoleRoot, "Debug Console", 24);
+            headerText.color = new Color(0.82f, 0.88f, 0.98f, 1f);
+
+            GameObject inputRowObject = new("DebugConsoleInputRow", typeof(RectTransform));
+            inputRowObject.transform.SetParent(debugConsoleRoot, false);
+            RectTransform inputRow = inputRowObject.GetComponent<RectTransform>();
+            SimpleUiFactory.AddHorizontalLayout(inputRow, spacing: 10, padding: 0);
+
+            debugCommandInputField = SimpleUiFactory.CreateInputField(inputRow, "gain currency 50");
+            Button executeButton = SimpleUiFactory.CreateButton(inputRow, "Execute", ExecuteDebugCommand);
+            LayoutElement executeLayout = executeButton.gameObject.GetComponent<LayoutElement>();
+            executeLayout.flexibleWidth = 0f;
+            executeLayout.preferredWidth = 150f;
+
+            debugResultText = SimpleUiFactory.CreateText(debugConsoleRoot, string.Empty, 20);
+            debugResultText.color = new Color(0.7f, 0.78f, 0.9f, 1f);
+        }
+
+        private void ExecuteDebugCommand()
+        {
+            if (debugConsoleCommandProcessor == null || debugCommandInputField == null || debugResultText == null)
+                return;
+
+            DebugConsoleCommandResult result = debugConsoleCommandProcessor.Execute(debugCommandInputField.text);
+            debugResultText.text = result.Message;
+            debugResultText.color = result.Success
+                ? new Color(0.62f, 0.9f, 0.66f, 1f)
+                : new Color(1f, 0.66f, 0.66f, 1f);
+
+            debugCommandInputField.text = string.Empty;
+            debugCommandInputField.ActivateInputField();
+        }
+
         private RunCoordinator ResolveCoordinator()
         {
             if (GameFlowRoot.Instance != null)
@@ -151,6 +209,7 @@ namespace RunFlow
                 coordinator.DebugUiChanged -= HandleDebugUiChanged;
 
             coordinator = newCoordinator;
+            debugConsoleCommandProcessor = coordinator != null ? new DebugConsoleCommandProcessor(coordinator) : null;
 
             if (coordinator != null)
                 coordinator.DebugUiChanged += HandleDebugUiChanged;

@@ -103,6 +103,224 @@ namespace RunFlow
             DebugUiChanged?.Invoke(enabled);
         }
 
+        public void ResetMetaProgress()
+        {
+            Profile ??= new ProfileSaveData();
+            Profile.unlockIds = new List<string>();
+            Profile.metaCurrency = 0;
+            saveService.SaveProfile(Profile);
+        }
+
+        public bool TryGainCurrency(int amount, out string message)
+        {
+            if (CurrentRun == null)
+            {
+                message = "No active run is loaded.";
+                return false;
+            }
+
+            CurrentRun.gold += amount;
+            SaveCurrentRun();
+            message = $"Run gold is now {CurrentRun.gold}.";
+            return true;
+        }
+
+        public bool TryGainMetaCurrency(int amount, out string message)
+        {
+            Profile ??= new ProfileSaveData();
+            Profile.metaCurrency += amount;
+            saveService.SaveProfile(Profile);
+            message = $"Meta currency is now {Profile.metaCurrency}.";
+            return true;
+        }
+
+        public bool TrySetLives(int value, out string message)
+        {
+            if (CurrentRun == null)
+            {
+                message = "No active run is loaded.";
+                return false;
+            }
+
+            CurrentRun.currentHealth = Mathf.Clamp(value, 0, CurrentRun.maxHealth);
+            SaveCurrentRun();
+            message = $"Lives set to {CurrentRun.currentHealth}/{CurrentRun.maxHealth}.";
+            return true;
+        }
+
+        public bool TryAddLives(int delta, out string message)
+        {
+            if (CurrentRun == null)
+            {
+                message = "No active run is loaded.";
+                return false;
+            }
+
+            CurrentRun.currentHealth = Mathf.Clamp(CurrentRun.currentHealth + delta, 0, CurrentRun.maxHealth);
+            SaveCurrentRun();
+            message = $"Lives set to {CurrentRun.currentHealth}/{CurrentRun.maxHealth}.";
+            return true;
+        }
+
+        public bool TryAddCardById(string cardId, out string message)
+        {
+            if (CurrentRun == null)
+            {
+                message = "No active run is loaded.";
+                return false;
+            }
+
+            CardDef card = contentRepository.GetCardById(cardId);
+            if (card == null)
+            {
+                message = $"Card '{cardId}' was not found.";
+                return false;
+            }
+
+            CurrentRun.deck ??= new List<OwnedCard>();
+            CurrentRun.deck.Add(new OwnedCard(card));
+            SaveCurrentRun();
+            message = $"Added card '{contentRepository.GetCardId(card)}'.";
+            return true;
+        }
+
+        public bool TryAddAugmentById(string augmentId, out string message)
+        {
+            if (CurrentRun == null)
+            {
+                message = "No active run is loaded.";
+                return false;
+            }
+
+            CardAugmentDef augment = contentRepository.GetAugmentById(augmentId);
+            if (augment == null)
+            {
+                message = $"Augment '{augmentId}' was not found.";
+                return false;
+            }
+
+            CurrentRun.ownedAugments ??= new List<OwnedAugment>();
+            CurrentRun.ownedAugments.Add(new OwnedAugment(augment));
+            SaveCurrentRun();
+            message = $"Added augment '{contentRepository.GetAugmentId(augment)}'.";
+            return true;
+        }
+
+        public List<MetaUnlockEntry> GetMetaUnlocks()
+        {
+            return contentRepository.GetMetaUnlocks();
+        }
+
+        public bool IsMetaUnlockPurchased(string unlockId)
+        {
+            return Profile != null && Profile.HasUnlock(unlockId);
+        }
+
+        public bool AreMetaUnlockPrerequisitesMet(MetaUnlockEntry unlock)
+        {
+            if (unlock?.prerequisiteUnlockIds == null)
+                return true;
+
+            for (int i = 0; i < unlock.prerequisiteUnlockIds.Count; i++)
+            {
+                string prerequisiteId = unlock.prerequisiteUnlockIds[i];
+                if (string.IsNullOrWhiteSpace(prerequisiteId))
+                    continue;
+
+                if (!IsMetaUnlockPurchased(prerequisiteId))
+                    return false;
+            }
+
+            return true;
+        }
+
+        public string GetMetaUnlockRequirementText(MetaUnlockEntry unlock)
+        {
+            if (unlock?.prerequisiteUnlockIds == null)
+                return string.Empty;
+
+            List<string> names = new();
+            for (int i = 0; i < unlock.prerequisiteUnlockIds.Count; i++)
+            {
+                string prerequisiteId = unlock.prerequisiteUnlockIds[i];
+                if (string.IsNullOrWhiteSpace(prerequisiteId) || IsMetaUnlockPurchased(prerequisiteId))
+                    continue;
+
+                MetaUnlockEntry prerequisite = contentRepository.GetMetaUnlockById(prerequisiteId);
+                if (prerequisite != null)
+                    names.Add(prerequisite.GetDisplayName());
+                else
+                    names.Add(prerequisiteId);
+            }
+
+            return names.Count > 0 ? $"Requires: {string.Join(", ", names)}" : string.Empty;
+        }
+
+        public bool TryPurchaseMetaUnlock(string unlockId)
+        {
+            if (string.IsNullOrWhiteSpace(unlockId))
+                return false;
+
+            Profile ??= new ProfileSaveData();
+            if (Profile.HasUnlock(unlockId))
+                return false;
+
+            MetaUnlockEntry unlock = contentRepository.GetMetaUnlockById(unlockId);
+            if (unlock == null || unlock.type == MetaUnlockType.Relic || !AreMetaUnlockPrerequisitesMet(unlock))
+                return false;
+
+            if (unlock.type == MetaUnlockType.Card && unlock.card == null)
+                return false;
+
+            if (unlock.type == MetaUnlockType.UnlockGroup && GetUnlockContents(unlock).Count == 0)
+                return false;
+
+            int cost = Mathf.Max(0, unlock.cost);
+            if (Profile.metaCurrency < cost)
+                return false;
+
+            Profile.metaCurrency -= cost;
+            Profile.AddUnlock(unlockId);
+
+            saveService.SaveProfile(Profile);
+            return true;
+        }
+
+        public bool IsCardUnlocked(CardDef card)
+        {
+            if (card == null)
+                return false;
+
+            List<MetaUnlockEntry> unlocks = contentRepository.GetMetaUnlocksForCard(card);
+            if (unlocks.Count == 0)
+                return true;
+
+            if (Profile == null)
+                return false;
+
+            for (int i = 0; i < unlocks.Count; i++)
+            {
+                MetaUnlockEntry unlock = unlocks[i];
+                if (unlock != null && Profile.HasUnlock(unlock.UnlockId))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public List<MetaUnlockContent> GetUnlockContents(MetaUnlockEntry unlock)
+        {
+            List<MetaUnlockContent> contents = new();
+            if (unlock?.contents == null)
+                return contents;
+
+            for (int i = 0; i < unlock.contents.Count; i++)
+                if (unlock.contents[i] != null)
+                    contents.Add(unlock.contents[i]);
+
+            return contents;
+        }
+
         public RunMapNodeData GetNode(string nodeId)
         {
             return CurrentRun?.mapState != null ? CurrentRun.mapState.FindNode(nodeId) : null;
@@ -638,7 +856,12 @@ namespace RunFlow
             if (shopInventory == null || CurrentRun == null)
                 return new List<ShopOfferData>();
 
-            return shopInventory.GetRandomOffers(CurrentRun.seed, nodeId);
+            return shopInventory.GetRandomOffers(CurrentRun.seed, nodeId, IsShopOfferUnlocked);
+        }
+
+        private bool IsShopOfferUnlocked(ShopOfferData offer)
+        {
+            return offer == null || offer.offerType != ShopOfferType.Card || IsCardUnlocked(offer.card);
         }
 
         private bool CanApplyRestAction(string nodeId)
@@ -714,7 +937,7 @@ namespace RunFlow
             if (encounter?.rewardPool == null)
                 return;
 
-            List<PendingRewardEntry> rewardChoices = encounter.rewardPool.GetRandomChoices(CurrentRun.seed, nodeId);
+            List<PendingRewardEntry> rewardChoices = encounter.rewardPool.GetRandomChoices(CurrentRun.seed, nodeId, IsCardUnlocked);
             PendingRewardData pendingReward = new()
             {
                 sourceNodeId = nodeId,

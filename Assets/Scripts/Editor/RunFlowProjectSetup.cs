@@ -21,6 +21,7 @@ public static class RunFlowProjectSetup
     private const string EncountersPath = RunFlowRootPath + "/Encounters";
     private const string RewardsPath = RunFlowRootPath + "/Rewards";
     private const string ShopsPath = RunFlowRootPath + "/Shops";
+    private const string UnlocksPath = RunFlowRootPath + "/Unlocks";
     private const string MapNodesPath = RunFlowRootPath + "/MapNodes";
     private const string MapsPath = RunFlowRootPath + "/Maps";
     private const string DefaultPathPrefabPath = PathsPath + "/StarterCombatPath 1.prefab";
@@ -39,6 +40,7 @@ public static class RunFlowProjectSetup
         if (upgradedStarterCard != null && !cards.Contains(upgradedStarterCard))
             cards.Add(upgradedStarterCard);
 
+        CreateMetaUnlockCatalog(cards);
         CardRewardPoolDef rewardPool = CreateRewardPool(cards, augments);
         ShopInventoryDef shopInventory = CreateShopInventory(cards, augments);
         EncounterDef regularFightA = CreateEncounter("regular-fight-a", "Regular Fight I", EncounterKind.RegularFight, pathPrefab, enemies, rewardPool, 10, 1, 4, 0);
@@ -71,6 +73,7 @@ public static class RunFlowProjectSetup
         EnsureFolder(EncountersPath);
         EnsureFolder(RewardsPath);
         EnsureFolder(ShopsPath);
+        EnsureFolder(UnlocksPath);
         EnsureFolder(MapNodesPath);
         EnsureFolder(MapsPath);
     }
@@ -198,6 +201,91 @@ public static class RunFlowProjectSetup
 
         EditorUtility.SetDirty(shop);
         return shop;
+    }
+
+    private static MetaUnlockCatalogDef CreateMetaUnlockCatalog(List<CardDef> cards)
+    {
+        MetaUnlockCatalogDef catalog = LoadOrCreateAsset<MetaUnlockCatalogDef>($"{UnlocksPath}/Meta Unlocks.asset");
+        catalog.id = "meta_unlocks";
+        catalog.displayName = "Meta Unlocks";
+
+        MetaUnlockEntry bombSummoner = CreateCardUnlock("unlock.card.bomb_summoner", FindCard(cards, "bomb_summoner"), 4);
+        bombSummoner.prerequisiteUnlockIds = new List<string> { "unlock.group.tower_starters" };
+
+        catalog.unlocks = new List<MetaUnlockEntry>
+        {
+            new()
+            {
+                id = "unlock.group.tower_starters",
+                type = MetaUnlockType.UnlockGroup,
+                cost = 5,
+                displayName = "Tower Starter Unlocks",
+                description = "Unlocks a set of tower cards so they can appear in future card rewards and shops.",
+                contents = new List<MetaUnlockContent>
+                {
+                    CreateCardUnlockContent(FindCard(cards, "shotgunner")),
+                    CreateCardUnlockContent(FindCard(cards, "tesla")),
+                    CreateCardUnlockContent(FindCard(cards, "turret_summoner")),
+                    CreateCardUnlockContent(FindCard(cards, "shotgunner_PLUS")),
+                    CreateCardUnlockContent(FindCard(cards, "tesla_PLUS"))
+                }
+            },
+            bombSummoner,
+            new()
+            {
+                id = "unlock.relic.placeholder",
+                type = MetaUnlockType.Relic,
+                cost = 0,
+                displayName = "Relic Unlocks",
+                description = "Relic unlock support will use this unlock type later."
+            }
+        };
+
+        EditorUtility.SetDirty(catalog);
+        return catalog;
+    }
+
+    private static MetaUnlockContent CreateCardUnlockContent(CardDef card)
+    {
+        return new MetaUnlockContent
+        {
+            type = MetaUnlockType.Card,
+            displayName = card != null ? card.displayName : "Card Unlock",
+            description = card != null
+                ? $"Unlocks {card.displayName} so it can appear in future card rewards and shops."
+                : "Unlocks a card so it can appear in future card rewards and shops.",
+            card = card
+        };
+    }
+
+    private static MetaUnlockEntry CreateCardUnlock(string id, CardDef card, int cost)
+    {
+        return new MetaUnlockEntry
+        {
+            id = id,
+            type = MetaUnlockType.Card,
+            cost = cost,
+            displayName = card != null ? card.displayName : "Card Unlock",
+            description = card != null
+                ? $"Unlocks {card.displayName} so it can appear in future card rewards and shops."
+                : "Unlocks a card so it can appear in future card rewards and shops.",
+            card = card
+        };
+    }
+
+    private static CardDef FindCard(List<CardDef> cards, string id)
+    {
+        if (cards == null)
+            return null;
+
+        for (int i = 0; i < cards.Count; i++)
+        {
+            CardDef card = cards[i];
+            if (card != null && card.id == id)
+                return card;
+        }
+
+        return null;
     }
 
     private static EncounterDef CreateEncounter(

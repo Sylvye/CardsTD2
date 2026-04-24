@@ -103,6 +103,18 @@ namespace RunFlow
             return layout;
         }
 
+        public static HorizontalLayoutGroup AddHorizontalLayout(Transform target, int spacing = 12, int padding = 0)
+        {
+            HorizontalLayoutGroup layout = target.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = spacing;
+            layout.padding = new RectOffset(padding, padding, padding, padding);
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            return layout;
+        }
+
         public static Text CreateText(Transform parent, string content, int fontSize = 28, TextAnchor alignment = TextAnchor.MiddleLeft)
         {
             GameObject textObject = new("Text", typeof(RectTransform), typeof(Text));
@@ -146,6 +158,59 @@ namespace RunFlow
             textTransform.offsetMax = Vector2.zero;
 
             return button;
+        }
+
+        public static InputField CreateInputField(Transform parent, string placeholder)
+        {
+            GameObject inputObject = new("InputField", typeof(RectTransform), typeof(Image), typeof(InputField), typeof(LayoutElement));
+            inputObject.transform.SetParent(parent, false);
+
+            Image background = inputObject.GetComponent<Image>();
+            background.color = new Color(0.12f, 0.16f, 0.22f, 1f);
+
+            LayoutElement layoutElement = inputObject.GetComponent<LayoutElement>();
+            layoutElement.minHeight = 54f;
+            layoutElement.flexibleWidth = 1f;
+
+            RectTransform inputRect = inputObject.GetComponent<RectTransform>();
+            inputRect.sizeDelta = new Vector2(0f, 54f);
+
+            GameObject textAreaObject = new("Text Area", typeof(RectTransform), typeof(RectMask2D));
+            textAreaObject.transform.SetParent(inputObject.transform, false);
+
+            RectTransform textAreaRect = textAreaObject.GetComponent<RectTransform>();
+            textAreaRect.anchorMin = Vector2.zero;
+            textAreaRect.anchorMax = Vector2.one;
+            textAreaRect.offsetMin = new Vector2(16f, 10f);
+            textAreaRect.offsetMax = new Vector2(-16f, -10f);
+
+            Text placeholderText = CreateText(textAreaObject.transform, placeholder, 22, TextAnchor.MiddleLeft);
+            placeholderText.name = "Placeholder";
+            placeholderText.color = new Color(0.58f, 0.64f, 0.74f, 0.9f);
+
+            Text inputText = CreateText(textAreaObject.transform, string.Empty, 22, TextAnchor.MiddleLeft);
+            inputText.name = "Text";
+            inputText.supportRichText = false;
+
+            RectTransform placeholderRect = placeholderText.rectTransform;
+            placeholderRect.anchorMin = Vector2.zero;
+            placeholderRect.anchorMax = Vector2.one;
+            placeholderRect.offsetMin = Vector2.zero;
+            placeholderRect.offsetMax = Vector2.zero;
+
+            RectTransform inputTextRect = inputText.rectTransform;
+            inputTextRect.anchorMin = Vector2.zero;
+            inputTextRect.anchorMax = Vector2.one;
+            inputTextRect.offsetMin = Vector2.zero;
+            inputTextRect.offsetMax = Vector2.zero;
+
+            InputField inputField = inputObject.GetComponent<InputField>();
+            inputField.targetGraphic = background;
+            inputField.textComponent = inputText;
+            inputField.placeholder = placeholderText;
+            inputField.lineType = InputField.LineType.SingleLine;
+            inputField.text = string.Empty;
+            return inputField;
         }
 
         public static RectTransform CreateSection(Transform parent, string name, int spacing = 8)

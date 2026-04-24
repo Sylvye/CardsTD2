@@ -10,21 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5161b0368f8d87418fd372260815a17, type: 3}
-  m_Name: Shotgunner
+  m_Name: Turret Summoner+
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerDef
-  prefab: {fileID: 77660494436261291, guid: 76405fe5966513d4aaa88e935c2cf22b, type: 3}
-  effectRadius: 2
-  id: shotgun_turret
-  displayName: Shotgun Turret
-  placementRadius: 0.5
+  prefab: {fileID: 77660494436261291, guid: e3b8e2513f8f4cc4586c05e79fd69e78, type: 3}
+  effectRadius: 3.5
+  id: turret_summoner_PLUS
+  displayName: Turret Summoner+
+  placementRadius: 0.8
   baseStats:
-    maxHealth: 10
-    range: 2
-    fireInterval: 0.8
+    maxHealth: 30
+    range: 3.5
+    fireInterval: 3
     damage: 1
-  defaultTargetPriority: 2
+  defaultTargetPriority: 0
   tags: []
   defaultModifiers: []
   attacks:
-  - {fileID: 11400000, guid: f611d8f96a01c8d4397688f62634a164, type: 2}
+  - {fileID: 11400000, guid: 18f62ee737d47a74da35808935c93243, type: 2}
   triggeredEffects: []

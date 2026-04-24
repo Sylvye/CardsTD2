@@ -17,7 +17,12 @@ namespace RunFlow
 
         public List<ShopOfferData> GetRandomOffers(int seed, string salt)
         {
-            List<ShopOfferData> availableOffers = GetValidOffers();
+            return GetRandomOffers(seed, salt, null);
+        }
+
+        public List<ShopOfferData> GetRandomOffers(int seed, string salt, Func<ShopOfferData, bool> canIncludeOffer)
+        {
+            List<ShopOfferData> availableOffers = GetValidOffers(canIncludeOffer);
             List<ShopOfferData> selectedOffers = new();
 
             int desiredCount = Mathf.Clamp(choiceCount, 0, availableOffers.Count);
@@ -38,7 +43,7 @@ namespace RunFlow
             return selectedOffers;
         }
 
-        private List<ShopOfferData> GetValidOffers()
+        private List<ShopOfferData> GetValidOffers(Func<ShopOfferData, bool> canIncludeOffer)
         {
             List<ShopOfferData> validOffers = new();
             if (offers == null)
@@ -49,7 +54,8 @@ namespace RunFlow
                 ShopOfferData offer = offers[i];
                 if (offer != null &&
                     offer.weight > 0 &&
-                    !string.IsNullOrWhiteSpace(offer.OfferId))
+                    !string.IsNullOrWhiteSpace(offer.OfferId) &&
+                    (canIncludeOffer == null || canIncludeOffer(offer)))
                 {
                     validOffers.Add(offer);
                 }

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerDef
   prefab: {fileID: 77660494436261291, guid: 76405fe5966513d4aaa88e935c2cf22b, type: 3}
   effectRadius: 2.5
-  id: shotgunner_PLUS
-  displayName: Shotgunner+
+  id: shotgun_turret_PLUS
+  displayName: Shotgun Turret+
   placementRadius: 0.5
   baseStats:
     maxHealth: 12

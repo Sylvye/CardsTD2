@@ -18,7 +18,12 @@ namespace RunFlow
 
         public List<PendingRewardEntry> GetRandomChoices(int seed, string salt)
         {
-            List<WeightedRewardCandidate> availableRewards = BuildCandidates();
+            return GetRandomChoices(seed, salt, null);
+        }
+
+        public List<PendingRewardEntry> GetRandomChoices(int seed, string salt, Func<CardDef, bool> canIncludeCard)
+        {
+            List<WeightedRewardCandidate> availableRewards = BuildCandidates(canIncludeCard);
             List<PendingRewardEntry> selectedRewards = new();
 
             int desiredCount = Mathf.Clamp(choiceCount, 0, availableRewards.Count);
@@ -44,7 +49,7 @@ namespace RunFlow
             return selectedRewards;
         }
 
-        private List<WeightedRewardCandidate> BuildCandidates()
+        private List<WeightedRewardCandidate> BuildCandidates(Func<CardDef, bool> canIncludeCard)
         {
             Dictionary<string, WeightedRewardCandidate> candidatesByKey = new();
 
@@ -53,6 +58,9 @@ namespace RunFlow
                 for (int i = 0; i < cards.Count; i++)
                 {
                     WeightedCardRewardEntry entry = cards[i];
+                    if (entry?.card == null || (canIncludeCard != null && !canIncludeCard(entry.card)))
+                        continue;
+
                     string contentId = GetCardId(entry?.card);
                     AddCandidate(candidatesByKey, RunRewardType.Card, contentId, entry?.weight ?? 0);
                 }

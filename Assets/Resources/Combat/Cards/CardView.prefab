@@ -531,8 +531,8 @@ MonoBehaviour:
   augmentBadgeContainer: {fileID: 863420000000000001}
   augmentBadgeTemplate: {fileID: 863420000000000004}
   playButton: {fileID: 198304793261325859}
-  vertOffset: 100
-  hoverRaiseAmount: 50
+  vertOffset: 20
+  hoverRaiseAmount: 130
   moveSpeed: 12
   augmentBadgeVerticalSpacing: 6
 --- !u!1 &7830766309854922857
@@ -708,7 +708,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 20.569946, y: 126.32001}
+  m_AnchoredPosition: {x: 20, y: 124}
   m_SizeDelta: {x: 150.05, y: 38.356}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &359183542136193069
@@ -774,7 +774,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_characterHorizontalScale: 1

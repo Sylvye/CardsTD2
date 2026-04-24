@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 public class RunFlowEditorTests
 {
@@ -209,6 +210,142 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void RunCoordinator_ResetMetaProgress_ClearsUnlocksAndCurrencyButPreservesRunAndDebugFlag()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        ProfileSaveData profile = new()
+        {
+            metaCurrency = 17,
+            activeRunId = "debug-run",
+            debugUiEnabled = true
+        };
+        profile.AddUnlock("unlock.test");
+        saveService.SaveProfile(profile);
+        saveService.SaveRun(CreateBossRun("debug-run", "act_debug"));
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+        coordinator.ResetMetaProgress();
+
+        ProfileSaveData loadedProfile = saveService.LoadProfile();
+        Assert.That(loadedProfile.metaCurrency, Is.EqualTo(0));
+        Assert.That(loadedProfile.unlockIds, Is.Empty);
+        Assert.That(loadedProfile.activeRunId, Is.EqualTo("debug-run"));
+        Assert.That(loadedProfile.debugUiEnabled, Is.True);
+    }
+
+    [Test]
+    public void RunCoordinator_DebugMutations_PersistRunAndProfileChanges()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        ProfileSaveData profile = new()
+        {
+            metaCurrency = 4,
+            activeRunId = "mutate-run",
+            debugUiEnabled = true
+        };
+        saveService.SaveProfile(profile);
+        saveService.SaveRun(CreateBossRun("mutate-run", "act_debug"));
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+        CardDef firstCard = GetFirstCard();
+        CardAugmentDef firstAugment = FindCompatibleAugment(firstCard);
+        Assert.NotNull(firstAugment);
+
+        Assert.True(coordinator.TryGainCurrency(12, out _));
+        Assert.True(coordinator.TryGainMetaCurrency(6, out _));
+        Assert.True(coordinator.TrySetLives(9, out _));
+        Assert.True(coordinator.TryAddLives(-3, out _));
+        Assert.True(coordinator.TryAddCardById(contentRepository.GetCardId(firstCard), out _));
+        Assert.True(coordinator.TryAddAugmentById(contentRepository.GetAugmentId(firstAugment), out _));
+
+        ProfileSaveData loadedProfile = saveService.LoadProfile();
+        RunSaveData loadedRun = saveService.LoadRun("mutate-run");
+
+        Assert.That(loadedProfile.metaCurrency, Is.EqualTo(10));
+        Assert.That(loadedRun.gold, Is.EqualTo(22));
+        Assert.That(loadedRun.currentHealth, Is.EqualTo(6));
+        Assert.That(loadedRun.deck.Count, Is.EqualTo(2));
+        Assert.That(loadedRun.deck[1].CurrentDefinition, Is.EqualTo(firstCard));
+        Assert.That(loadedRun.ownedAugments.Count, Is.EqualTo(1));
+        Assert.That(loadedRun.ownedAugments[0].Definition, Is.EqualTo(firstAugment));
+    }
+
+    [Test]
+    public void RunCoordinator_DebugMutations_RejectMissingRunAndInvalidIdsWithoutMutatingState()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        saveService.SaveProfile(new ProfileSaveData { metaCurrency = 3 });
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        Assert.False(coordinator.TryGainCurrency(5, out _));
+        Assert.False(coordinator.TrySetLives(10, out _));
+        Assert.False(coordinator.TryAddLives(2, out _));
+        Assert.False(coordinator.TryAddCardById("missing-card", out _));
+        Assert.False(coordinator.TryAddAugmentById("missing-augment", out _));
+
+        ProfileSaveData loadedProfile = saveService.LoadProfile();
+        Assert.That(loadedProfile.metaCurrency, Is.EqualTo(3));
+        Assert.That(loadedProfile.activeRunId, Is.Null);
+    }
+
+    [Test]
+    public void DebugConsoleCommandProcessor_ParsesAliasesAndWhitespaceInsensitiveCommands()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        ProfileSaveData profile = new()
+        {
+            metaCurrency = 2,
+            activeRunId = "parser-run",
+            debugUiEnabled = true
+        };
+        saveService.SaveProfile(profile);
+        saveService.SaveRun(CreateBossRun("parser-run", "act_debug"));
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+        DebugConsoleCommandProcessor processor = new(coordinator);
+        CardDef firstCard = GetFirstCard();
+        CardAugmentDef firstAugment = FindCompatibleAugment(firstCard);
+        Assert.NotNull(firstAugment);
+
+        DebugConsoleCommandResult currencyResult = processor.Execute("  GAIN   CURRENCY   7 ");
+        DebugConsoleCommandResult metaResult = processor.Execute("gain meta currency 3");
+        DebugConsoleCommandResult livesResult = processor.Execute("modify    lives   add   -4");
+        DebugConsoleCommandResult cardResult = processor.Execute($"add card by id {contentRepository.GetCardId(firstCard)}");
+        DebugConsoleCommandResult augmentResult = processor.Execute($"ADD AUGMENT {contentRepository.GetAugmentId(firstAugment)}");
+
+        Assert.That(currencyResult.Success, Is.True);
+        Assert.That(metaResult.Success, Is.True);
+        Assert.That(livesResult.Success, Is.True);
+        Assert.That(cardResult.Success, Is.True);
+        Assert.That(augmentResult.Success, Is.True);
+
+        RunSaveData loadedRun = saveService.LoadRun("parser-run");
+        ProfileSaveData loadedProfile = saveService.LoadProfile();
+        Assert.That(loadedRun.gold, Is.EqualTo(17));
+        Assert.That(loadedRun.currentHealth, Is.EqualTo(16));
+        Assert.That(loadedRun.deck.Count, Is.EqualTo(2));
+        Assert.That(loadedRun.ownedAugments.Count, Is.EqualTo(1));
+        Assert.That(loadedProfile.metaCurrency, Is.EqualTo(5));
+    }
+
+    [Test]
+    public void DebugConsoleCommandProcessor_ReturnsHelpfulErrorsForMalformedCommands()
+    {
+        DebugConsoleCommandProcessor processor = new(new RunCoordinator(new SaveService(contentRepository, saveDirectory), contentRepository, _ => { }));
+
+        DebugConsoleCommandResult malformedLives = processor.Execute("lives nope 4");
+        DebugConsoleCommandResult malformedAmount = processor.Execute("gain currency nope");
+        DebugConsoleCommandResult unknownCommand = processor.Execute("warp core");
+
+        Assert.That(malformedLives.Success, Is.False);
+        Assert.That(malformedLives.Message, Does.Contain("lives set"));
+        Assert.That(malformedAmount.Success, Is.False);
+        Assert.That(malformedAmount.Message, Does.Contain("integer amount"));
+        Assert.That(unknownCommand.Success, Is.False);
+        Assert.That(unknownCommand.Message, Does.Contain("Unknown command"));
+    }
+
+    [Test]
     public void CardRewardPoolDef_ReturnsMixedCardAndAugmentChoices()
     {
         MapTemplateDef template = CreateTemplate();
@@ -280,6 +417,253 @@ public class RunFlowEditorTests
         Assert.That(firstRoll.Count, Is.EqualTo(2));
         CollectionAssert.AreEqual(firstRoll.ConvertAll(offer => offer.OfferId), secondRoll.ConvertAll(offer => offer.OfferId));
         Assert.That(firstRoll.Exists(offer => offer.OfferId == "heal"), Is.False);
+    }
+
+    [Test]
+    public void RunCoordinator_MetaUnlockPurchase_SpendsCurrencyPersistsAndPreventsDuplicate()
+    {
+        MetaUnlockEntry unlock = GetFirstMetaUnlock(MetaUnlockType.Card);
+        MetaUnlockEntry prerequisite = GetMetaUnlockById("unlock.group.tower_starters");
+        SaveService saveService = new(contentRepository, saveDirectory);
+        saveService.SaveProfile(new ProfileSaveData { metaCurrency = prerequisite.cost + unlock.cost + 2 });
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        Assert.False(coordinator.IsCardUnlocked(unlock.card));
+        Assert.False(coordinator.TryPurchaseMetaUnlock(unlock.UnlockId));
+        Assert.True(coordinator.TryPurchaseMetaUnlock(prerequisite.UnlockId));
+        Assert.True(coordinator.TryPurchaseMetaUnlock(unlock.UnlockId));
+        Assert.True(coordinator.IsCardUnlocked(unlock.card));
+        Assert.That(coordinator.Profile.metaCurrency, Is.EqualTo(2));
+        Assert.True(coordinator.Profile.HasUnlock(unlock.UnlockId));
+
+        Assert.False(coordinator.TryPurchaseMetaUnlock(unlock.UnlockId));
+        Assert.That(coordinator.Profile.metaCurrency, Is.EqualTo(2));
+
+        ProfileSaveData loadedProfile = saveService.LoadProfile();
+        Assert.True(loadedProfile.HasUnlock(unlock.UnlockId));
+        Assert.That(loadedProfile.metaCurrency, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void RunCoordinator_RelicPlaceholder_IsVisibleButNotPurchasable()
+    {
+        MetaUnlockEntry unlock = GetFirstMetaUnlock(MetaUnlockType.Relic);
+        SaveService saveService = new(contentRepository, saveDirectory);
+        saveService.SaveProfile(new ProfileSaveData { metaCurrency = 100 });
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        Assert.That(coordinator.GetMetaUnlocks(), Does.Contain(unlock));
+        Assert.False(coordinator.TryPurchaseMetaUnlock(unlock.UnlockId));
+        Assert.False(coordinator.Profile.HasUnlock(unlock.UnlockId));
+    }
+
+    [Test]
+    public void RunCoordinator_UnlockGroupPurchase_SpendsCurrencyAndPersistsOnlyGroupUnlock()
+    {
+        MetaUnlockEntry group = GetMetaUnlockById("unlock.group.tower_starters");
+        SaveService saveService = new(contentRepository, saveDirectory);
+        saveService.SaveProfile(new ProfileSaveData { metaCurrency = group.cost + 4 });
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+        List<MetaUnlockContent> contents = coordinator.GetUnlockContents(group);
+        Assert.That(contents.Count, Is.GreaterThanOrEqualTo(3));
+        Assert.False(coordinator.IsCardUnlocked(contents[0].card));
+        Assert.Null(contentRepository.GetMetaUnlockById("unlock.card.shotgunner"));
+        Assert.Null(contentRepository.GetMetaUnlockById("unlock.card.tesla"));
+        Assert.Null(contentRepository.GetMetaUnlockById("unlock.card.turret_summoner"));
+
+        Assert.True(coordinator.TryPurchaseMetaUnlock(group.UnlockId));
+        Assert.That(coordinator.Profile.metaCurrency, Is.EqualTo(4));
+        Assert.True(coordinator.Profile.HasUnlock(group.UnlockId));
+        Assert.False(coordinator.Profile.HasUnlock("unlock.card.shotgunner"));
+        Assert.False(coordinator.Profile.HasUnlock("unlock.card.tesla"));
+        Assert.False(coordinator.Profile.HasUnlock("unlock.card.turret_summoner"));
+        for (int i = 0; i < contents.Count; i++)
+            if (contents[i].card != null)
+                Assert.True(coordinator.IsCardUnlocked(contents[i].card));
+
+        ProfileSaveData loadedProfile = saveService.LoadProfile();
+        Assert.True(loadedProfile.HasUnlock(group.UnlockId));
+        Assert.False(loadedProfile.HasUnlock("unlock.card.shotgunner"));
+        Assert.False(loadedProfile.HasUnlock("unlock.card.tesla"));
+        Assert.False(loadedProfile.HasUnlock("unlock.card.turret_summoner"));
+    }
+
+    [Test]
+    public void RunCoordinator_UnlockGroupPurchase_DoesNotDoubleSpendWhenAlreadyPurchased()
+    {
+        MetaUnlockEntry group = GetMetaUnlockById("unlock.group.tower_starters");
+        SaveService saveService = new(contentRepository, saveDirectory);
+        saveService.SaveProfile(new ProfileSaveData { metaCurrency = group.cost + 10 });
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        Assert.True(coordinator.TryPurchaseMetaUnlock(group.UnlockId));
+        int currencyAfterPurchase = coordinator.Profile.metaCurrency;
+        Assert.False(coordinator.TryPurchaseMetaUnlock(group.UnlockId));
+        Assert.That(coordinator.Profile.metaCurrency, Is.EqualTo(currencyAfterPurchase));
+    }
+
+    [Test]
+    public void RunCoordinator_PrerequisiteLockedUnlock_CannotBePurchasedUntilRequirementIsMet()
+    {
+        MetaUnlockEntry baseUnlock = GetMetaUnlockById("unlock.group.tower_starters");
+        MetaUnlockEntry upgradeUnlock = GetMetaUnlockById("unlock.card.bomb_summoner");
+        SaveService saveService = new(contentRepository, saveDirectory);
+        saveService.SaveProfile(new ProfileSaveData { metaCurrency = baseUnlock.cost + upgradeUnlock.cost + 3 });
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        Assert.False(coordinator.AreMetaUnlockPrerequisitesMet(upgradeUnlock));
+        Assert.That(coordinator.GetMetaUnlockRequirementText(upgradeUnlock), Does.Contain(baseUnlock.GetDisplayName()));
+        Assert.False(coordinator.TryPurchaseMetaUnlock(upgradeUnlock.UnlockId));
+        Assert.False(coordinator.Profile.HasUnlock(upgradeUnlock.UnlockId));
+
+        Assert.True(coordinator.TryPurchaseMetaUnlock(baseUnlock.UnlockId));
+        Assert.True(coordinator.AreMetaUnlockPrerequisitesMet(upgradeUnlock));
+        Assert.True(coordinator.TryPurchaseMetaUnlock(upgradeUnlock.UnlockId));
+        Assert.True(coordinator.Profile.HasUnlock(upgradeUnlock.UnlockId));
+    }
+
+    [Test]
+    public void RunCoordinator_GroupContainedCardsBecomeEligibleForRewardsAndShops()
+    {
+        MetaUnlockEntry group = GetMetaUnlockById("unlock.group.tower_starters");
+        SaveService saveService = new(contentRepository, saveDirectory);
+        saveService.SaveProfile(new ProfileSaveData { metaCurrency = group.cost });
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+        CardDef groupedCard = GetFirstContainedCard(group);
+        Assert.NotNull(groupedCard);
+
+        CardRewardPoolDef rewardPool = ScriptableObject.CreateInstance<CardRewardPoolDef>();
+        rewardPool.choiceCount = 1;
+        rewardPool.cards = new List<WeightedCardRewardEntry>
+        {
+            new() { card = groupedCard, weight = 1 }
+        };
+
+        ShopInventoryDef inventory = ScriptableObject.CreateInstance<ShopInventoryDef>();
+        inventory.choiceCount = 1;
+        inventory.offers = new List<ShopOfferData>
+        {
+            new() { id = "grouped-card", displayName = "Grouped Card", offerType = ShopOfferType.Card, price = 1, card = groupedCard, weight = 1 }
+        };
+
+        Assert.That(rewardPool.GetRandomChoices(1, "locked", coordinator.IsCardUnlocked).Count, Is.EqualTo(0));
+        Assert.That(inventory.GetRandomOffers(1, "locked", offer => offer.offerType != ShopOfferType.Card || coordinator.IsCardUnlocked(offer.card)).Count, Is.EqualTo(0));
+
+        Assert.True(coordinator.TryPurchaseMetaUnlock(group.UnlockId));
+        Assert.That(rewardPool.GetRandomChoices(1, "unlocked", coordinator.IsCardUnlocked).Count, Is.EqualTo(1));
+        Assert.That(inventory.GetRandomOffers(1, "unlocked", offer => offer.offerType != ShopOfferType.Card || coordinator.IsCardUnlocked(offer.card)).Count, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void CardRewardPoolDef_FiltersLockedCatalogCardsBeforeChoosing()
+    {
+        CardDef lockedCard = GetFirstContainedCard(GetMetaUnlockById("unlock.group.tower_starters"));
+        CardDef unlockedCard = GetFirstCatalogAbsentCard();
+        SaveService saveService = new(contentRepository, saveDirectory);
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        CardRewardPoolDef rewardPool = ScriptableObject.CreateInstance<CardRewardPoolDef>();
+        rewardPool.choiceCount = 2;
+        rewardPool.cards = new List<WeightedCardRewardEntry>
+        {
+            new() { card = lockedCard, weight = 100 },
+            new() { card = unlockedCard, weight = 1 }
+        };
+
+        List<PendingRewardEntry> choices = rewardPool.GetRandomChoices(99, "locked-card-filter", coordinator.IsCardUnlocked);
+
+        Assert.That(choices.Count, Is.EqualTo(1));
+        Assert.That(choices[0].contentId, Is.EqualTo(contentRepository.GetCardId(unlockedCard)));
+        Assert.That(choices.Exists(entry => entry.contentId == contentRepository.GetCardId(lockedCard)), Is.False);
+    }
+
+    [Test]
+    public void ShopInventoryDef_FiltersLockedCatalogCardsBeforeChoosing()
+    {
+        CardDef lockedCard = GetFirstContainedCard(GetMetaUnlockById("unlock.group.tower_starters"));
+        CardDef unlockedCard = GetFirstCatalogAbsentCard();
+        SaveService saveService = new(contentRepository, saveDirectory);
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        ShopInventoryDef inventory = ScriptableObject.CreateInstance<ShopInventoryDef>();
+        inventory.choiceCount = 2;
+        inventory.offers = new List<ShopOfferData>
+        {
+            new() { id = "locked-card", displayName = "Locked Card", offerType = ShopOfferType.Card, price = 1, card = lockedCard, weight = 100 },
+            new() { id = "unlocked-card", displayName = "Unlocked Card", offerType = ShopOfferType.Card, price = 1, card = unlockedCard, weight = 1 }
+        };
+
+        List<ShopOfferData> offers = inventory.GetRandomOffers(
+            55,
+            "locked-shop-filter",
+            offer => offer.offerType != ShopOfferType.Card || coordinator.IsCardUnlocked(offer.card));
+
+        Assert.That(offers.Count, Is.EqualTo(1));
+        Assert.That(offers[0].OfferId, Is.EqualTo("unlocked-card"));
+    }
+
+    [Test]
+    public void RunCoordinator_TryPurchaseShopOffer_RejectsLockedCardOffer()
+    {
+        CardDef lockedCard = contentRepository.GetCardById("tesla");
+        Assert.NotNull(lockedCard);
+        ShopInventoryDef inventory = contentRepository.GetDefaultShopInventory();
+        Assert.NotNull(inventory);
+
+        ShopOfferData lockedOffer = null;
+        for (int i = 0; i < inventory.offers.Count; i++)
+        {
+            ShopOfferData offer = inventory.offers[i];
+            if (offer != null && offer.offerType == ShopOfferType.Card && offer.card == lockedCard)
+            {
+                lockedOffer = offer;
+                break;
+            }
+        }
+
+        Assert.NotNull(lockedOffer);
+
+        SaveService saveService = new(contentRepository, saveDirectory);
+        RunSaveData run = new()
+        {
+            runId = "locked-shop-run",
+            currentHealth = 20,
+            maxHealth = 20,
+            gold = 999,
+            deck = new List<OwnedCard> { new(GetFirstCatalogAbsentCard()) },
+            currentNodeId = "shop-node",
+            completedNodeIds = new List<string>(),
+            mapState = new RunMapStateData
+            {
+                mapTemplateId = "test-template",
+                startNodeId = "shop-node",
+                nodes = new List<RunMapNodeData>
+                {
+                    new()
+                    {
+                        nodeId = "shop-node",
+                        displayName = "Shop",
+                        nodeType = MapNodeType.Shop,
+                        shopInventoryId = inventory.InventoryId
+                    }
+                }
+            },
+            seed = 123
+        };
+
+        saveService.SaveProfile(new ProfileSaveData { activeRunId = run.runId });
+        saveService.SaveRun(run);
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        Assert.False(coordinator.IsCardUnlocked(lockedCard));
+        Assert.False(coordinator.TryPurchaseShopOffer("shop-node", lockedOffer.OfferId));
+        Assert.That(coordinator.CurrentRun.deck.Count, Is.EqualTo(1));
+        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(999));
     }
 
     [Test]
@@ -995,6 +1379,30 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void PauseMenuController_DebugConsoleVisibility_FollowsDebugToggle()
+    {
+        RunCoordinator coordinator = ConfigureGameFlowRoot();
+        GameObject menuObject = new("Pause Menu");
+        PauseMenuController pauseMenu = menuObject.AddComponent<PauseMenuController>();
+
+        pauseMenu.Initialize(coordinator, false);
+
+        RectTransform debugConsoleRoot = GetPrivateField<RectTransform>(pauseMenu, "debugConsoleRoot");
+        InputField commandInput = GetPrivateField<InputField>(pauseMenu, "debugCommandInputField");
+        Assert.NotNull(debugConsoleRoot);
+        Assert.NotNull(commandInput);
+        Assert.That(debugConsoleRoot.gameObject.activeSelf, Is.False);
+
+        coordinator.SetDebugUiEnabled(true);
+        Assert.That(debugConsoleRoot.gameObject.activeSelf, Is.True);
+
+        coordinator.SetDebugUiEnabled(false);
+        Assert.That(debugConsoleRoot.gameObject.activeSelf, Is.False);
+
+        Object.DestroyImmediate(menuObject);
+    }
+
+    [Test]
     public void CombatSceneBootstrapper_EnsurePauseMenu_CreatesPauseMenuAndHooksPauseState()
     {
         ConfigureGameFlowRoot();
@@ -1214,6 +1622,55 @@ public class RunFlowEditorTests
         }
 
         Assert.Fail("Expected at least one card definition.");
+        return null;
+    }
+
+    private MetaUnlockEntry GetFirstMetaUnlock(MetaUnlockType type)
+    {
+        List<MetaUnlockEntry> unlocks = contentRepository.GetMetaUnlocks();
+        for (int i = 0; i < unlocks.Count; i++)
+        {
+            MetaUnlockEntry unlock = unlocks[i];
+            if (unlock != null && unlock.type == type)
+                return unlock;
+        }
+
+        Assert.Fail($"Expected at least one {type} meta unlock.");
+        return null;
+    }
+
+    private MetaUnlockEntry GetMetaUnlockById(string unlockId)
+    {
+        MetaUnlockEntry unlock = contentRepository.GetMetaUnlockById(unlockId);
+        Assert.NotNull(unlock, $"Expected meta unlock '{unlockId}'.");
+        return unlock;
+    }
+
+    private static CardDef GetFirstContainedCard(MetaUnlockEntry unlock)
+    {
+        if (unlock?.contents != null)
+        {
+            for (int i = 0; i < unlock.contents.Count; i++)
+            {
+                MetaUnlockContent content = unlock.contents[i];
+                if (content != null && content.type == MetaUnlockType.Card && content.card != null)
+                    return content.card;
+            }
+        }
+
+        Assert.Fail($"Expected unlock '{unlock?.UnlockId}' to contain at least one card.");
+        return null;
+    }
+
+    private CardDef GetFirstCatalogAbsentCard()
+    {
+        foreach (CardDef card in contentRepository.Cards)
+        {
+            if (card != null && contentRepository.GetMetaUnlockForCard(card) == null)
+                return card;
+        }
+
+        Assert.Fail("Expected at least one card outside the meta unlock catalog.");
         return null;
     }
 
