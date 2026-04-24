@@ -21,11 +21,15 @@ MonoBehaviour:
     weight: 3
   - card: {fileID: 11400000, guid: d5f9933d13facd74da7a14618c88b329, type: 2}
     weight: 3
+  - card: {fileID: 11400000, guid: 941482cdfeb3f21408567eb408f47c4d, type: 2}
+    weight: 3
   - card: {fileID: 11400000, guid: 531c69a24aa7e49e1a2a2700babf351c, type: 2}
     weight: 2
   - card: {fileID: 11400000, guid: 9597b314491050c4a8d5d3bc6bf627a2, type: 2}
     weight: 2
   - card: {fileID: 11400000, guid: ecdf9eccd6ca02541bffd4ad1a4fc0a1, type: 2}
+    weight: 2
+  - card: {fileID: 11400000, guid: a815cb27a4c214fa5a6690af4d6efbf5, type: 2}
     weight: 2
   - card: {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
     weight: 2

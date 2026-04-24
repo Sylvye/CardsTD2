@@ -289,7 +289,7 @@ public class RunFlowEditorTests
     }
 
     [Test]
-    public void DebugConsoleCommandProcessor_ParsesAliasesAndWhitespaceInsensitiveCommands()
+    public void DebugConsoleCommandProcessor_ParsesConfiguredCommandsAndWhitespaceInsensitiveCommands()
     {
         SaveService saveService = new(contentRepository, saveDirectory);
         ProfileSaveData profile = new()
@@ -307,11 +307,11 @@ public class RunFlowEditorTests
         CardAugmentDef firstAugment = FindCompatibleAugment(firstCard);
         Assert.NotNull(firstAugment);
 
-        DebugConsoleCommandResult currencyResult = processor.Execute("  GAIN   CURRENCY   7 ");
-        DebugConsoleCommandResult metaResult = processor.Execute("gain meta currency 3");
-        DebugConsoleCommandResult livesResult = processor.Execute("modify    lives   add   -4");
-        DebugConsoleCommandResult cardResult = processor.Execute($"add card by id {contentRepository.GetCardId(firstCard)}");
-        DebugConsoleCommandResult augmentResult = processor.Execute($"ADD AUGMENT {contentRepository.GetAugmentId(firstAugment)}");
+        DebugConsoleCommandResult currencyResult = processor.Execute("  MONEY   ADD   7 ");
+        DebugConsoleCommandResult metaResult = processor.Execute("meta add 3");
+        DebugConsoleCommandResult livesResult = processor.Execute("lives add -4");
+        DebugConsoleCommandResult cardResult = processor.Execute($"card add {contentRepository.GetCardId(firstCard)}");
+        DebugConsoleCommandResult augmentResult = processor.Execute($"AUGMENT ADD {contentRepository.GetAugmentId(firstAugment)}");
 
         Assert.That(currencyResult.Success, Is.True);
         Assert.That(metaResult.Success, Is.True);
@@ -334,7 +334,7 @@ public class RunFlowEditorTests
         DebugConsoleCommandProcessor processor = new(new RunCoordinator(new SaveService(contentRepository, saveDirectory), contentRepository, _ => { }));
 
         DebugConsoleCommandResult malformedLives = processor.Execute("lives nope 4");
-        DebugConsoleCommandResult malformedAmount = processor.Execute("gain currency nope");
+        DebugConsoleCommandResult malformedAmount = processor.Execute("money add nope");
         DebugConsoleCommandResult unknownCommand = processor.Execute("warp core");
 
         Assert.That(malformedLives.Success, Is.False);
@@ -343,6 +343,22 @@ public class RunFlowEditorTests
         Assert.That(malformedAmount.Message, Does.Contain("integer amount"));
         Assert.That(unknownCommand.Success, Is.False);
         Assert.That(unknownCommand.Message, Does.Contain("Unknown command"));
+    }
+
+    [Test]
+    public void DebugConsoleCommandProcessor_Help_ListsAvailableCommands()
+    {
+        DebugConsoleCommandProcessor processor = new(new RunCoordinator(new SaveService(contentRepository, saveDirectory), contentRepository, _ => { }));
+
+        DebugConsoleCommandResult helpResult = processor.Execute("help");
+
+        Assert.That(helpResult.Success, Is.True);
+        Assert.That(helpResult.Message, Does.Contain("Available commands"));
+        Assert.That(helpResult.Message, Does.Contain("meta reset"));
+        Assert.That(helpResult.Message, Does.Contain("money add <amount>"));
+        Assert.That(helpResult.Message, Does.Contain("meta add <amount>"));
+        Assert.That(helpResult.Message, Does.Contain("card add <id>"));
+        Assert.That(helpResult.Message, Does.Contain("augment add <id>"));
     }
 
     [Test]

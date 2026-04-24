@@ -18,6 +18,17 @@ namespace RunFlow
 
     public class DebugConsoleCommandProcessor
     {
+        private const string HelpMessage =
+            "Available commands:\n" +
+            "help\n" +
+            "meta reset\n" +
+            "money add <amount>\n" +
+            "meta add <amount>\n" +
+            "lives set <value>\n" +
+            "lives add <delta>\n" +
+            "card add <id>\n" +
+            "augment add <id>";
+
         private readonly RunCoordinator coordinator;
 
         public DebugConsoleCommandProcessor(RunCoordinator coordinator)
@@ -34,29 +45,32 @@ namespace RunFlow
             if (string.IsNullOrWhiteSpace(normalized))
                 return new DebugConsoleCommandResult(false, "Enter a command.");
 
-            if (normalized == "reset meta progress")
+            if (normalized == "help")
+                return new DebugConsoleCommandResult(true, HelpMessage);
+
+            if (normalized == "meta reset")
             {
                 coordinator.ResetMetaProgress();
                 return new DebugConsoleCommandResult(true, "Meta progress reset.");
             }
 
-            if (normalized.StartsWith("gain currency", StringComparison.Ordinal))
+            if (normalized.StartsWith("money add", StringComparison.Ordinal))
             {
-                if (!TryMatchAmountCommand(normalized, "gain currency", out int currencyAmount, out string amountError))
+                if (!TryMatchAmountCommand(normalized, "money add", out int currencyAmount, out string amountError))
                     return new DebugConsoleCommandResult(false, amountError);
 
                 return BuildResult(coordinator.TryGainCurrency(currencyAmount, out string message), message);
             }
 
-            if (normalized.StartsWith("gain meta currency", StringComparison.Ordinal))
+            if (normalized.StartsWith("meta add", StringComparison.Ordinal))
             {
-                if (!TryMatchAmountCommand(normalized, "gain meta currency", out int metaAmount, out string amountError))
+                if (!TryMatchAmountCommand(normalized, "meta add", out int metaAmount, out string amountError))
                     return new DebugConsoleCommandResult(false, amountError);
 
                 return BuildResult(coordinator.TryGainMetaCurrency(metaAmount, out string message), message);
             }
 
-            if (normalized.StartsWith("lives ", StringComparison.Ordinal) || normalized.StartsWith("modify lives ", StringComparison.Ordinal))
+            if (normalized.StartsWith("lives ", StringComparison.Ordinal))
             {
                 if (!TryMatchLivesCommand(normalized, out bool setLives, out int livesValue, out string amountError))
                     return new DebugConsoleCommandResult(false, amountError);
@@ -66,10 +80,10 @@ namespace RunFlow
                     : BuildResult(coordinator.TryAddLives(livesValue, out message), message);
             }
 
-            if (TryMatchIdCommand(normalized, "add card", out string cardId))
+            if (TryMatchIdCommand(normalized, "card add", out string cardId))
                 return BuildResult(coordinator.TryAddCardById(cardId, out string message), message);
 
-            if (TryMatchIdCommand(normalized, "add augment", out string augmentId))
+            if (TryMatchIdCommand(normalized, "augment add", out string augmentId))
                 return BuildResult(coordinator.TryAddAugmentById(augmentId, out string message), message);
 
             return new DebugConsoleCommandResult(false, $"Unknown command: {normalized}");
@@ -115,14 +129,10 @@ namespace RunFlow
             value = 0;
             error = null;
 
-            string commandText = normalized;
-            if (commandText.StartsWith("modify lives ", StringComparison.Ordinal))
-                commandText = commandText.Substring("modify ".Length);
-
-            if (!commandText.StartsWith("lives ", StringComparison.Ordinal))
+            if (!normalized.StartsWith("lives ", StringComparison.Ordinal))
                 return false;
 
-            string[] parts = commandText.Split(' ');
+            string[] parts = normalized.Split(' ');
             if (parts.Length != 3 || (parts[1] != "set" && parts[1] != "add"))
             {
                 error = "Use 'lives set <value>' or 'lives add <delta>'.";
@@ -146,9 +156,6 @@ namespace RunFlow
                 return false;
 
             string remainder = normalized.Substring(prefix.Length).Trim();
-            if (remainder.StartsWith("by id ", StringComparison.Ordinal))
-                remainder = remainder.Substring("by id ".Length).Trim();
-
             if (string.IsNullOrWhiteSpace(remainder))
                 return false;
 

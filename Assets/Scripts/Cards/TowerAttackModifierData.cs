@@ -19,6 +19,7 @@ namespace Cards
         public float projectileLifetimeDelta;
 
         [Header("Beam")]
+        public int beamProjectileCountDelta;
         public float flatDamageBonusDelta;
         public float damageMultiplierDelta;
 
@@ -53,7 +54,7 @@ namespace Cards
 
             if (attackDef is BeamTowerAttackDef beamAttack)
             {
-                beamAttack.projectileCount = Mathf.Max(1, beamAttack.projectileCount + projectileCountDelta);
+                beamAttack.projectileCount = Mathf.Max(1, beamAttack.projectileCount + beamProjectileCountDelta);
                 beamAttack.flatDamageBonus = Mathf.Max(0f, beamAttack.flatDamageBonus + flatDamageBonusDelta);
                 beamAttack.damageMultiplier = Mathf.Max(0f, beamAttack.damageMultiplier + damageMultiplierDelta);
                 return;

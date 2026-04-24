@@ -39,15 +39,6 @@ namespace RunFlow
 
         private void Update()
         {
-            if (IsOpen && debugCommandInputField != null && debugCommandInputField.isFocused)
-            {
-                if (Keyboard.current?.enterKey.wasPressedThisFrame == true || Keyboard.current?.numpadEnterKey.wasPressedThisFrame == true)
-                {
-                    ExecuteDebugCommand();
-                    return;
-                }
-            }
-
             if (Keyboard.current?.escapeKey.wasPressedThisFrame != true)
                 return;
 
@@ -167,6 +158,7 @@ namespace RunFlow
             SimpleUiFactory.AddHorizontalLayout(inputRow, spacing: 10, padding: 0);
 
             debugCommandInputField = SimpleUiFactory.CreateInputField(inputRow, "gain currency 50");
+            debugCommandInputField.onEndEdit.AddListener(HandleDebugCommandEndEdit);
             Button executeButton = SimpleUiFactory.CreateButton(inputRow, "Execute", ExecuteDebugCommand);
             LayoutElement executeLayout = executeButton.gameObject.GetComponent<LayoutElement>();
             executeLayout.flexibleWidth = 0f;
@@ -178,10 +170,15 @@ namespace RunFlow
 
         private void ExecuteDebugCommand()
         {
+            ExecuteDebugCommand(debugCommandInputField != null ? debugCommandInputField.text : string.Empty);
+        }
+
+        private void ExecuteDebugCommand(string commandText)
+        {
             if (debugConsoleCommandProcessor == null || debugCommandInputField == null || debugResultText == null)
                 return;
 
-            DebugConsoleCommandResult result = debugConsoleCommandProcessor.Execute(debugCommandInputField.text);
+            DebugConsoleCommandResult result = debugConsoleCommandProcessor.Execute(commandText);
             debugResultText.text = result.Message;
             debugResultText.color = result.Success
                 ? new Color(0.62f, 0.9f, 0.66f, 1f)
@@ -189,6 +186,20 @@ namespace RunFlow
 
             debugCommandInputField.text = string.Empty;
             debugCommandInputField.ActivateInputField();
+        }
+
+        private void HandleDebugCommandEndEdit(string commandText)
+        {
+            if (!IsOpen || !IsSubmitKeyPressed())
+                return;
+
+            ExecuteDebugCommand(commandText);
+        }
+
+        private static bool IsSubmitKeyPressed()
+        {
+            return Keyboard.current?.enterKey.wasPressedThisFrame == true ||
+                   Keyboard.current?.numpadEnterKey.wasPressedThisFrame == true;
         }
 
         private RunCoordinator ResolveCoordinator()

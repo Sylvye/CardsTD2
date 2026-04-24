@@ -99,6 +99,42 @@ public class ProjectileSpreadTests
     }
 
     [Test]
+    public void ApplyTo_BeamProjectileCountDelta_IncreasesProjectileCount()
+    {
+        BeamTowerAttackDef attackDef = ScriptableObject.CreateInstance<BeamTowerAttackDef>();
+        attackDef.projectileCount = 1;
+
+        TowerAttackModifierData modifier = new()
+        {
+            beamProjectileCountDelta = 1
+        };
+
+        modifier.ApplyTo(attackDef);
+
+        Assert.That(attackDef.projectileCount, Is.EqualTo(2));
+
+        Object.DestroyImmediate(attackDef);
+    }
+
+    [Test]
+    public void ApplyTo_BeamProjectileCountDelta_StopsAtOne()
+    {
+        BeamTowerAttackDef attackDef = ScriptableObject.CreateInstance<BeamTowerAttackDef>();
+        attackDef.projectileCount = 2;
+
+        TowerAttackModifierData modifier = new()
+        {
+            beamProjectileCountDelta = -5
+        };
+
+        modifier.ApplyTo(attackDef);
+
+        Assert.That(attackDef.projectileCount, Is.EqualTo(1));
+
+        Object.DestroyImmediate(attackDef);
+    }
+
+    [Test]
     public void CombatProjectileAssets_DefaultMinimumSpreadToZero_AndKeepExistingSpreadValues()
     {
         ProjectileTowerAttackDef pellet = AssetDatabase.LoadAssetAtPath<ProjectileTowerAttackDef>(

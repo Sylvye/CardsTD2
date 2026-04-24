@@ -80,7 +80,7 @@ MonoBehaviour:
       description: Unlocks the Turret Summoner+. It can appear in future card rewards
         and shops.
       icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
-      card: {fileID: 0}
+      card: {fileID: 11400000, guid: a815cb27a4c214fa5a6690af4d6efbf5, type: 2}
   - id: unlock.relic.placeholder
     type: 1
     cost: 0
