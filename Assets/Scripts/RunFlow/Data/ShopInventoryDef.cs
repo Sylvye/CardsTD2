@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cards;
+using Relics;
 using UnityEngine;
 
 namespace RunFlow
@@ -95,6 +96,7 @@ namespace RunFlow
         public int price;
         public CardDef card;
         public CardAugmentDef augment;
+        public RelicDef relic;
         public int healAmount;
         public int weight = 1;
 
@@ -109,6 +111,7 @@ namespace RunFlow
             {
                 ShopOfferType.Card when card != null => $"Buy {card.displayName}",
                 ShopOfferType.Augment when augment != null => $"Buy {augment.displayName}",
+                ShopOfferType.Relic when relic != null => $"Buy {relic.DisplayNameOrFallback}",
                 ShopOfferType.Heal => $"Heal {healAmount}",
                 _ => "Offer"
             };

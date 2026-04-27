@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Cards;
+using Relics;
 using UnityEngine;
 
 namespace RunFlow
@@ -102,6 +103,7 @@ namespace RunFlow
 
             fileData.deck = new List<OwnedCardFileData>();
             fileData.ownedAugments = new List<OwnedAugmentFileData>();
+            fileData.ownedRelicIds = new List<string>();
             if (run.deck != null)
             {
                 for (int i = 0; i < run.deck.Count; i++)
@@ -150,6 +152,20 @@ namespace RunFlow
                 }
             }
 
+            if (run.ownedRelics != null)
+            {
+                for (int i = 0; i < run.ownedRelics.Count; i++)
+                {
+                    OwnedRelic ownedRelic = run.ownedRelics[i];
+                    if (ownedRelic?.Definition == null)
+                        continue;
+
+                    string relicId = contentRepository.GetRelicId(ownedRelic.Definition);
+                    if (!string.IsNullOrWhiteSpace(relicId) && !fileData.ownedRelicIds.Contains(relicId))
+                        fileData.ownedRelicIds.Add(relicId);
+                }
+            }
+
             return fileData;
         }
 
@@ -169,7 +185,8 @@ namespace RunFlow
                 endRunAfterPendingReward = fileData.endRunAfterPendingReward,
                 seed = fileData.seed,
                 deck = new List<OwnedCard>(),
-                ownedAugments = new List<OwnedAugment>()
+                ownedAugments = new List<OwnedAugment>(),
+                ownedRelics = new List<OwnedRelic>()
             };
 
             if (fileData.deck != null)
@@ -215,9 +232,33 @@ namespace RunFlow
                 }
             }
 
+            if (fileData.ownedRelicIds != null)
+            {
+                for (int i = 0; i < fileData.ownedRelicIds.Count; i++)
+                {
+                    RelicDef relic = contentRepository.GetRelicById(fileData.ownedRelicIds[i]);
+                    if (relic != null && !ContainsRelic(run.ownedRelics, relic))
+                        run.ownedRelics.Add(new OwnedRelic(relic));
+                }
+            }
+
             run.pendingReward?.MigrateLegacyEntries();
 
             return run;
+        }
+
+        private static bool ContainsRelic(List<OwnedRelic> ownedRelics, RelicDef relic)
+        {
+            if (ownedRelics == null || relic == null)
+                return false;
+
+            for (int i = 0; i < ownedRelics.Count; i++)
+            {
+                if (ownedRelics[i]?.Definition == relic)
+                    return true;
+            }
+
+            return false;
         }
 
         [Serializable]
@@ -229,6 +270,7 @@ namespace RunFlow
             public int gold;
             public List<OwnedCardFileData> deck = new();
             public List<OwnedAugmentFileData> ownedAugments = new();
+            public List<string> ownedRelicIds = new();
             public string currentNodeId;
             public List<string> completedNodeIds = new();
             public RunMapStateData mapState = new();

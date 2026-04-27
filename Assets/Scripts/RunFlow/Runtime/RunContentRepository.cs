@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cards;
+using Relics;
 using UnityEngine;
 
 namespace RunFlow
@@ -9,6 +10,7 @@ namespace RunFlow
     {
         private readonly Dictionary<string, CardDef> cardsById = new();
         private readonly Dictionary<string, CardAugmentDef> augmentsById = new();
+        private readonly Dictionary<string, RelicDef> relicsById = new();
         private readonly Dictionary<string, MapTemplateDef> mapTemplatesById = new();
         private readonly List<MapTemplateDef> mapTemplates = new();
         private readonly Dictionary<string, EncounterDef> encountersById = new();
@@ -23,12 +25,14 @@ namespace RunFlow
 
         public IReadOnlyCollection<CardDef> Cards => cardsById.Values;
         public IReadOnlyCollection<CardAugmentDef> Augments => augmentsById.Values;
+        public IReadOnlyCollection<RelicDef> Relics => relicsById.Values;
         public IReadOnlyList<MetaUnlockEntry> MetaUnlocks => metaUnlocks;
 
         public void Refresh()
         {
             cardsById.Clear();
             augmentsById.Clear();
+            relicsById.Clear();
             mapTemplatesById.Clear();
             mapTemplates.Clear();
             encountersById.Clear();
@@ -41,6 +45,7 @@ namespace RunFlow
 
             LoadCards();
             LoadAugments();
+            LoadRelics();
             LoadMetaUnlockCatalogs();
             LoadMapTemplates();
             LoadEncounters();
@@ -61,6 +66,12 @@ namespace RunFlow
         {
             EnsureLoaded();
             return !string.IsNullOrWhiteSpace(id) && augmentsById.TryGetValue(id, out CardAugmentDef augment) ? augment : null;
+        }
+
+        public RelicDef GetRelicById(string id)
+        {
+            EnsureLoaded();
+            return !string.IsNullOrWhiteSpace(id) && relicsById.TryGetValue(id, out RelicDef relic) ? relic : null;
         }
 
         public MapTemplateDef GetMapTemplateById(string id)
@@ -134,6 +145,11 @@ namespace RunFlow
             return augment == null ? null : string.IsNullOrWhiteSpace(augment.id) ? augment.name : augment.id;
         }
 
+        public string GetRelicId(RelicDef relic)
+        {
+            return relic == null ? null : relic.RelicId;
+        }
+
         public string GetEncounterId(EncounterDef encounter)
         {
             return encounter == null ? null : encounter.EncounterId;
@@ -203,6 +219,18 @@ namespace RunFlow
                 string id = GetAugmentId(augment);
                 if (!string.IsNullOrWhiteSpace(id))
                     augmentsById[id] = augment;
+            }
+        }
+
+        private void LoadRelics()
+        {
+            RelicDef[] relics = Resources.LoadAll<RelicDef>("RunFlow/Relics");
+            for (int i = 0; i < relics.Length; i++)
+            {
+                RelicDef relic = relics[i];
+                string id = GetRelicId(relic);
+                if (!string.IsNullOrWhiteSpace(id))
+                    relicsById[id] = relic;
             }
         }
 

@@ -99,6 +99,7 @@ namespace Combat
                 $"Mana Regen: {setup.ManaRegenPerSecond:0.##}/s\n" +
                 $"Health: {currentHealth}/{maxHealth}\n" +
                 $"Opening Hand: {setup.OpeningHandSize}\n" +
+                $"Max Hand: {setup.MaxHandSize}\n" +
                 $"Manual Draw Cost: {setup.ManualDrawCost}";
         }
 

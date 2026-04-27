@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a596de0479c4954928d812b3c6dd953, type: 3}
+  m_Name: Mana Battery
+  m_EditorClassIdentifier: Assembly-CSharp::Relics.RelicDef
+  id: mana_battery
+  displayName: Mana Battery
+  description: Start each combat with 15 mana.
+  icon: {fileID: 0}
+  effects:
+  - {fileID: 11400000, guid: 397e8d19673b40ab87bc90b09ede8bd6, type: 2}

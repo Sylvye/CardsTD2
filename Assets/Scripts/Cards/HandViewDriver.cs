@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Combat;
 using Enemies;
+using Relics;
 using UnityEngine;
 using Towers;
 
@@ -33,7 +34,7 @@ namespace Cards
                 Initialize(startingDeck);
         }
 
-        public void Initialize(IReadOnlyList<OwnedCard> deck, IPlayerEffects overridePlayerEffects = null)
+        public void Initialize(IReadOnlyList<OwnedCard> deck, IPlayerEffects overridePlayerEffects = null, IReadOnlyList<OwnedRelic> activeRelics = null)
         {
             print("Initializing deck in HandViewDriver");
             if (handController != null)
@@ -41,9 +42,9 @@ namespace Cards
 
             playerEffects = ResolvePlayerEffects(overridePlayerEffects);
             combatCardState = new CombatCardState();
-            combatCardState.BuildDrawPileFromOwnedCards(deck ?? startingDeck);
+            combatCardState.BuildDrawPileFromOwnedCards(deck ?? startingDeck, activeRelics);
 
-            handController = new HandController(combatCardState, 5);
+            handController = new HandController(combatCardState, ResolveMaxHandSize(playerEffects));
             effectResolver = new CardEffectResolver(combatCardState, handController, towerManager, enemyManager, playerEffects);
             handController.SetEffectResolver(effectResolver);
 
@@ -53,7 +54,8 @@ namespace Cards
             handGameplayDriver?.Initialize(
                 combatCardState,
                 handController,
-                handCardsPresenter.SelectedCardController
+                handCardsPresenter.SelectedCardController,
+                handView
             );
         }
 
@@ -72,6 +74,13 @@ namespace Cards
                 resolvedEffects = FindAnyObjectByType<CombatSessionDriver>();
 
             return resolvedEffects;
+        }
+
+        private static int ResolveMaxHandSize(IPlayerEffects resolvedEffects)
+        {
+            return resolvedEffects is CombatSessionDriver combatSessionDriver
+                ? combatSessionDriver.MaxHandSize
+                : 5;
         }
     }
 }

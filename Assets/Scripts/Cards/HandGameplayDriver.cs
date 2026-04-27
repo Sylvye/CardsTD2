@@ -23,7 +23,8 @@ namespace Cards
         public void Initialize(
             CombatCardState combatCardState,
             HandController handController,
-            SelectedCardController selectedCardController)
+            SelectedCardController selectedCardController,
+            HandView handView)
         {
             if (handController == null)
                 return;
@@ -64,6 +65,8 @@ namespace Cards
                     IsGameplayInputBlocked
                 );
             }
+
+            handView?.ConfigureTargetLines(playFieldRaycaster, IsGameplayInputBlocked);
 
             if (fieldCardUseController != null)
             {

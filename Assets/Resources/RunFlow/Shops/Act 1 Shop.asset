@@ -72,3 +72,39 @@ MonoBehaviour:
     augment: {fileID: 0}
     healAmount: 0
     weight: 2
+  - id: mana_battery
+    displayName: Buy Mana Battery
+    offerType: 3
+    price: 10
+    card: {fileID: 0}
+    augment: {fileID: 0}
+    relic: {fileID: 11400000, guid: dca0e2a544734c8f957a43451374d90c, type: 2}
+    healAmount: 0
+    weight: 2
+  - id: tower_discount
+    displayName: Buy Tower Discount
+    offerType: 3
+    price: 10
+    card: {fileID: 0}
+    augment: {fileID: 0}
+    relic: {fileID: 11400000, guid: 8b29958850bb42d7b21ab2c3f08c920d, type: 2}
+    healAmount: 0
+    weight: 2
+  - id: spell_discount
+    displayName: Buy Spell Discount
+    offerType: 3
+    price: 10
+    card: {fileID: 0}
+    augment: {fileID: 0}
+    relic: {fileID: 11400000, guid: dd3da045bacc4919a869fe9f4044bbd0, type: 2}
+    healAmount: 0
+    weight: 2
+  - id: deep_pockets
+    displayName: Buy Deep Pockets
+    offerType: 3
+    price: 10
+    card: {fileID: 0}
+    augment: {fileID: 0}
+    relic: {fileID: 11400000, guid: 2a458c45d3ef4ffaa355b22667222e06, type: 2}
+    healAmount: 0
+    weight: 2

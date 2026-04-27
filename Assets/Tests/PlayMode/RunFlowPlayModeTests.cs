@@ -64,8 +64,8 @@ public class RunFlowPlayModeTests
         coordinator.StartNewRun();
         yield return WaitForScene(SceneNames.RunMap);
 
-        RunMapSceneController controller = Object.FindFirstObjectByType<RunMapSceneController>();
-        ScrollRect scrollRect = Object.FindFirstObjectByType<ScrollRect>();
+        RunMapSceneController controller = Object.FindAnyObjectByType<RunMapSceneController>();
+        ScrollRect scrollRect = Object.FindAnyObjectByType<ScrollRect>();
 
         Assert.NotNull(controller);
         Assert.NotNull(scrollRect);

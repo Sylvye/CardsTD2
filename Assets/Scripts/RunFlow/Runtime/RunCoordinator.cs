@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cards;
+using Relics;
 using UnityEngine;
 
 namespace RunFlow
@@ -107,6 +108,7 @@ namespace RunFlow
         {
             Profile ??= new ProfileSaveData();
             Profile.unlockIds = new List<string>();
+            Profile.discoveredRelicIds = new List<string>();
             Profile.metaCurrency = 0;
             saveService.SaveProfile(Profile);
         }
@@ -203,6 +205,36 @@ namespace RunFlow
             CurrentRun.ownedAugments.Add(new OwnedAugment(augment));
             SaveCurrentRun();
             message = $"Added augment '{contentRepository.GetAugmentId(augment)}'.";
+            return true;
+        }
+
+        public bool TryAddRelicById(string relicId, out string message)
+        {
+            if (CurrentRun == null)
+            {
+                message = "No active run is loaded.";
+                return false;
+            }
+
+            RelicDef relic = contentRepository.GetRelicById(relicId);
+            if (relic == null)
+            {
+                message = $"Relic '{relicId}' was not found.";
+                return false;
+            }
+
+            if (HasRelic(relic))
+            {
+                message = $"Relic '{contentRepository.GetRelicId(relic)}' is already owned.";
+                return false;
+            }
+
+            CurrentRun.ownedRelics ??= new List<OwnedRelic>();
+            CurrentRun.ownedRelics.Add(new OwnedRelic(relic));
+            Profile ??= new ProfileSaveData();
+            Profile.AddDiscoveredRelic(contentRepository.GetRelicId(relic));
+            SaveAll();
+            message = $"Added relic '{contentRepository.GetRelicId(relic)}'.";
             return true;
         }
 
@@ -530,11 +562,19 @@ namespace RunFlow
             for (int i = 0; i < rolledOffers.Count; i++)
             {
                 ShopOfferData offer = rolledOffers[i];
-                if (offer != null && !shopState.HasPurchased(offer.OfferId))
+                if (offer != null && !shopState.HasPurchased(offer.OfferId) && IsShopOfferAvailable(offer))
                     offers.Add(offer);
             }
 
             return offers;
+        }
+
+        public int GetResolvedShopOfferPrice(ShopOfferData offer)
+        {
+            if (offer == null)
+                return 0;
+
+            return RelicResolver.ModifyShopPrice(CurrentRun?.ownedRelics, offer, Mathf.Max(0, offer.price));
         }
 
         public bool TryPurchaseShopOffer(string nodeId, string offerId, string targetCardUniqueId = null)
@@ -559,7 +599,11 @@ namespace RunFlow
                 }
             }
 
-            if (offer == null || CurrentRun.gold < offer.price)
+            if (offer == null || !IsShopOfferAvailable(offer))
+                return false;
+
+            int price = GetResolvedShopOfferPrice(offer);
+            if (CurrentRun.gold < price)
                 return false;
 
             ShopPurchaseStateData shopState = CurrentRun.mapState.GetOrCreateShopState(nodeId);
@@ -569,7 +613,7 @@ namespace RunFlow
             if (!ApplyShopOffer(offer, targetCardUniqueId))
                 return false;
 
-            CurrentRun.gold -= Mathf.Max(0, offer.price);
+            CurrentRun.gold -= price;
             shopState.MarkPurchased(offer.OfferId);
             SaveAll();
             return true;
@@ -639,6 +683,22 @@ namespace RunFlow
             }
 
             return ownedAugments;
+        }
+
+        public List<OwnedRelic> GetOwnedRelics()
+        {
+            List<OwnedRelic> ownedRelics = new();
+            if (CurrentRun?.ownedRelics == null)
+                return ownedRelics;
+
+            for (int i = 0; i < CurrentRun.ownedRelics.Count; i++)
+            {
+                OwnedRelic ownedRelic = CurrentRun.ownedRelics[i];
+                if (ownedRelic?.Definition != null)
+                    ownedRelics.Add(ownedRelic);
+            }
+
+            return ownedRelics;
         }
 
         public OwnedAugment GetOwnedAugment(string uniqueAugmentId)
@@ -763,7 +823,8 @@ namespace RunFlow
                 endRunAfterPendingReward = false,
                 seed = seed,
                 deck = new List<OwnedCard>(),
-                ownedAugments = new List<OwnedAugment>()
+                ownedAugments = new List<OwnedAugment>(),
+                ownedRelics = new List<OwnedRelic>()
             };
 
             if (!string.IsNullOrWhiteSpace(mapState.startNodeId))
@@ -813,6 +874,16 @@ namespace RunFlow
                     CurrentRun.ownedAugments.Add(new OwnedAugment(offer.augment));
                     return true;
 
+                case ShopOfferType.Relic:
+                    if (offer.relic == null || HasRelic(offer.relic))
+                        return false;
+
+                    CurrentRun.ownedRelics ??= new List<OwnedRelic>();
+                    CurrentRun.ownedRelics.Add(new OwnedRelic(offer.relic));
+                    Profile ??= new ProfileSaveData();
+                    Profile.AddDiscoveredRelic(contentRepository.GetRelicId(offer.relic));
+                    return true;
+
                 case ShopOfferType.Heal:
                     CurrentRun.currentHealth = Mathf.Min(CurrentRun.maxHealth, CurrentRun.currentHealth + Mathf.Max(0, offer.healAmount));
                     return true;
@@ -856,12 +927,52 @@ namespace RunFlow
             if (shopInventory == null || CurrentRun == null)
                 return new List<ShopOfferData>();
 
-            return shopInventory.GetRandomOffers(CurrentRun.seed, nodeId, IsShopOfferUnlocked);
+            return shopInventory.GetRandomOffers(CurrentRun.seed, nodeId, CanRollShopOffer);
         }
 
-        private bool IsShopOfferUnlocked(ShopOfferData offer)
+        private bool CanRollShopOffer(ShopOfferData offer)
         {
-            return offer == null || offer.offerType != ShopOfferType.Card || IsCardUnlocked(offer.card);
+            if (offer == null)
+                return true;
+
+            return offer.offerType switch
+            {
+                ShopOfferType.Card => IsCardUnlocked(offer.card),
+                ShopOfferType.Relic => offer.relic != null,
+                _ => true
+            };
+        }
+
+        private bool IsShopOfferAvailable(ShopOfferData offer)
+        {
+            if (offer == null)
+                return true;
+
+            return offer.offerType switch
+            {
+                ShopOfferType.Card => IsCardUnlocked(offer.card),
+                ShopOfferType.Relic => offer.relic != null && !HasRelic(offer.relic),
+                _ => true
+            };
+        }
+
+        private bool HasRelic(RelicDef relic)
+        {
+            if (relic == null || CurrentRun?.ownedRelics == null)
+                return false;
+
+            string relicId = contentRepository.GetRelicId(relic);
+            for (int i = 0; i < CurrentRun.ownedRelics.Count; i++)
+            {
+                RelicDef ownedRelic = CurrentRun.ownedRelics[i]?.Definition;
+                if (ownedRelic == null)
+                    continue;
+
+                if (ownedRelic == relic || contentRepository.GetRelicId(ownedRelic) == relicId)
+                    return true;
+            }
+
+            return false;
         }
 
         private bool CanApplyRestAction(string nodeId)

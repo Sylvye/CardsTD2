@@ -1878,6 +1878,7 @@ MonoBehaviour:
     CurrentHealth: 20
     MaxHealth: 20
     OpeningHandSize: 5
+    MaxHandSize: 5
     ManualDrawCost: 5
 --- !u!4 &962809202
 Transform:

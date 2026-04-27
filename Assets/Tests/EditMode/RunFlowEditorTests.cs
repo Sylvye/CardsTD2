@@ -5,6 +5,7 @@ using Cards;
 using Combat;
 using Enemies;
 using NUnit.Framework;
+using Relics;
 using RunFlow;
 using TMPro;
 using UnityEditor;
@@ -433,6 +434,211 @@ public class RunFlowEditorTests
         Assert.That(firstRoll.Count, Is.EqualTo(2));
         CollectionAssert.AreEqual(firstRoll.ConvertAll(offer => offer.OfferId), secondRoll.ConvertAll(offer => offer.OfferId));
         Assert.That(firstRoll.Exists(offer => offer.OfferId == "heal"), Is.False);
+    }
+
+    [Test]
+    public void RunContentRepository_LoadsTestingRelics()
+    {
+        Assert.NotNull(contentRepository.GetRelicById("mana_battery"));
+        Assert.NotNull(contentRepository.GetRelicById("tower_discount"));
+        Assert.NotNull(contentRepository.GetRelicById("spell_discount"));
+        Assert.NotNull(contentRepository.GetRelicById("deep_pockets"));
+    }
+
+    [Test]
+    public void SaveService_RoundTripsOwnedRelicsAndDiscoveredRelics()
+    {
+        RelicDef relic = contentRepository.GetRelicById("mana_battery");
+        Assert.NotNull(relic);
+
+        SaveService saveService = new(contentRepository, saveDirectory);
+        ProfileSaveData profile = new() { activeRunId = "relic-run" };
+        profile.AddDiscoveredRelic(relic.RelicId);
+        saveService.SaveProfile(profile);
+
+        RunSaveData run = new()
+        {
+            runId = "relic-run",
+            currentHealth = 20,
+            maxHealth = 20,
+            gold = 0,
+            deck = new List<OwnedCard> { new(GetFirstCard()) },
+            ownedRelics = new List<OwnedRelic> { new(relic) },
+            completedNodeIds = new List<string>(),
+            mapState = new RunMapStateData(),
+            seed = 7
+        };
+        saveService.SaveRun(run);
+
+        ProfileSaveData loadedProfile = saveService.LoadProfile();
+        RunSaveData loadedRun = saveService.LoadRun("relic-run");
+
+        Assert.True(loadedProfile.HasDiscoveredRelic(relic.RelicId));
+        Assert.NotNull(loadedRun);
+        Assert.That(loadedRun.ownedRelics.Count, Is.EqualTo(1));
+        Assert.That(loadedRun.ownedRelics[0].Definition, Is.EqualTo(relic));
+    }
+
+    [Test]
+    public void RunCoordinator_TryPurchaseShopOffer_AddsRelicDiscoversAndFiltersDuplicates()
+    {
+        RelicDef relic = contentRepository.GetRelicById("mana_battery");
+        Assert.NotNull(relic);
+
+        ShopInventoryDef inventory = contentRepository.GetDefaultShopInventory();
+        Assert.NotNull(inventory);
+
+        int originalChoiceCount = inventory.choiceCount;
+        List<ShopOfferData> originalOffers = new(inventory.offers);
+
+        try
+        {
+            inventory.choiceCount = 1;
+            inventory.offers = new List<ShopOfferData>
+            {
+                new() { id = "test-relic", displayName = "Test Relic", offerType = ShopOfferType.Relic, price = 10, relic = relic, weight = 1 }
+            };
+
+            SaveService saveService = new(contentRepository, saveDirectory);
+            RunSaveData run = new()
+            {
+                runId = "shop-relic-run",
+                currentHealth = 20,
+                maxHealth = 20,
+                gold = 25,
+                deck = new List<OwnedCard> { new(GetFirstCard()) },
+                currentNodeId = "shop-a",
+                completedNodeIds = new List<string>(),
+                mapState = new RunMapStateData
+                {
+                    mapTemplateId = "test-template",
+                    startNodeId = "shop-a",
+                    nodes = new List<RunMapNodeData>
+                    {
+                        new() { nodeId = "shop-a", displayName = "Shop A", nodeType = MapNodeType.Shop, shopInventoryId = inventory.InventoryId },
+                        new() { nodeId = "shop-b", displayName = "Shop B", nodeType = MapNodeType.Shop, shopInventoryId = inventory.InventoryId }
+                    }
+                },
+                seed = 123
+            };
+
+            saveService.SaveProfile(new ProfileSaveData { activeRunId = run.runId });
+            saveService.SaveRun(run);
+
+            RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+            List<ShopOfferData> offers = coordinator.GetAvailableShopOffers("shop-a");
+            Assert.That(offers.Count, Is.EqualTo(1));
+            Assert.That(coordinator.GetResolvedShopOfferPrice(offers[0]), Is.EqualTo(10));
+
+            Assert.True(coordinator.TryPurchaseShopOffer("shop-a", "test-relic"));
+            Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(15));
+            Assert.That(coordinator.GetOwnedRelics().Count, Is.EqualTo(1));
+            Assert.That(coordinator.GetOwnedRelics()[0].Definition, Is.EqualTo(relic));
+            Assert.True(coordinator.Profile.HasDiscoveredRelic(relic.RelicId));
+
+            Assert.False(coordinator.TryPurchaseShopOffer("shop-a", "test-relic"));
+            Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(15));
+            Assert.That(coordinator.GetAvailableShopOffers("shop-b").Count, Is.EqualTo(0));
+        }
+        finally
+        {
+            inventory.choiceCount = originalChoiceCount;
+            inventory.offers = originalOffers;
+        }
+    }
+
+    [Test]
+    public void RelicCardModifier_ModifiesMatchingCardCostsAndClampsToZero()
+    {
+        CardDef towerCard = GetFirstCardOfType(CardType.Tower);
+        CardDef spellCard = GetFirstCardOfType(CardType.Spell);
+
+        RelicCardModifierDef towerDiscount = ScriptableObject.CreateInstance<RelicCardModifierDef>();
+        towerDiscount.allowedCardTypes = new List<CardType> { CardType.Tower };
+        towerDiscount.manaCostDelta = -1;
+
+        RelicCardModifierDef spellDiscount = ScriptableObject.CreateInstance<RelicCardModifierDef>();
+        spellDiscount.allowedCardTypes = new List<CardType> { CardType.Spell };
+        spellDiscount.manaCostDelta = -1;
+
+        RelicDef towerRelic = ScriptableObject.CreateInstance<RelicDef>();
+        towerRelic.effects = new List<RelicEffectDef> { towerDiscount };
+
+        RelicDef spellRelic = ScriptableObject.CreateInstance<RelicDef>();
+        spellRelic.effects = new List<RelicEffectDef> { spellDiscount };
+
+        CardDef zeroCostTower = ScriptableObject.CreateInstance<CardDef>();
+        zeroCostTower.type = CardType.Tower;
+        zeroCostTower.baseManaCost = 0;
+
+        try
+        {
+            ResolvedCardData towerResolved = CardRuntimeResolver.Build(
+                new OwnedCard(towerCard),
+                new List<OwnedRelic> { new(towerRelic) });
+            ResolvedCardData spellUnaffected = CardRuntimeResolver.Build(
+                new OwnedCard(spellCard),
+                new List<OwnedRelic> { new(towerRelic) });
+            ResolvedCardData spellResolved = CardRuntimeResolver.Build(
+                new OwnedCard(spellCard),
+                new List<OwnedRelic> { new(spellRelic) });
+            ResolvedCardData clamped = CardRuntimeResolver.Build(
+                new OwnedCard(zeroCostTower),
+                new List<OwnedRelic> { new(towerRelic) });
+
+            Assert.That(towerResolved.ManaCost, Is.EqualTo(Mathf.Max(0, towerCard.baseManaCost - 1)));
+            Assert.That(spellUnaffected.ManaCost, Is.EqualTo(spellCard.baseManaCost));
+            Assert.That(spellResolved.ManaCost, Is.EqualTo(Mathf.Max(0, spellCard.baseManaCost - 1)));
+            Assert.That(clamped.ManaCost, Is.EqualTo(0));
+        }
+        finally
+        {
+            Object.DestroyImmediate(towerDiscount);
+            Object.DestroyImmediate(spellDiscount);
+            Object.DestroyImmediate(towerRelic);
+            Object.DestroyImmediate(spellRelic);
+            Object.DestroyImmediate(zeroCostTower);
+        }
+    }
+
+    [Test]
+    public void RelicCombatSetupModifier_OverridesStartingManaAndIncreasesMaxHandSize()
+    {
+        RelicCombatSetupModifierDef manaEffect = ScriptableObject.CreateInstance<RelicCombatSetupModifierDef>();
+        manaEffect.overrideStartingMana = true;
+        manaEffect.startingManaOverride = 15;
+
+        RelicCombatSetupModifierDef handEffect = ScriptableObject.CreateInstance<RelicCombatSetupModifierDef>();
+        handEffect.maxHandSizeDelta = 1;
+
+        RelicDef manaRelic = ScriptableObject.CreateInstance<RelicDef>();
+        manaRelic.effects = new List<RelicEffectDef> { manaEffect };
+
+        RelicDef handRelic = ScriptableObject.CreateInstance<RelicDef>();
+        handRelic.effects = new List<RelicEffectDef> { handEffect };
+
+        try
+        {
+            CombatSessionSetup setup = new()
+            {
+                StartingMana = 10,
+                MaxHandSize = 5
+            };
+
+            RelicResolver.ModifyCombatSetup(
+                new List<OwnedRelic> { new(manaRelic), new(handRelic) },
+                setup);
+
+            Assert.That(setup.StartingMana, Is.EqualTo(15));
+            Assert.That(setup.MaxHandSize, Is.EqualTo(6));
+        }
+        finally
+        {
+            Object.DestroyImmediate(manaEffect);
+            Object.DestroyImmediate(handEffect);
+            Object.DestroyImmediate(manaRelic);
+            Object.DestroyImmediate(handRelic);
+        }
     }
 
     [Test]
@@ -1638,6 +1844,18 @@ public class RunFlowEditorTests
         }
 
         Assert.Fail("Expected at least one card definition.");
+        return null;
+    }
+
+    private CardDef GetFirstCardOfType(CardType cardType)
+    {
+        foreach (CardDef card in contentRepository.Cards)
+        {
+            if (card != null && card.type == cardType)
+                return card;
+        }
+
+        Assert.Fail($"Expected at least one {cardType} card definition.");
         return null;
     }
 

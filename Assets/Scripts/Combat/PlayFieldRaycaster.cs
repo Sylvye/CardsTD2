@@ -8,24 +8,42 @@ namespace Combat
         [SerializeField] private Camera targetCamera;
         [SerializeField] private Collider2D playFieldArea;
 
-        public bool TryGetMouseWorldPoint(out Vector3 worldPoint)
+        public bool TryGetMouseWorldPoint(out Vector3 worldPoint, bool requirePlayField = true)
         {
             worldPoint = default;
 
-            if (targetCamera is null)
-                targetCamera = Camera.main;
-
-            if (targetCamera is null)
+            if (!TryGetTargetCamera(out Camera camera))
                 return false;
 
             Vector2 mouseScreen = Mouse.current.position.ReadValue();
-            worldPoint = targetCamera.ScreenToWorldPoint(mouseScreen);
+            worldPoint = camera.ScreenToWorldPoint(mouseScreen);
             worldPoint.z = 0f;
 
-            if (playFieldArea is null)
+            if (!requirePlayField || playFieldArea is null)
                 return true;
 
             return playFieldArea.OverlapPoint(worldPoint);
+        }
+
+        public bool TryScreenToWorldPoint(Vector2 screenPoint, out Vector3 worldPoint)
+        {
+            worldPoint = default;
+
+            if (!TryGetTargetCamera(out Camera camera))
+                return false;
+
+            worldPoint = camera.ScreenToWorldPoint(screenPoint);
+            worldPoint.z = 0f;
+            return true;
+        }
+
+        private bool TryGetTargetCamera(out Camera camera)
+        {
+            if (targetCamera is null)
+                targetCamera = Camera.main;
+
+            camera = targetCamera;
+            return camera is not null;
         }
     }
 }

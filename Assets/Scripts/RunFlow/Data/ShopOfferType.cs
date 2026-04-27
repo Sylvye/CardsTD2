@@ -4,6 +4,7 @@ namespace RunFlow
     {
         Card = 0,
         Augment = 1,
-        Heal = 2
+        Heal = 2,
+        Relic = 3
     }
 }

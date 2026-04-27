@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cc72ca802a148cd8c7ed7e01ab08aac, type: 3}
+  m_Name: Spell Discount Effect
+  m_EditorClassIdentifier: Assembly-CSharp::Relics.RelicCardModifierDef
+  allowedCardTypes: 01000000
+  allowedFamilyIds: []
+  manaCostDelta: -1
+  extraAugmentSlots: 0
+  additionalCardEffects: []
+  additionalTowerModifiers: []
+  towerAttackModifiers: []
+  additionalSpellEffects: []

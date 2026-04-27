@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Relics;
 using Towers;
 using UnityEngine;
 
@@ -7,6 +8,11 @@ namespace Cards
     public static class CardRuntimeResolver
     {
         public static ResolvedCardData Build(OwnedCard ownedCard)
+        {
+            return Build(ownedCard, null);
+        }
+
+        public static ResolvedCardData Build(OwnedCard ownedCard, IReadOnlyList<OwnedRelic> activeRelics)
         {
             CardDef definition = ownedCard != null ? ownedCard.CurrentDefinition : null;
             if (definition == null)
@@ -43,6 +49,26 @@ namespace Cards
 
                     AppendSpellEffects(spellEffects, augment.additionalSpellEffects);
                 }
+            }
+
+            RelicCardModificationContext relicContext = new(
+                ownedCard,
+                definition,
+                manaCost,
+                augmentSlots,
+                effects,
+                towerModifiers,
+                towerAttackModifiers);
+            RelicResolver.ModifyCard(activeRelics, relicContext);
+            manaCost = relicContext.ManaCost;
+            augmentSlots = relicContext.AugmentSlots;
+
+            if (relicContext.AdditionalSpellEffects.Count > 0)
+            {
+                if (spellEffects == null)
+                    spellEffects = CloneSpellEffects((definition.spawnableObject as SpellDef)?.triggeredEffects);
+
+                AppendSpellEffects(spellEffects, relicContext.AdditionalSpellEffects);
             }
 
             manaCost = Mathf.Max(0, manaCost);

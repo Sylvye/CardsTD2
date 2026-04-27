@@ -149,6 +149,7 @@ namespace RunFlow
                 $"Health: {coordinator.CurrentRun.currentHealth}/{coordinator.CurrentRun.maxHealth}\n" +
                 $"Gold: {coordinator.CurrentRun.gold}\n" +
                 $"Augments: {coordinator.GetOwnedAugments().Count}\n" +
+                $"Relics: {coordinator.GetOwnedRelics().Count}\n" +
                 $"Meta Currency: {coordinator.Profile.metaCurrency}";
 
             int nodeCount = 0;
@@ -485,18 +486,19 @@ namespace RunFlow
                     continue;
 
                 string purchaseOfferId = offer.OfferId;
+                int price = coordinator.GetResolvedShopOfferPrice(offer);
                 SimpleUiFactory.CreateItemTile(
                     offersSection,
                     GetOfferIcon(offer),
                     offer.GetDisplayName(),
                     GetOfferSubtitle(offer),
-                    GetOfferDetail(offer),
+                    GetOfferDetail(coordinator, offer),
                     () =>
                     {
                         if (coordinator.TryPurchaseShopOffer(node.nodeId, purchaseOfferId))
                             RefreshUi();
                     },
-                    interactable: coordinator.CurrentRun.gold >= offer.price);
+                    interactable: coordinator.CurrentRun.gold >= price);
             }
 
             SimpleUiFactory.CreateButton(detailRoot, "Leave Shop", () =>
@@ -619,6 +621,7 @@ namespace RunFlow
             {
                 ShopOfferType.Card => offer.card != null ? offer.card.icon : null,
                 ShopOfferType.Augment => offer.augment != null ? offer.augment.icon : null,
+                ShopOfferType.Relic => offer.relic != null ? offer.relic.icon : null,
                 _ => null
             };
         }
@@ -629,25 +632,29 @@ namespace RunFlow
             {
                 ShopOfferType.Card => "Card Offer",
                 ShopOfferType.Augment => "Augment Offer",
+                ShopOfferType.Relic => "Relic Offer",
                 ShopOfferType.Heal => "Shop Service",
                 _ => "Offer"
             };
         }
 
-        private static string GetOfferDetail(ShopOfferData offer)
+        private static string GetOfferDetail(RunCoordinator coordinator, ShopOfferData offer)
         {
             if (offer == null)
                 return string.Empty;
 
+            int price = coordinator != null ? coordinator.GetResolvedShopOfferPrice(offer) : Mathf.Max(0, offer.price);
             return offer.offerType switch
             {
                 ShopOfferType.Card when offer.card != null =>
-                    $"{offer.card.description}\nBuy for {offer.price} gold.",
+                    $"{offer.card.description}\nBuy for {price} gold.",
                 ShopOfferType.Augment when offer.augment != null =>
-                    $"{offer.augment.description}\nBuy for {offer.price} gold. Apply later for {Mathf.Max(0, offer.augment.applicationCost)} gold.",
+                    $"{offer.augment.description}\nBuy for {price} gold. Apply later for {Mathf.Max(0, offer.augment.applicationCost)} gold.",
+                ShopOfferType.Relic when offer.relic != null =>
+                    $"{offer.relic.description}\nBuy for {price} gold.",
                 ShopOfferType.Heal =>
-                    $"Recover {offer.healAmount} health for {offer.price} gold.",
-                _ => $"{offer.price} gold"
+                    $"Recover {offer.healAmount} health for {price} gold.",
+                _ => $"{price} gold"
             };
         }
 

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Cards;
 using Combat;
 using Enemies;
+using Relics;
 using UnityEngine;
 
 namespace RunFlow
@@ -43,7 +44,7 @@ namespace RunFlow
             if (combatSessionDriver != null)
                 combatSessionDriver.ConfigureSession(BuildSessionSetup(request));
 
-            handViewDriver?.Initialize(request.run.deck, combatSessionDriver);
+            handViewDriver?.Initialize(request.run.deck, combatSessionDriver, request.run.ownedRelics);
         }
 
         private CombatSessionSetup BuildSessionSetup(CombatSceneRequest request)
@@ -56,6 +57,7 @@ namespace RunFlow
                 setup.MaxHealth = request.run.maxHealth;
             }
 
+            RelicResolver.ModifyCombatSetup(request?.run?.ownedRelics, setup);
             return setup;
         }
 
@@ -75,6 +77,7 @@ namespace RunFlow
                 maxHealth = debugMaxHealth,
                 gold = 0,
                 deck = new List<OwnedCard>(debugDeck),
+                ownedRelics = new List<OwnedRelic>(),
                 completedNodeIds = new List<string>(),
                 mapState = new RunMapStateData(),
                 seed = 1

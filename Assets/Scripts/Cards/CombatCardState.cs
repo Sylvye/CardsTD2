@@ -1,6 +1,7 @@
 ﻿namespace Cards
 {
     using System.Collections.Generic;
+    using Relics;
     using UnityEngine;
 
     public class CombatCardState
@@ -20,7 +21,7 @@
             ExhaustPile = new CardZone("Exhaust Pile");
         }
 
-        public void BuildDrawPileFromOwnedCards(IEnumerable<OwnedCard> ownedCards)
+        public void BuildDrawPileFromOwnedCards(IEnumerable<OwnedCard> ownedCards, IReadOnlyList<OwnedRelic> activeRelics = null)
         {
             DrawPile.Clear();
             Hand.Clear();
@@ -40,7 +41,7 @@
                 }
 
                 ownedCard.EnsureUniqueId();
-                CardInstance instance = new CardInstance(ownedCard, nextRuntimeId++);
+                CardInstance instance = new CardInstance(ownedCard, nextRuntimeId++, activeRelics);
                 DrawPile.Add(instance);
             }
 

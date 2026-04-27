@@ -38,6 +38,7 @@ public class CombatSessionDriverEditor : Editor
             EditorGUILayout.IntField("Current Health", driver.PlayerState != null ? driver.PlayerState.CurrentHealth : setup.CurrentHealth);
             EditorGUILayout.IntField("Max Health", driver.PlayerState != null ? driver.PlayerState.MaxHealth : setup.MaxHealth);
             EditorGUILayout.IntField("Opening Hand Size", setup.OpeningHandSize);
+            EditorGUILayout.IntField("Max Hand Size", setup.MaxHandSize);
             EditorGUILayout.IntField("Manual Draw Cost", setup.ManualDrawCost);
         }
     }

@@ -3,6 +3,7 @@ using System.Reflection;
 using Cards;
 using Combat;
 using Enemies;
+using Relics;
 using RunFlow;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -21,6 +22,7 @@ public static class RunFlowProjectSetup
     private const string EncountersPath = RunFlowRootPath + "/Encounters";
     private const string RewardsPath = RunFlowRootPath + "/Rewards";
     private const string ShopsPath = RunFlowRootPath + "/Shops";
+    private const string RelicsPath = RunFlowRootPath + "/Relics";
     private const string UnlocksPath = RunFlowRootPath + "/Unlocks";
     private const string MapNodesPath = RunFlowRootPath + "/MapNodes";
     private const string MapsPath = RunFlowRootPath + "/Maps";
@@ -35,6 +37,7 @@ public static class RunFlowProjectSetup
 
         List<CardDef> cards = LoadAssets<CardDef>("Assets/Resources/Combat/Cards/Definitions");
         List<CardAugmentDef> augments = LoadAssets<CardAugmentDef>("Assets/Resources/Combat/Cards/Augments");
+        List<RelicDef> relics = LoadAssets<RelicDef>(RelicsPath);
         List<EnemyDef> enemies = LoadAssets<EnemyDef>("Assets/Resources/Combat/Enemies/Definitions");
         CardDef upgradedStarterCard = EnsureStarterUpgrade(cards);
         if (upgradedStarterCard != null && !cards.Contains(upgradedStarterCard))
@@ -42,7 +45,7 @@ public static class RunFlowProjectSetup
 
         CreateMetaUnlockCatalog(cards);
         CardRewardPoolDef rewardPool = CreateRewardPool(cards, augments);
-        ShopInventoryDef shopInventory = CreateShopInventory(cards, augments);
+        ShopInventoryDef shopInventory = CreateShopInventory(cards, augments, relics);
         EncounterDef regularFightA = CreateEncounter("regular-fight-a", "Regular Fight I", EncounterKind.RegularFight, pathPrefab, enemies, rewardPool, 10, 1, 4, 0);
         EncounterDef regularFightB = CreateEncounter("regular-fight-b", "Regular Fight II", EncounterKind.RegularFight, pathPrefab, enemies, rewardPool, 12, 1, 6, 0);
         EncounterDef regularFightC = CreateEncounter("regular-fight-c", "Regular Fight III", EncounterKind.RegularFight, pathPrefab, enemies, rewardPool, 14, 1, 4, 1);
@@ -73,6 +76,7 @@ public static class RunFlowProjectSetup
         EnsureFolder(EncountersPath);
         EnsureFolder(RewardsPath);
         EnsureFolder(ShopsPath);
+        EnsureFolder(RelicsPath);
         EnsureFolder(UnlocksPath);
         EnsureFolder(MapNodesPath);
         EnsureFolder(MapsPath);
@@ -158,7 +162,7 @@ public static class RunFlowProjectSetup
         return rewardPool;
     }
 
-    private static ShopInventoryDef CreateShopInventory(List<CardDef> cards, List<CardAugmentDef> augments)
+    private static ShopInventoryDef CreateShopInventory(List<CardDef> cards, List<CardAugmentDef> augments, List<RelicDef> relics)
     {
         ShopInventoryDef shop = LoadOrCreateAsset<ShopInventoryDef>($"{ShopsPath}/StarterShop.asset");
         shop.id = "starter-shop";
@@ -188,6 +192,26 @@ public static class RunFlowProjectSetup
             augment = augmentOffer,
             weight = 1
         });
+
+        if (relics != null)
+        {
+            for (int i = 0; i < relics.Count; i++)
+            {
+                RelicDef relic = relics[i];
+                if (relic == null)
+                    continue;
+
+                shop.offers.Add(new ShopOfferData
+                {
+                    id = relic.RelicId,
+                    displayName = $"Buy {relic.DisplayNameOrFallback}",
+                    offerType = ShopOfferType.Relic,
+                    price = 10,
+                    relic = relic,
+                    weight = 1
+                });
+            }
+        }
 
         shop.offers.Add(new ShopOfferData
         {
@@ -529,7 +553,7 @@ public static class RunFlowProjectSetup
 
     private static T RequireSceneComponent<T>(string scenePath) where T : Component
     {
-        T component = Object.FindFirstObjectByType<T>();
+        T component = Object.FindAnyObjectByType<T>();
         if (component == null)
             throw new MissingReferenceException($"{scenePath} does not contain a required {typeof(T).Name} component.");
 
@@ -538,7 +562,7 @@ public static class RunFlowProjectSetup
 
     private static T FindOrCreateComponent<T>(System.Func<T> create) where T : Component
     {
-        T component = Object.FindFirstObjectByType<T>();
+        T component = Object.FindAnyObjectByType<T>();
         if (component != null)
             return component;
 

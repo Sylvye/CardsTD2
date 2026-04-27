@@ -11,6 +11,7 @@ namespace Combat
         public int CurrentHealth = 20;
         public int MaxHealth = 20;
         public int OpeningHandSize = 5;
+        public int MaxHandSize = 5;
         public int ManualDrawCost = 2;
 
         public CombatSessionSetup Clone()
@@ -23,6 +24,7 @@ namespace Combat
                 CurrentHealth = CurrentHealth,
                 MaxHealth = MaxHealth,
                 OpeningHandSize = OpeningHandSize,
+                MaxHandSize = MaxHandSize,
                 ManualDrawCost = ManualDrawCost
             };
         }

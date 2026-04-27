@@ -1,4 +1,5 @@
 ﻿using System;
+using Combat;
 using UnityEngine;
 
 namespace Cards
@@ -12,6 +13,8 @@ namespace Cards
         private HandController handController;
         private SelectedCardController selectedCardController;
         private Action<CardInstance> onCardClicked;
+        private PlayFieldRaycaster targetLineRaycaster;
+        private Func<bool> isInputBlocked;
 
         public void Initialize(
             CombatCardState combatCardState,
@@ -59,7 +62,20 @@ namespace Cards
                                   selectedCardController.SelectedCard == card;
 
                 view.SetSelected(isSelected);
+                ConfigureTargetLine(view);
             }
+        }
+
+        public void ConfigureTargetLines(PlayFieldRaycaster raycaster, Func<bool> inputBlocked)
+        {
+            targetLineRaycaster = raycaster;
+            isInputBlocked = inputBlocked;
+
+            if (cardContainer == null)
+                return;
+
+            for (int i = 0; i < cardContainer.childCount; i++)
+                ConfigureTargetLine(cardContainer.GetChild(i).GetComponent<CardView>());
         }
 
         private void HandleCardClicked(CardInstance card)
@@ -94,6 +110,14 @@ namespace Cards
             {
                 Destroy(cardContainer.GetChild(i).gameObject);
             }
+        }
+
+        private void ConfigureTargetLine(CardView view)
+        {
+            if (view == null)
+                return;
+
+            view.ConfigureTargetLine(selectedCardController, targetLineRaycaster, isInputBlocked);
         }
     }
 }

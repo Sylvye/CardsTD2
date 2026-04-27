@@ -2,6 +2,7 @@ namespace Cards
 {
     using System;
     using System.Collections.Generic;
+    using Relics;
     using UnityEngine;
 
     [Serializable]
@@ -11,6 +12,7 @@ namespace Cards
         [SerializeField] private int currentManaCost;
         [SerializeField] private int uniqueRuntimeId;
         [NonSerialized] private ResolvedCardData resolvedData;
+        [NonSerialized] private IReadOnlyList<OwnedRelic> activeRelics;
 
         // properties
         public OwnedCard OwnedCard => ownedCard;
@@ -34,10 +36,17 @@ namespace Cards
         {
         }
 
-        public CardInstance(OwnedCard ownedCard, int runtimeId)
+        public CardInstance(OwnedCard ownedCard, int runtimeId, IReadOnlyList<OwnedRelic> activeRelics = null)
         {
             this.ownedCard = ownedCard;
             uniqueRuntimeId = runtimeId;
+            this.activeRelics = activeRelics;
+            RefreshResolvedData();
+        }
+
+        public void SetActiveRelics(IReadOnlyList<OwnedRelic> relics)
+        {
+            activeRelics = relics;
             RefreshResolvedData();
         }
 
@@ -79,7 +88,7 @@ namespace Cards
 
         public void RefreshResolvedData()
         {
-            resolvedData = CardRuntimeResolver.Build(ownedCard);
+            resolvedData = CardRuntimeResolver.Build(ownedCard, activeRelics);
             currentManaCost = resolvedData != null ? resolvedData.ManaCost : 0;
         }
 

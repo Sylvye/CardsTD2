@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Combat;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -17,6 +18,7 @@ namespace Cards
         [SerializeField] private RectTransform augmentBadgeContainer;
         [SerializeField] private Image augmentBadgeTemplate;
         [SerializeField] private Button playButton;
+        [SerializeField] private CardTargetLineController targetLineController;
         
         [Header("Motion")]
         [SerializeField] private float vertOffset = 0f;
@@ -41,6 +43,9 @@ namespace Cards
 
             if (augmentBadgeTemplate != null && !augmentBadgePool.Contains(augmentBadgeTemplate))
                 augmentBadgePool.Add(augmentBadgeTemplate);
+
+            if (targetLineController == null)
+                targetLineController = GetComponentInChildren<CardTargetLineController>(true);
         }
 
         private void Update()
@@ -55,6 +60,8 @@ namespace Cards
             Vector2 current = rectTransform.localPosition;
             float newY = Mathf.Lerp(current.y, baseLocalPosition.y + targetY, Time.deltaTime * moveSpeed);
             rectTransform.localPosition = new Vector2(current.x, newY);
+
+            targetLineController?.RefreshLine();
         }
 
         public void Bind(CardInstance card, Action<CardInstance> clickCallback)
@@ -69,6 +76,7 @@ namespace Cards
                 rectTransform = GetComponent<RectTransform>();
             
             Refresh();
+            targetLineController?.HideLine();
 
             if (playButton is not null)
             {
@@ -108,6 +116,20 @@ namespace Cards
         public void SetSelected(bool selected)
         {
             isSelected = selected;
+        }
+
+        public void ConfigureTargetLine(
+            SelectedCardController selectedCardController,
+            PlayFieldRaycaster playFieldRaycaster,
+            Func<bool> inputBlocked)
+        {
+            if (targetLineController == null)
+                targetLineController = GetComponentInChildren<CardTargetLineController>(true);
+
+            if (targetLineController == null)
+                return;
+
+            targetLineController.Initialize(this, selectedCardController, playFieldRaycaster, inputBlocked);
         }
 
         public void OnPointerEnter(PointerEventData eventData)

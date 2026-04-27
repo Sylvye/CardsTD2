@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cards;
+using Relics;
 
 namespace RunFlow
 {
@@ -13,6 +14,7 @@ namespace RunFlow
         public int gold;
         public List<OwnedCard> deck = new();
         public List<OwnedAugment> ownedAugments = new();
+        public List<OwnedRelic> ownedRelics = new();
         public string currentNodeId;
         public List<string> completedNodeIds = new();
         public RunMapStateData mapState = new();
