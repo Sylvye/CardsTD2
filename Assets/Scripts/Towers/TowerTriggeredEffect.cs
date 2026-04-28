@@ -1,4 +1,5 @@
 using System;
+using Combat;
 using UnityEngine;
 
 namespace Towers
@@ -11,5 +12,6 @@ namespace Towers
 
         [Header("Generic Value")]
         public float amount = 0f;
+        public DamageTypeDef damageType;
     }
 }

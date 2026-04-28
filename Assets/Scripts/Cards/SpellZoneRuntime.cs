@@ -331,7 +331,7 @@ namespace Cards
                     ResolveGainMana(effect, context);
                     break;
                 case SpellEffectType.DamageEnemy:
-                    ResolveEnemyTargets(effect, context, enemy => enemy.TakeDamage(effect.amount));
+                    ResolveEnemyTargets(effect, context, enemy => enemy.TakeDamage(effect.amount, effect.damageType));
                     break;
                 case SpellEffectType.ApplyEnemyModifier:
                     ResolveEnemyModifier(effect, context);

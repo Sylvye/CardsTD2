@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: TeslaBeamDef
   m_EditorClassIdentifier: Assembly-CSharp::Towers.BeamTowerAttackDef
   targetFilters: []
+  damageType: {fileID: 11400000, guid: 519ce00809cd4260824271811b0683d6, type: 2}
   damageMultiplier: 1
   flatDamageBonus: 0
   projectileCount: 1

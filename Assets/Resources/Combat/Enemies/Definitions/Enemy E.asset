@@ -10,16 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e7e99368baf4b3bb40e1750a05d04cf, type: 3}
-  m_Name: Enemy A
+  m_Name: Enemy E
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyDef
-  prefab: {fileID: 2232636580848620905, guid: 674143ff06aa1b945ae3142edff0730b, type: 3}
-  maxHealth: 12
-  moveSpeed: 1
+  prefab: {fileID: 2232636580848620905, guid: f3d5e4752ccd041ebb7185407ae3adb7, type: 3}
+  maxHealth: 8
+  moveSpeed: 3
   lifeDamage: 1
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
   resistedDamageFlashColor: {r: 0.45, g: 0.65, b: 1, a: 1}
   weaknessDamageFlashColor: {r: 1, g: 0.9, b: 0.1, a: 1}
   damageFlashDuration: 0.1
-  weaknesses: []
-  resistances: []
+  weaknesses:
+  - {fileID: 11400000, guid: 519ce00809cd4260824271811b0683d6, type: 2}
+  - {fileID: 11400000, guid: d2f6711a6f7547db9b6b3f4fba8bf783, type: 2}
+  - {fileID: 11400000, guid: 990399bbb9c1498fb659dafff749b34d, type: 2}
+  - {fileID: 11400000, guid: 5d560b3e776e45c4a4d4df214ca2737a, type: 2}
+  - {fileID: 11400000, guid: 7109e2e7c1ed4956bc58399b32859ea9, type: 2}
+  resistances:
+  - damageType: {fileID: 11400000, guid: ceb65f1a0a404858bbfa385ea1b90127, type: 2}
+    immune: 0
   triggeredEffects: []

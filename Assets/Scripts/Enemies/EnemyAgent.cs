@@ -23,6 +23,9 @@ namespace Enemies
         private float damageFlashTimeRemaining;
         private float damageFlashDuration;
         private Color damageFlashColor;
+        private Color resistedDamageFlashColor;
+        private Color weaknessDamageFlashColor;
+        private Color activeDamageFlashColor;
 
         private bool isInitialized;
         private bool isDeadOrEscaped;
@@ -65,6 +68,9 @@ namespace Enemies
             currentHealth = maxHealth;
             lifeDamage = def.lifeDamage;
             damageFlashColor = def.damageFlashColor;
+            resistedDamageFlashColor = def.resistedDamageFlashColor;
+            weaknessDamageFlashColor = def.weaknessDamageFlashColor;
+            activeDamageFlashColor = damageFlashColor;
             damageFlashDuration = Mathf.Max(0f, def.damageFlashDuration);
             damageFlashTimeRemaining = 0f;
 
@@ -102,14 +108,27 @@ namespace Enemies
             }
         }
 
-        public void TakeDamage(float amount)
+        public void TakeDamage(float amount, DamageTypeDef damageType = null)
         {
             if (isDeadOrEscaped || amount <= 0f)
                 return;
 
             EnemyResolvedStats stats = GetResolvedStats();
-            currentHealth -= amount * stats.DamageTakenMultiplier;
-            TriggerDamageFlash();
+            EnemyDamageResponse damageResponse = enemyDef != null
+                ? enemyDef.ResolveDamageTypeResponse(amount, damageType)
+                : new EnemyDamageResponse(amount, EnemyDamageResponseType.Normal);
+            float damageAmount = damageResponse.Amount;
+            damageAmount *= stats.DamageTakenMultiplier;
+            if (damageAmount <= 0f)
+            {
+                if (damageResponse.ResponseType == EnemyDamageResponseType.Resistance)
+                    TriggerDamageFlash(GetDamageFlashColor(damageResponse.ResponseType));
+
+                return;
+            }
+
+            currentHealth -= damageAmount;
+            TriggerDamageFlash(GetDamageFlashColor(damageResponse.ResponseType));
 
             FireTrigger(EnemyTriggerType.OnHit);
 
@@ -162,11 +181,26 @@ namespace Enemies
             Destroy(gameObject);
         }
 
-        private void TriggerDamageFlash()
+        private Color GetDamageFlashColor(EnemyDamageResponseType damageResponseType)
+        {
+            switch (damageResponseType)
+            {
+                case EnemyDamageResponseType.Weakness:
+                    return weaknessDamageFlashColor;
+                case EnemyDamageResponseType.Resistance:
+                    return resistedDamageFlashColor;
+                case EnemyDamageResponseType.Normal:
+                default:
+                    return damageFlashColor;
+            }
+        }
+
+        private void TriggerDamageFlash(Color flashColor)
         {
             if (spriteRenderers == null || spriteRenderers.Length == 0 || damageFlashDuration <= 0f)
                 return;
 
+            activeDamageFlashColor = flashColor;
             damageFlashTimeRemaining = damageFlashDuration;
             ApplyFlashColor(1f);
         }
@@ -229,7 +263,7 @@ namespace Enemies
                 if (spriteRenderer == null)
                     continue;
 
-                spriteRenderer.color = Color.Lerp(spriteBaseColors[i], damageFlashColor, normalizedIntensity);
+                spriteRenderer.color = Color.Lerp(spriteBaseColors[i], activeDamageFlashColor, normalizedIntensity);
             }
         }
 

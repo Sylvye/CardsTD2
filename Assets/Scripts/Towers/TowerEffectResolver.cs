@@ -44,7 +44,7 @@ namespace Towers
             if (context?.TargetEnemy == null || context.TargetEnemy.IsDeadOrEscaped)
                 return;
 
-            context.TargetEnemy.TakeDamage(effect.amount);
+            context.TargetEnemy.TakeDamage(effect.amount, effect.damageType);
         }
 
         private static void ResolveHealTower(TowerTriggeredEffect effect, TowerEffectContext context)

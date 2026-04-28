@@ -1,4 +1,5 @@
 using System;
+using Combat;
 using Enemies;
 using Towers;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace Cards
         public SpellEffectType effectType = SpellEffectType.None;
         public SpellTargetType targetType = SpellTargetType.None;
         public float amount = 0f;
+        public DamageTypeDef damageType;
         [Min(0.01f)] public float tickInterval = 1f;
 
         [Header("Modifiers")]
@@ -27,6 +29,7 @@ namespace Cards
                 effectType = effectType,
                 targetType = targetType,
                 amount = amount,
+                damageType = damageType,
                 tickInterval = tickInterval,
                 towerModifier = towerModifier,
                 enemyModifier = enemyModifier,

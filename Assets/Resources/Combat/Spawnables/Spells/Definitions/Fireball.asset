@@ -20,6 +20,7 @@ MonoBehaviour:
     effectType: 2
     targetType: 1
     amount: 10
+    damageType: {fileID: 11400000, guid: d2f6711a6f7547db9b6b3f4fba8bf783, type: 2}
     tickInterval: 0.01
     towerModifier: {fileID: 0}
     enemyModifier: {fileID: 0}
@@ -28,6 +29,7 @@ MonoBehaviour:
     effectType: 2
     targetType: 1
     amount: 2
+    damageType: {fileID: 11400000, guid: d2f6711a6f7547db9b6b3f4fba8bf783, type: 2}
     tickInterval: 0.3
     towerModifier: {fileID: 0}
     enemyModifier: {fileID: 0}

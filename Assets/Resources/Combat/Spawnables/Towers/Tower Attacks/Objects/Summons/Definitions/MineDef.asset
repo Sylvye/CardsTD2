@@ -30,3 +30,4 @@ MonoBehaviour:
   - trigger: 3
     effectType: 1
     amount: 10
+    damageType: {fileID: 11400000, guid: ceb65f1a0a404858bbfa385ea1b90127, type: 2}

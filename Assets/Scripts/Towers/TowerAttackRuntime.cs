@@ -105,6 +105,7 @@ namespace Towers
                     target,
                     projectileDirection,
                     damage,
+                    attackDef.DamageType,
                     attackDef.projectileSpeed,
                     attackDef.projectileLifetime,
                     attackDef.followTarget,
@@ -169,7 +170,7 @@ namespace Towers
                     continue;
 
                 bool wasAliveBeforeHit = !target.IsDeadOrEscaped;
-                target.TakeDamage(damage);
+                target.TakeDamage(damage, attackDef.DamageType);
                 tower.ReportHit(target, damage, target.transform.position);
                 if (wasAliveBeforeHit && target.IsDeadOrEscaped)
                     tower.ReportKill(target, damage, target.transform.position);

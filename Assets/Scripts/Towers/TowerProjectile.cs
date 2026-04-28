@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Combat;
 using Enemies;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace Towers
         private Collider2D projectileCollider;
         private Vector2 travelDirection;
         private float damage;
+        private DamageTypeDef damageType;
         private float speed;
         private float lifetimeRemaining;
         private int remainingHits;
@@ -40,6 +42,7 @@ namespace Towers
             EnemyAgent targetEnemy,
             Vector3 initialTravelDirection,
             float projectileDamage,
+            DamageTypeDef projectileDamageType,
             float projectileSpeed,
             float lifetime,
             bool shouldFollowTarget,
@@ -51,6 +54,7 @@ namespace Towers
                 ? ((Vector2)initialTravelDirection).normalized
                 : Vector2.right;
             damage = projectileDamage;
+            damageType = projectileDamageType;
             speed = Mathf.Max(0.01f, projectileSpeed);
             lifetimeRemaining = Mathf.Max(0.01f, lifetime);
             remainingHits = Mathf.Max(0, pierceCount) + 1;
@@ -112,7 +116,7 @@ namespace Towers
                 Expire();
 
             bool wasAliveBeforeHit = !enemy.IsDeadOrEscaped;
-            enemy.TakeDamage(damage);
+            enemy.TakeDamage(damage, damageType);
             ownerTower?.ReportHit(enemy, damage, transform.position);
             if (wasAliveBeforeHit && enemy.IsDeadOrEscaped)
                 ownerTower?.ReportKill(enemy, damage, transform.position);
