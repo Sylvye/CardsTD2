@@ -12,8 +12,7 @@ namespace RunFlow
         public bool isDefaultStartTemplate;
         public string displayName;
         public MapTemplateDef nextActTemplate;
-        public MapNodeDef startNode;
-        public List<MapNodeDef> nodes = new();
+        public List<MapNodeConfigDef> nodeConfigs = new();
         public List<CardDef> startingDeck = new();
         public int startingHealth = 20;
         public int maxHealth = 20;
@@ -25,21 +24,19 @@ namespace RunFlow
         [Range(0f, 1f)] public float branchChance = 0.45f;
         [Range(0f, 1f)] public float mergeChance = 0.35f;
         public ShopInventoryDef defaultShopInventory;
-        public List<NodeTypeGenerationRule> nodeTypeRules = new();
-        public List<NodeEncounterPoolBinding> nodeEncounterPools = new();
 
         public string TemplateId => string.IsNullOrWhiteSpace(id) ? null : id.Trim();
 
-        public MapNodeDef FindNode(string nodeId)
+        public MapNodeConfigDef GetNodeConfig(MapNodeType nodeType)
         {
-            if (string.IsNullOrWhiteSpace(nodeId) || nodes == null)
+            if (nodeConfigs == null)
                 return null;
 
-            for (int i = 0; i < nodes.Count; i++)
+            for (int i = 0; i < nodeConfigs.Count; i++)
             {
-                MapNodeDef node = nodes[i];
-                if (node != null && node.NodeId == nodeId)
-                    return node;
+                MapNodeConfigDef config = nodeConfigs[i];
+                if (config != null && config.NodeType == nodeType)
+                    return config;
             }
 
             return null;
@@ -47,32 +44,42 @@ namespace RunFlow
 
         public NodeTypeGenerationRule GetNodeTypeRule(MapNodeType nodeType)
         {
-            if (nodeTypeRules != null)
-            {
-                for (int i = 0; i < nodeTypeRules.Count; i++)
-                {
-                    NodeTypeGenerationRule rule = nodeTypeRules[i];
-                    if (rule != null && rule.nodeType == nodeType)
-                        return rule;
-                }
-            }
+            MapNodeConfigDef config = GetNodeConfig(nodeType);
+            if (config?.generationRule != null)
+                return config.generationRule;
 
             return GetDefaultRule(nodeType);
         }
 
         public EncounterPoolDef GetEncounterPool(MapNodeType nodeType)
         {
-            if (nodeEncounterPools == null)
-                return null;
+            return GetNodeConfig(nodeType) is CombatNodeConfigDef config ? config.encounterPool : null;
+        }
 
-            for (int i = 0; i < nodeEncounterPools.Count; i++)
+        public CombatMapPoolDef GetCombatMapPool(MapNodeType nodeType)
+        {
+            return GetNodeConfig(nodeType) is CombatNodeConfigDef config ? config.pathPool : null;
+        }
+
+        public NodeRewardRule GetRewardRule(MapNodeType nodeType)
+        {
+            if (GetNodeConfig(nodeType) is CombatNodeConfigDef config)
             {
-                NodeEncounterPoolBinding binding = nodeEncounterPools[i];
-                if (binding != null && binding.nodeType == nodeType)
-                    return binding.encounterPool;
+                return new NodeRewardRule
+                {
+                    nodeType = nodeType,
+                    rewardPool = config.rewardPool,
+                    goldReward = config.goldReward,
+                    metaCurrencyReward = config.metaCurrencyReward
+                };
             }
 
             return null;
+        }
+
+        public ShopInventoryDef GetShopInventory(MapNodeType nodeType)
+        {
+            return GetNodeConfig(nodeType) is ShopNodeConfigDef config ? config.shopInventory : null;
         }
 
         private void OnValidate()
@@ -142,9 +149,11 @@ namespace RunFlow
     }
 
     [Serializable]
-    public class NodeEncounterPoolBinding
+    public class NodeRewardRule
     {
         public MapNodeType nodeType;
-        public EncounterPoolDef encounterPool;
+        public CardRewardPoolDef rewardPool;
+        public int goldReward;
+        public int metaCurrencyReward;
     }
 }

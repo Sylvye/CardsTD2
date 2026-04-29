@@ -16,8 +16,12 @@ MonoBehaviour:
   isDefaultStartTemplate: 0
   displayName: Act 2
   nextActTemplate: {fileID: 11400000, guid: 044d24d52bef34d36adace1a1c8673b7, type: 2}
-  startNode: {fileID: 11400000, guid: 57f1f9052a042a0469aff2b198f37db7, type: 2}
-  nodes: []
+  nodeConfigs:
+  - {fileID: 11400000, guid: 8fe2cab98d1d4e67b1de06d1f6f93699, type: 2}
+  - {fileID: 11400000, guid: 2c2042cd7cf444b4960fd9bdf16e3ffe, type: 2}
+  - {fileID: 11400000, guid: a4d0239668cd4d2cb101dbdd2a982d98, type: 2}
+  - {fileID: 11400000, guid: 7b87ac49c2794a2a9b726ae1745f028d, type: 2}
+  - {fileID: 11400000, guid: f97accb489974f26bcde6676c235677c, type: 2}
   startingDeck:
   - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
   - {fileID: 11400000, guid: cbacb3eeb97240e4385f77767a0579b7, type: 2}
@@ -35,27 +39,3 @@ MonoBehaviour:
   branchChance: 0.5
   mergeChance: 0.5
   defaultShopInventory: {fileID: 11400000, guid: 4aa76f3f89e7fde4a9bd0b6e57e177f6, type: 2}
-  nodeTypeRules:
-  - nodeType: 1
-    weight: 10
-    minCount: 12
-    maxCount: -1
-  - nodeType: 3
-    weight: 6
-    minCount: 4
-    maxCount: 8
-  - nodeType: 2
-    weight: 3
-    minCount: 2
-    maxCount: 3
-  - nodeType: 4
-    weight: 3
-    minCount: 1
-    maxCount: 5
-  nodeEncounterPools:
-  - nodeType: 1
-    encounterPool: {fileID: 11400000, guid: 4dd41b9f48b5afe4a89e4e6418d8ae1e, type: 2}
-  - nodeType: 4
-    encounterPool: {fileID: 11400000, guid: 44820f7f707841c6a9e03df7a6e98b22, type: 2}
-  - nodeType: 6
-    encounterPool: {fileID: 11400000, guid: c0a8dd6c4ef84dca9be2dca3ac6d4c33, type: 2}

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cards;
+using Enemies;
 using Relics;
 using UnityEngine;
 
@@ -429,7 +430,8 @@ namespace RunFlow
                 case MapNodeType.Miniboss:
                 case MapNodeType.Boss:
                     EncounterDef encounter = contentRepository.GetEncounterById(node.encounterId);
-                    CurrentCombatRequest = new CombatSceneRequest(node.nodeId, encounter, CurrentRun);
+                    EnemyPath pathPrefab = ResolvePathPrefab(node, encounter);
+                    CurrentCombatRequest = new CombatSceneRequest(node.nodeId, encounter, pathPrefab, CurrentRun);
                     SaveCurrentRun();
                     loadScene?.Invoke(SceneNames.Combat);
                     break;
@@ -775,17 +777,17 @@ namespace RunFlow
             RunMapNodeData node = GetNode(result.nodeId);
             CompleteNode(result.nodeId, saveAfterComplete: false);
 
-            if (result.encounter != null)
-            {
-                CurrentRun.gold += Mathf.Max(0, result.encounter.goldReward);
-                Profile.metaCurrency += Mathf.Max(0, result.encounter.metaCurrencyReward);
+            NodeRewardRule rewardRule = ResolveRewardRule(node);
+            CurrentRun.gold += Mathf.Max(0, ResolveGoldReward(rewardRule, result.encounter));
+            Profile.metaCurrency += Mathf.Max(0, ResolveMetaCurrencyReward(rewardRule, result.encounter));
 
-                if (result.encounter.encounterKind == EncounterKind.Miniboss)
-                    Profile.AddUnlock(FirstMinibossUnlockId);
+            if (node?.nodeType == MapNodeType.Miniboss || (node == null && result.encounter?.encounterKind == EncounterKind.Miniboss))
+            {
+                Profile.AddUnlock(FirstMinibossUnlockId);
             }
 
             bool isBossVictory = node?.nodeType == MapNodeType.Boss || result.encounter?.encounterKind == EncounterKind.Boss;
-            PopulatePendingRewards(result.encounter, result.nodeId);
+            PopulatePendingRewards(ResolveRewardPool(rewardRule, result.encounter), result.nodeId);
 
             if (isBossVictory)
             {
@@ -1042,13 +1044,13 @@ namespace RunFlow
             loadScene?.Invoke(SceneNames.MainMenu);
         }
 
-        private void PopulatePendingRewards(EncounterDef encounter, string nodeId)
+        private void PopulatePendingRewards(CardRewardPoolDef rewardPool, string nodeId)
         {
             CurrentRun.pendingReward = null;
-            if (encounter?.rewardPool == null)
+            if (rewardPool == null)
                 return;
 
-            List<PendingRewardEntry> rewardChoices = encounter.rewardPool.GetRandomChoices(CurrentRun.seed, nodeId, IsCardUnlocked);
+            List<PendingRewardEntry> rewardChoices = rewardPool.GetRandomChoices(CurrentRun.seed, nodeId, IsCardUnlocked);
             PendingRewardData pendingReward = new()
             {
                 sourceNodeId = nodeId,
@@ -1071,6 +1073,118 @@ namespace RunFlow
 
             if (pendingReward.entries.Count > 0)
                 CurrentRun.pendingReward = pendingReward;
+        }
+
+        private NodeRewardRule ResolveRewardRule(RunMapNodeData node)
+        {
+            return node != null && CurrentMapTemplate != null
+                ? CurrentMapTemplate.GetRewardRule(node.nodeType)
+                : null;
+        }
+
+        private static CardRewardPoolDef ResolveRewardPool(NodeRewardRule rewardRule, EncounterDef fallbackEncounter)
+        {
+            return rewardRule != null ? rewardRule.rewardPool : fallbackEncounter?.rewardPool;
+        }
+
+        private static int ResolveGoldReward(NodeRewardRule rewardRule, EncounterDef fallbackEncounter)
+        {
+            return rewardRule != null ? rewardRule.goldReward : fallbackEncounter != null ? fallbackEncounter.goldReward : 0;
+        }
+
+        private static int ResolveMetaCurrencyReward(NodeRewardRule rewardRule, EncounterDef fallbackEncounter)
+        {
+            return rewardRule != null ? rewardRule.metaCurrencyReward : fallbackEncounter != null ? fallbackEncounter.metaCurrencyReward : 0;
+        }
+
+        private EnemyPath ResolvePathPrefab(RunMapNodeData node, EncounterDef fallbackEncounter)
+        {
+            CombatMapPoolDef pool = CurrentMapTemplate?.GetCombatMapPool(node != null ? node.nodeType : MapNodeType.Fight);
+            if (pool != null)
+            {
+                List<WeightedEnemyPathEntry> entries = pool.GetValidEntries();
+                if (entries.Count > 0)
+                    return BuildPathSequence(entries, GetNodeTypeIndex(node), GetPathSeed(node)).FindLast(path => path != null);
+            }
+
+            if (fallbackEncounter?.pathPrefab != null)
+            {
+                return fallbackEncounter.pathPrefab.GetComponent<EnemyPath>();
+            }
+
+            return null;
+        }
+
+        private int GetNodeTypeIndex(RunMapNodeData node)
+        {
+            if (node == null || CurrentRun?.mapState?.nodes == null)
+                return 0;
+
+            int index = 0;
+            for (int i = 0; i < CurrentRun.mapState.nodes.Count; i++)
+            {
+                RunMapNodeData candidate = CurrentRun.mapState.nodes[i];
+                if (candidate == null || candidate.nodeType != node.nodeType)
+                    continue;
+
+                if (candidate.nodeId == node.nodeId)
+                    return index;
+
+                index++;
+            }
+
+            return 0;
+        }
+
+        private int GetPathSeed(RunMapNodeData node)
+        {
+            int nodeTypeSeed = node != null
+                ? node.nodeType switch
+                {
+                    MapNodeType.Miniboss => 0x4D415049,
+                    MapNodeType.Boss => 0x4D415042,
+                    _ => 0x50415448
+                }
+                : 0x50415448;
+
+            return (CurrentRun != null ? CurrentRun.seed : 0) ^ nodeTypeSeed;
+        }
+
+        private static List<EnemyPath> BuildPathSequence(List<WeightedEnemyPathEntry> candidates, int index, int seed)
+        {
+            List<EnemyPath> picks = new();
+            if (index < 0 || candidates == null || candidates.Count == 0)
+                return picks;
+
+            System.Random random = new(seed);
+            while (picks.Count <= index)
+            {
+                List<WeightedEnemyPathEntry> cycleEntries = new(candidates);
+                while (cycleEntries.Count > 0 && picks.Count <= index)
+                {
+                    int totalWeight = 0;
+                    for (int i = 0; i < cycleEntries.Count; i++)
+                        totalWeight += Mathf.Max(1, cycleEntries[i].weight);
+
+                    int roll = random.Next(totalWeight);
+                    int runningWeight = 0;
+                    int chosenIndex = 0;
+                    for (int i = 0; i < cycleEntries.Count; i++)
+                    {
+                        runningWeight += Mathf.Max(1, cycleEntries[i].weight);
+                        if (roll < runningWeight)
+                        {
+                            chosenIndex = i;
+                            break;
+                        }
+                    }
+
+                    picks.Add(cycleEntries[chosenIndex].pathPrefab);
+                    cycleEntries.RemoveAt(chosenIndex);
+                }
+            }
+
+            return picks;
         }
 
         private void QueueBossOutcome(MapTemplateDef nextActTemplate)

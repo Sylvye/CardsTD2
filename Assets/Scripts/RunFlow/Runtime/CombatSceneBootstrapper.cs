@@ -34,7 +34,7 @@ namespace RunFlow
                 return;
             }
 
-            EnemyPath runtimePath = SpawnPath(request.encounter);
+            EnemyPath runtimePath = SpawnPath(request.pathPrefab, request.encounter);
             if (enemySpawner != null)
             {
                 enemySpawner.ConfigureEncounter(request.encounter, runtimePath, combatSessionDriver);
@@ -86,7 +86,7 @@ namespace RunFlow
             return new CombatSceneRequest("debug", debugEncounter, debugRun);
         }
 
-        private EnemyPath SpawnPath(EncounterDef encounter)
+        private EnemyPath SpawnPath(EnemyPath pathPrefab, EncounterDef legacyEncounter)
         {
             if (pathAnchor == null)
                 pathAnchor = transform;
@@ -94,11 +94,18 @@ namespace RunFlow
             for (int i = pathAnchor.childCount - 1; i >= 0; i--)
                 Destroy(pathAnchor.GetChild(i).gameObject);
 
-            if (encounter == null || encounter.pathPrefab == null)
+            GameObject pathObjectPrefab = pathPrefab != null
+                ? pathPrefab.gameObject
+                : legacyEncounter != null ? legacyEncounter.pathPrefab : null;
+
+            if (pathObjectPrefab == null)
                 return pathAnchor.GetComponentInChildren<EnemyPath>(true);
 
-            GameObject pathObject = Instantiate(encounter.pathPrefab, pathAnchor);
-            pathObject.name = $"{encounter.DisplayNameOrFallback} Path";
+            string pathName = pathPrefab != null
+                ? pathPrefab.name
+                : legacyEncounter != null ? legacyEncounter.DisplayNameOrFallback : "Combat";
+            GameObject pathObject = Instantiate(pathObjectPrefab, pathAnchor);
+            pathObject.name = $"{pathName} Path";
             return pathObject.GetComponent<EnemyPath>();
         }
 

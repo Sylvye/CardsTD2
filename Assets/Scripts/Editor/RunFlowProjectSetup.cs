@@ -20,13 +20,14 @@ public static class RunFlowProjectSetup
     private const string RunFlowRootPath = "Assets/Resources/RunFlow";
     private const string PathsPath = RunFlowRootPath + "/Paths";
     private const string EncountersPath = RunFlowRootPath + "/Encounters";
+    private const string CombatMapPoolsPath = RunFlowRootPath + "/CombatMapPools";
     private const string RewardsPath = RunFlowRootPath + "/Rewards";
     private const string ShopsPath = RunFlowRootPath + "/Shops";
     private const string RelicsPath = RunFlowRootPath + "/Relics";
     private const string UnlocksPath = RunFlowRootPath + "/Unlocks";
-    private const string MapNodesPath = RunFlowRootPath + "/MapNodes";
+    private const string NodeConfigsPath = RunFlowRootPath + "/NodeConfigs";
     private const string MapsPath = RunFlowRootPath + "/Maps";
-    private const string DefaultPathPrefabPath = PathsPath + "/StarterCombatPath 1.prefab";
+    private const string DefaultPathPrefabPath = PathsPath + "/Path 1.prefab";
 
     [MenuItem("Tools/Run Flow/Generate Scenes And Content")]
     public static void GenerateScenesAndContent()
@@ -54,7 +55,11 @@ public static class RunFlowProjectSetup
         EncounterPoolDef regularPool = CreateEncounterPool("starter-fight-pool", "Starter Fight Pool", regularFightA, regularFightB, regularFightC);
         EncounterPoolDef minibossPool = CreateEncounterPool("starter-miniboss-pool", "Starter Miniboss Pool", miniboss);
         EncounterPoolDef bossPool = CreateEncounterPool("starter-boss-pool", "Starter Boss Pool", boss);
-        MapTemplateDef mapTemplate = CreateMap(cards, shopInventory, regularPool, minibossPool, bossPool);
+        EnemyPath enemyPath = GetEnemyPath(pathPrefab);
+        CombatMapPoolDef regularMapPool = CreateCombatMapPool("starter-fight-map-pool", "Starter Fight Map Pool", enemyPath);
+        CombatMapPoolDef minibossMapPool = CreateCombatMapPool("starter-miniboss-map-pool", "Starter Miniboss Map Pool", enemyPath);
+        CombatMapPoolDef bossMapPool = CreateCombatMapPool("starter-boss-map-pool", "Starter Boss Map Pool", enemyPath);
+        MapTemplateDef mapTemplate = CreateMap(cards, shopInventory, regularPool, minibossPool, bossPool, regularMapPool, minibossMapPool, bossMapPool, rewardPool);
 
         CreateBootstrapScene();
         CreateControllerScene<MainMenuSceneController>(MainMenuScenePath, "Main Menu");
@@ -74,11 +79,12 @@ public static class RunFlowProjectSetup
         EnsureFolder(RunFlowRootPath);
         EnsureFolder(PathsPath);
         EnsureFolder(EncountersPath);
+        EnsureFolder(CombatMapPoolsPath);
         EnsureFolder(RewardsPath);
         EnsureFolder(ShopsPath);
         EnsureFolder(RelicsPath);
         EnsureFolder(UnlocksPath);
-        EnsureFolder(MapNodesPath);
+        EnsureFolder(NodeConfigsPath);
         EnsureFolder(MapsPath);
     }
 
@@ -363,6 +369,30 @@ public static class RunFlowProjectSetup
         return encounterPool;
     }
 
+    private static CombatMapPoolDef CreateCombatMapPool(string id, string displayName, params EnemyPath[] paths)
+    {
+        CombatMapPoolDef combatMapPool = LoadOrCreateAsset<CombatMapPoolDef>($"{CombatMapPoolsPath}/{displayName}.asset");
+        combatMapPool.id = id;
+        combatMapPool.displayName = displayName;
+        combatMapPool.paths = new List<WeightedEnemyPathEntry>();
+
+        for (int i = 0; i < paths.Length; i++)
+        {
+            EnemyPath path = paths[i];
+            if (path == null)
+                continue;
+
+            combatMapPool.paths.Add(new WeightedEnemyPathEntry
+            {
+                pathPrefab = path,
+                weight = 1
+            });
+        }
+
+        EditorUtility.SetDirty(combatMapPool);
+        return combatMapPool;
+    }
+
     private static List<SpawnBatch> BuildStarterSpawnBatches(List<EnemyDef> enemies, int enemyACount, int enemyBCount)
     {
         List<SpawnBatch> spawnBatches = new();
@@ -399,13 +429,15 @@ public static class RunFlowProjectSetup
         ShopInventoryDef shopInventory,
         EncounterPoolDef regularFightPool,
         EncounterPoolDef minibossPool,
-        EncounterPoolDef bossPool)
+        EncounterPoolDef bossPool,
+        CombatMapPoolDef regularFightMapPool,
+        CombatMapPoolDef minibossMapPool,
+        CombatMapPoolDef bossMapPool,
+        CardRewardPoolDef rewardPool)
     {
         MapTemplateDef map = LoadOrCreateAsset<MapTemplateDef>($"{MapsPath}/StarterMap.asset");
         map.id = "starter-map";
         map.displayName = "Starter Act";
-        map.startNode = null;
-        map.nodes = new List<MapNodeDef>();
         map.startingDeck = BuildStartingDeck(cards);
         map.startingHealth = 20;
         map.maxHealth = 20;
@@ -417,34 +449,148 @@ public static class RunFlowProjectSetup
         map.branchChance = 0.5f;
         map.mergeChance = 0.4f;
         map.defaultShopInventory = shopInventory;
-        map.nodeTypeRules = new List<NodeTypeGenerationRule>
+        map.nodeConfigs = new List<MapNodeConfigDef>
         {
-            new() { nodeType = MapNodeType.Fight, weight = 6, minCount = 0, maxCount = -1 },
-            new() { nodeType = MapNodeType.Shop, weight = 2, minCount = 1, maxCount = 2 },
-            new() { nodeType = MapNodeType.Rest, weight = 2, minCount = 1, maxCount = 2 },
-            new() { nodeType = MapNodeType.Miniboss, weight = 1, minCount = 1, maxCount = 1 }
-        };
-        map.nodeEncounterPools = new List<NodeEncounterPoolBinding>
-        {
-            new() { nodeType = MapNodeType.Fight, encounterPool = regularFightPool },
-            new() { nodeType = MapNodeType.Miniboss, encounterPool = minibossPool },
-            new() { nodeType = MapNodeType.Boss, encounterPool = bossPool }
+            CreateFightNodeConfig(
+                "starter-fight-node",
+                "Starter Fight Node",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Fight, weight = 6, minCount = 0, maxCount = -1 },
+                regularFightPool,
+                regularFightMapPool,
+                rewardPool,
+                10,
+                1),
+            CreateShopNodeConfig(
+                "starter-shop-node",
+                "Starter Shop Node",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Shop, weight = 2, minCount = 1, maxCount = 2 },
+                shopInventory),
+            CreateRestNodeConfig(
+                "starter-rest-node",
+                "Starter Rest Node",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Rest, weight = 2, minCount = 1, maxCount = 2 }),
+            CreateMinibossNodeConfig(
+                "starter-miniboss-node",
+                "Starter Miniboss Node",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Miniboss, weight = 1, minCount = 1, maxCount = 1 },
+                minibossPool,
+                minibossMapPool,
+                rewardPool,
+                20,
+                2),
+            CreateBossNodeConfig(
+                "starter-boss-node",
+                "Starter Boss Node",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Boss, weight = 0, minCount = 0, maxCount = 0 },
+                bossPool,
+                bossMapPool,
+                rewardPool,
+                32,
+                4)
         };
         EditorUtility.SetDirty(map);
         return map;
     }
 
-    private static MapNodeDef CreateNode(string id, string displayName, MapNodeType nodeType, EncounterDef encounter = null, ShopInventoryDef shopInventory = null)
+    private static FightNodeConfigDef CreateFightNodeConfig(
+        string id,
+        string displayName,
+        NodeTypeGenerationRule generationRule,
+        EncounterPoolDef encounterPool,
+        CombatMapPoolDef pathPool,
+        CardRewardPoolDef rewardPool,
+        int goldReward,
+        int metaCurrencyReward)
     {
-        string assetName = $"{displayName}.asset";
-        MapNodeDef node = LoadOrCreateAsset<MapNodeDef>($"{MapNodesPath}/{assetName}");
-        node.id = id;
-        node.displayName = displayName;
-        node.nodeType = nodeType;
-        node.encounter = encounter;
-        node.shopInventory = shopInventory;
-        EditorUtility.SetDirty(node);
-        return node;
+        FightNodeConfigDef config = LoadOrCreateAsset<FightNodeConfigDef>($"{NodeConfigsPath}/{displayName}.asset");
+        ConfigureCombatNode(config, id, displayName, generationRule, encounterPool, pathPool, rewardPool, goldReward, metaCurrencyReward);
+        return config;
+    }
+
+    private static MinibossNodeConfigDef CreateMinibossNodeConfig(
+        string id,
+        string displayName,
+        NodeTypeGenerationRule generationRule,
+        EncounterPoolDef encounterPool,
+        CombatMapPoolDef pathPool,
+        CardRewardPoolDef rewardPool,
+        int goldReward,
+        int metaCurrencyReward)
+    {
+        MinibossNodeConfigDef config = LoadOrCreateAsset<MinibossNodeConfigDef>($"{NodeConfigsPath}/{displayName}.asset");
+        ConfigureCombatNode(config, id, displayName, generationRule, encounterPool, pathPool, rewardPool, goldReward, metaCurrencyReward);
+        return config;
+    }
+
+    private static BossNodeConfigDef CreateBossNodeConfig(
+        string id,
+        string displayName,
+        NodeTypeGenerationRule generationRule,
+        EncounterPoolDef encounterPool,
+        CombatMapPoolDef pathPool,
+        CardRewardPoolDef rewardPool,
+        int goldReward,
+        int metaCurrencyReward)
+    {
+        BossNodeConfigDef config = LoadOrCreateAsset<BossNodeConfigDef>($"{NodeConfigsPath}/{displayName}.asset");
+        ConfigureCombatNode(config, id, displayName, generationRule, encounterPool, pathPool, rewardPool, goldReward, metaCurrencyReward);
+        return config;
+    }
+
+    private static void ConfigureCombatNode(
+        CombatNodeConfigDef config,
+        string id,
+        string displayName,
+        NodeTypeGenerationRule generationRule,
+        EncounterPoolDef encounterPool,
+        CombatMapPoolDef pathPool,
+        CardRewardPoolDef rewardPool,
+        int goldReward,
+        int metaCurrencyReward)
+    {
+        config.id = id;
+        config.displayName = displayName;
+        config.generationRule = generationRule;
+        config.encounterPool = encounterPool;
+        config.pathPool = pathPool;
+        config.rewardPool = rewardPool;
+        config.goldReward = goldReward;
+        config.metaCurrencyReward = metaCurrencyReward;
+        EditorUtility.SetDirty(config);
+    }
+
+    private static ShopNodeConfigDef CreateShopNodeConfig(
+        string id,
+        string displayName,
+        NodeTypeGenerationRule generationRule,
+        ShopInventoryDef shopInventory)
+    {
+        ShopNodeConfigDef config = LoadOrCreateAsset<ShopNodeConfigDef>($"{NodeConfigsPath}/{displayName}.asset");
+        config.id = id;
+        config.displayName = displayName;
+        config.generationRule = generationRule;
+        config.shopInventory = shopInventory;
+        EditorUtility.SetDirty(config);
+        return config;
+    }
+
+    private static RestNodeConfigDef CreateRestNodeConfig(string id, string displayName, NodeTypeGenerationRule generationRule)
+    {
+        RestNodeConfigDef config = LoadOrCreateAsset<RestNodeConfigDef>($"{NodeConfigsPath}/{displayName}.asset");
+        config.id = id;
+        config.displayName = displayName;
+        config.generationRule = generationRule;
+        EditorUtility.SetDirty(config);
+        return config;
+    }
+
+    private static EnemyPath GetEnemyPath(GameObject pathPrefab)
+    {
+        EnemyPath enemyPath = pathPrefab != null ? pathPrefab.GetComponent<EnemyPath>() : null;
+        if (enemyPath == null)
+            throw new MissingReferenceException($"Default combat path prefab must have an {nameof(EnemyPath)} component.");
+
+        return enemyPath;
     }
 
     private static List<CardDef> BuildStartingDeck(List<CardDef> cards)

@@ -419,6 +419,10 @@ namespace RunFlow
 
         private string ResolveShopInventoryId(MapTemplateDef template)
         {
+            ShopInventoryDef configuredInventory = template.GetShopInventory(MapNodeType.Shop);
+            if (configuredInventory != null)
+                return contentRepository.GetShopInventoryId(configuredInventory);
+
             if (template.defaultShopInventory != null)
                 return contentRepository.GetShopInventoryId(template.defaultShopInventory);
 
@@ -485,5 +489,6 @@ namespace RunFlow
                 this.weight = Mathf.Max(1, weight);
             }
         }
+
     }
 }

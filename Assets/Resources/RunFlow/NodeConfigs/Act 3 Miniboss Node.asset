@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a366c82058d45839a9d039fcda66890, type: 3}
+  m_Name: Act 3 Miniboss Node
+  m_EditorClassIdentifier: Assembly-CSharp::RunFlow.MinibossNodeConfigDef
+  id: act_3_miniboss_node
+  displayName: Miniboss
+  generationRule:
+    nodeType: 4
+    weight: 5
+    minCount: 1
+    maxCount: 5
+  encounterPool: {fileID: 11400000, guid: 44820f7f707841c6a9e03df7a6e98b22, type: 2}
+  pathPool: {fileID: 11400000, guid: 8ddc46248e5a461eb87b72b71553352d, type: 2}
+  rewardPool: {fileID: 11400000, guid: f6241c2e7602c4a499aab9caceed5ecb, type: 2}
+  goldReward: 20
+  metaCurrencyReward: 2

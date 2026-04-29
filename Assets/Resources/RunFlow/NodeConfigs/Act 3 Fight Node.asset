@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4dacf3737e1648ac96c2fc1197a43330, type: 3}
+  m_Name: Act 3 Fight Node
+  m_EditorClassIdentifier: Assembly-CSharp::RunFlow.FightNodeConfigDef
+  id: act_3_fight_node
+  displayName: Fight
+  generationRule:
+    nodeType: 1
+    weight: 10
+    minCount: 12
+    maxCount: -1
+  encounterPool: {fileID: 11400000, guid: 3a9dda0fee11e3a42b8218658cf9f2b3, type: 2}
+  pathPool: {fileID: 11400000, guid: 442496423bcb4d339eb52b6223eabdcc, type: 2}
+  rewardPool: {fileID: 11400000, guid: 6f5304e7a01c79941b946c59023f100c, type: 2}
+  goldReward: 14
+  metaCurrencyReward: 1

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5b19e16c3e3424691a33de4279e0e79, type: 3}
+  m_Name: Act 1 Fight Map Pool
+  m_EditorClassIdentifier: Assembly-CSharp::RunFlow.CombatMapPoolDef
+  id: act_1_fight_maps
+  displayName: Act 1 Fight Maps
+  paths:
+  - pathPrefab: {fileID: 2178568902523289953, guid: 57c8d953f37782c4580c359284f59da3, type: 3}
+    weight: 1
+  - pathPrefab: {fileID: 2178568902523289953, guid: b342ef7bf0e289f4aa9603bc43a64690, type: 3}
+    weight: 1
+  - pathPrefab: {fileID: 2178568902523289953, guid: 9d6ce8af8ce7d504d95214d8c07e1612, type: 3}
+    weight: 1

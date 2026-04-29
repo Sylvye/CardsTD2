@@ -908,6 +908,12 @@ public class RunFlowEditorTests
         for (int i = 0; i < mapState.nodes.Count; i++)
         {
             RunMapNodeData node = mapState.nodes[i];
+            if (node.nodeType == MapNodeType.Fight || node.nodeType == MapNodeType.Miniboss || node.nodeType == MapNodeType.Boss)
+            {
+                Assert.That(string.IsNullOrWhiteSpace(node.encounterId), Is.False);
+                Assert.That(template.GetCombatMapPool(node.nodeType)?.GetValidEntries().Count, Is.GreaterThan(0));
+            }
+
             if (!nodesPerColumn.TryGetValue(node.column, out int count))
                 count = 0;
 
@@ -954,13 +960,10 @@ public class RunFlowEditorTests
         RunMapGenerator generator = new(contentRepository);
         MapTemplateDef template = CreateTemplate();
         template.totalPlayableNodes = 9;
-        template.nodeTypeRules = new List<NodeTypeGenerationRule>
-        {
-            new() { nodeType = MapNodeType.Fight, weight = 1, minCount = 0, maxCount = -1 },
-            new() { nodeType = MapNodeType.Shop, weight = 1, minCount = 2, maxCount = 2 },
-            new() { nodeType = MapNodeType.Rest, weight = 1, minCount = 1, maxCount = 1 },
-            new() { nodeType = MapNodeType.Miniboss, weight = 1, minCount = 1, maxCount = 1 }
-        };
+        SetNodeRule(template, MapNodeType.Fight, 1, 0, -1);
+        SetNodeRule(template, MapNodeType.Shop, 1, 2, 2);
+        SetNodeRule(template, MapNodeType.Rest, 1, 1, 1);
+        SetNodeRule(template, MapNodeType.Miniboss, 1, 1, 1);
 
         RunMapStateData mapState = generator.Generate(template, 222);
         int shopCount = CountNodes(mapState, MapNodeType.Shop);
@@ -978,13 +981,10 @@ public class RunFlowEditorTests
         RunMapGenerator generator = new(contentRepository);
         MapTemplateDef template = CreateTemplate();
         template.totalPlayableNodes = 7;
-        template.nodeTypeRules = new List<NodeTypeGenerationRule>
-        {
-            new() { nodeType = MapNodeType.Fight, weight = 1, minCount = 5, maxCount = -1 },
-            new() { nodeType = MapNodeType.Shop, weight = 0, minCount = 0, maxCount = 0 },
-            new() { nodeType = MapNodeType.Rest, weight = 0, minCount = 0, maxCount = 0 },
-            new() { nodeType = MapNodeType.Miniboss, weight = 0, minCount = 0, maxCount = 0 }
-        };
+        SetNodeRule(template, MapNodeType.Fight, 1, 5, -1);
+        SetNodeRule(template, MapNodeType.Shop, 0, 0, 0);
+        SetNodeRule(template, MapNodeType.Rest, 0, 0, 0);
+        SetNodeRule(template, MapNodeType.Miniboss, 0, 0, 0);
 
         RunMapStateData mapState = generator.Generate(template, 5511);
         List<RunMapNodeData> fightNodes = mapState.nodes.FindAll(node => node.nodeType == MapNodeType.Fight);
@@ -997,6 +997,35 @@ public class RunFlowEditorTests
         Assert.That(firstCycle.Count, Is.EqualTo(Mathf.Min(3, fightNodes.Count)));
         for (int i = 0; i < fightNodes.Count; i++)
             Assert.That(template.GetEncounterPool(MapNodeType.Fight).GetValidEntries().Exists(entry => entry.encounter.EncounterId == fightNodes[i].encounterId));
+    }
+
+    [Test]
+    public void RunCoordinator_ResolvesCombatPathsFromPoolsWithoutRepeatsUntilExhausted()
+    {
+        RunMapGenerator generator = new(contentRepository);
+        MapTemplateDef template = CreateTemplate();
+        template.totalPlayableNodes = 7;
+        SetNodeRule(template, MapNodeType.Fight, 1, 5, -1);
+        SetNodeRule(template, MapNodeType.Shop, 0, 0, 0);
+        SetNodeRule(template, MapNodeType.Rest, 0, 0, 0);
+        SetNodeRule(template, MapNodeType.Miniboss, 0, 0, 0);
+
+        RunMapStateData mapState = generator.Generate(template, 6612);
+        List<RunMapNodeData> fightNodes = mapState.nodes.FindAll(node => node.nodeType == MapNodeType.Fight);
+        List<WeightedEnemyPathEntry> validEntries = template.GetCombatMapPool(MapNodeType.Fight).GetValidEntries();
+        int expectedCycleSize = Mathf.Min(validEntries.Count, fightNodes.Count);
+        Assert.That(expectedCycleSize, Is.GreaterThanOrEqualTo(1));
+
+        HashSet<EnemyPath> firstCycle = new();
+        for (int i = 0; i < expectedCycleSize; i++)
+            firstCycle.Add(ResolvePathForTest(template, mapState, fightNodes[i], 6612));
+
+        Assert.That(firstCycle.Count, Is.EqualTo(expectedCycleSize));
+        for (int i = 0; i < fightNodes.Count; i++)
+        {
+            EnemyPath path = ResolvePathForTest(template, mapState, fightNodes[i], 6612);
+            Assert.That(validEntries.Exists(entry => entry.pathPrefab == path));
+        }
     }
 
     [Test]
@@ -1042,6 +1071,23 @@ public class RunFlowEditorTests
     }
 
     [Test]
+    public void RunFlowContent_PathPoolsHaveValidEnemyPaths()
+    {
+        CombatMapPoolDef[] pathPools = Resources.LoadAll<CombatMapPoolDef>("RunFlow");
+
+        Assert.That(pathPools.Length, Is.GreaterThanOrEqualTo(1));
+        for (int i = 0; i < pathPools.Length; i++)
+        {
+            CombatMapPoolDef pathPool = pathPools[i];
+            Assert.NotNull(pathPool);
+            List<WeightedEnemyPathEntry> entries = pathPool.GetValidEntries();
+            Assert.That(entries.Count, Is.GreaterThan(0), $"Path pool '{pathPool.name}' has no valid EnemyPath entries.");
+            for (int entryIndex = 0; entryIndex < entries.Count; entryIndex++)
+                Assert.NotNull(entries[entryIndex].pathPrefab, $"Path pool '{pathPool.name}' has a missing EnemyPath entry.");
+        }
+    }
+
+    [Test]
     public void RunFlowContent_MapTemplatesLoadFromActsFolderAndHaveUniqueIds()
     {
         MapTemplateDef[] templates = Resources.LoadAll<MapTemplateDef>("RunFlow");
@@ -1079,6 +1125,9 @@ public class RunFlowEditorTests
         Assert.That(act1.nextActTemplate, Is.EqualTo(act2));
         Assert.That(act2.nextActTemplate, Is.EqualTo(act3));
         Assert.That(act3.nextActTemplate, Is.Null);
+        AssertTemplateHasRequiredNodeConfigs(act1);
+        AssertTemplateHasRequiredNodeConfigs(act2);
+        AssertTemplateHasRequiredNodeConfigs(act3);
     }
 
     [Test]
@@ -1317,6 +1366,7 @@ public class RunFlowEditorTests
         coordinator.SelectNode(firstFight.nodeId);
         Assert.That(loadedScene, Is.EqualTo(SceneNames.Combat));
         Assert.NotNull(coordinator.CurrentCombatRequest);
+        Assert.NotNull(coordinator.CurrentCombatRequest.pathPrefab);
 
         coordinator.HandleCombatResult(new CombatSceneResult(firstFight.nodeId, coordinator.CurrentCombatRequest.encounter, true, 18));
         Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
@@ -1372,7 +1422,8 @@ public class RunFlowEditorTests
         Assert.That(coordinator.CurrentMapTemplate.TemplateId, Is.EqualTo("act_2"));
         Assert.That(coordinator.CurrentRun.mapState.mapTemplateId, Is.EqualTo("act_2"));
         Assert.That(coordinator.CurrentRun.currentHealth, Is.EqualTo(15));
-        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(21));
+        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(42));
+        Assert.That(coordinator.Profile.metaCurrency, Is.EqualTo(4));
         Assert.That(coordinator.CurrentRun.pendingReward, Is.Null);
         Assert.That(coordinator.CurrentRun.queuedNextMapTemplateId, Is.Null);
         Assert.That(coordinator.CurrentRun.endRunAfterPendingReward, Is.False);
@@ -1456,7 +1507,7 @@ public class RunFlowEditorTests
         MethodInfo createEncounter = typeof(RunFlowProjectSetup).GetMethod("CreateEncounter", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(createEncounter);
 
-        GameObject pathPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/RunFlow/Paths/StarterCombatPath 1.prefab");
+        GameObject pathPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/RunFlow/Paths/Path 1.prefab");
         CardRewardPoolDef rewardPool = AssetDatabase.LoadAssetAtPath<CardRewardPoolDef>("Assets/Resources/RunFlow/Rewards/Act 1 Rewards.asset");
         EnemyDef enemyA = AssetDatabase.LoadAssetAtPath<EnemyDef>("Assets/Resources/Combat/Enemies/Definitions/Enemy A.asset");
         EnemyDef enemyB = AssetDatabase.LoadAssetAtPath<EnemyDef>("Assets/Resources/Combat/Enemies/Definitions/Enemy B.asset");
@@ -1565,7 +1616,7 @@ public class RunFlowEditorTests
 
         GameObject pathPrefab = (GameObject)loadDefaultPathPrefab.Invoke(null, null);
         Assert.NotNull(pathPrefab);
-        Assert.That(AssetDatabase.GetAssetPath(pathPrefab), Is.EqualTo("Assets/Resources/RunFlow/Paths/StarterCombatPath 1.prefab"));
+        Assert.That(AssetDatabase.GetAssetPath(pathPrefab), Is.EqualTo("Assets/Resources/RunFlow/Paths/Path 1.prefab"));
     }
 
     [Test]
@@ -1787,21 +1838,159 @@ public class RunFlowEditorTests
         for (int i = 0; i < bosses.Count; i++)
             bossPool.encounters.Add(new WeightedEncounterEntry { encounter = bosses[i], weight = 1 });
 
-        template.nodeTypeRules = new List<NodeTypeGenerationRule>
+        CombatMapPoolDef combatMapPool = ScriptableObject.CreateInstance<CombatMapPoolDef>();
+        combatMapPool.id = "combat-map-pool";
+        combatMapPool.paths = new List<WeightedEnemyPathEntry>();
+        List<EnemyPath> paths = LoadEnemyPaths();
+        Assert.That(paths.Count, Is.GreaterThan(0), "Expected at least one EnemyPath prefab in RunFlow/Paths.");
+        for (int i = 0; i < paths.Count; i++)
+            combatMapPool.paths.Add(new WeightedEnemyPathEntry { pathPrefab = paths[i], weight = 1 });
+
+        CardRewardPoolDef rewardPool = AssetDatabase.LoadAssetAtPath<CardRewardPoolDef>("Assets/Resources/RunFlow/Rewards/Act 1 Rewards.asset");
+        template.nodeConfigs = new List<MapNodeConfigDef>
         {
-            new() { nodeType = MapNodeType.Fight, weight = 6, minCount = 0, maxCount = -1 },
-            new() { nodeType = MapNodeType.Shop, weight = 2, minCount = 1, maxCount = 2 },
-            new() { nodeType = MapNodeType.Rest, weight = 2, minCount = 1, maxCount = 2 },
-            new() { nodeType = MapNodeType.Miniboss, weight = 1, minCount = 1, maxCount = 1 }
-        };
-        template.nodeEncounterPools = new List<NodeEncounterPoolBinding>
-        {
-            new() { nodeType = MapNodeType.Fight, encounterPool = fightPool },
-            new() { nodeType = MapNodeType.Miniboss, encounterPool = minibossPool },
-            new() { nodeType = MapNodeType.Boss, encounterPool = bossPool }
+            CreateCombatNodeConfig<FightNodeConfigDef>(
+                "test-fight-node",
+                "Test Fight",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Fight, weight = 6, minCount = 0, maxCount = -1 },
+                fightPool,
+                combatMapPool,
+                rewardPool,
+                10,
+                1),
+            CreateShopNodeConfig(
+                "test-shop-node",
+                "Test Shop",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Shop, weight = 2, minCount = 1, maxCount = 2 },
+                template.defaultShopInventory),
+            CreateRestNodeConfig(
+                "test-rest-node",
+                "Test Rest",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Rest, weight = 2, minCount = 1, maxCount = 2 }),
+            CreateCombatNodeConfig<MinibossNodeConfigDef>(
+                "test-miniboss-node",
+                "Test Miniboss",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Miniboss, weight = 1, minCount = 1, maxCount = 1 },
+                minibossPool,
+                combatMapPool,
+                rewardPool,
+                20,
+                2),
+            CreateCombatNodeConfig<BossNodeConfigDef>(
+                "test-boss-node",
+                "Test Boss",
+                new NodeTypeGenerationRule { nodeType = MapNodeType.Boss, weight = 0, minCount = 0, maxCount = 0 },
+                bossPool,
+                combatMapPool,
+                rewardPool,
+                32,
+                4)
         };
 
         return template;
+    }
+
+    private static T CreateCombatNodeConfig<T>(
+        string id,
+        string displayName,
+        NodeTypeGenerationRule generationRule,
+        EncounterPoolDef encounterPool,
+        CombatMapPoolDef pathPool,
+        CardRewardPoolDef rewardPool,
+        int goldReward,
+        int metaCurrencyReward) where T : CombatNodeConfigDef
+    {
+        T config = ScriptableObject.CreateInstance<T>();
+        config.id = id;
+        config.displayName = displayName;
+        config.generationRule = generationRule;
+        config.encounterPool = encounterPool;
+        config.pathPool = pathPool;
+        config.rewardPool = rewardPool;
+        config.goldReward = goldReward;
+        config.metaCurrencyReward = metaCurrencyReward;
+        return config;
+    }
+
+    private static ShopNodeConfigDef CreateShopNodeConfig(
+        string id,
+        string displayName,
+        NodeTypeGenerationRule generationRule,
+        ShopInventoryDef shopInventory)
+    {
+        ShopNodeConfigDef config = ScriptableObject.CreateInstance<ShopNodeConfigDef>();
+        config.id = id;
+        config.displayName = displayName;
+        config.generationRule = generationRule;
+        config.shopInventory = shopInventory;
+        return config;
+    }
+
+    private static RestNodeConfigDef CreateRestNodeConfig(string id, string displayName, NodeTypeGenerationRule generationRule)
+    {
+        RestNodeConfigDef config = ScriptableObject.CreateInstance<RestNodeConfigDef>();
+        config.id = id;
+        config.displayName = displayName;
+        config.generationRule = generationRule;
+        return config;
+    }
+
+    private static void SetNodeRule(MapTemplateDef template, MapNodeType nodeType, int weight, int minCount, int maxCount)
+    {
+        MapNodeConfigDef config = template.GetNodeConfig(nodeType);
+        Assert.NotNull(config, $"Template is missing a {nodeType} config.");
+        config.generationRule = new NodeTypeGenerationRule
+        {
+            nodeType = nodeType,
+            weight = weight,
+            minCount = minCount,
+            maxCount = maxCount
+        };
+    }
+
+    private static List<EnemyPath> LoadEnemyPaths()
+    {
+        List<EnemyPath> paths = new();
+        string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Resources/RunFlow/Paths" });
+        for (int i = 0; i < guids.Length; i++)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            EnemyPath enemyPath = prefab != null ? prefab.GetComponent<EnemyPath>() : null;
+            if (enemyPath != null)
+                paths.Add(enemyPath);
+        }
+
+        return paths;
+    }
+
+    private static EnemyPath ResolvePathForTest(MapTemplateDef template, RunMapStateData mapState, RunMapNodeData node, int seed)
+    {
+        List<WeightedEnemyPathEntry> entries = template.GetCombatMapPool(node.nodeType).GetValidEntries();
+        int index = 0;
+        for (int i = 0; i < mapState.nodes.Count; i++)
+        {
+            RunMapNodeData candidate = mapState.nodes[i];
+            if (candidate.nodeType != node.nodeType)
+                continue;
+
+            if (candidate.nodeId == node.nodeId)
+                break;
+
+            index++;
+        }
+
+        int nodeTypeSeed = node.nodeType switch
+        {
+            MapNodeType.Miniboss => 0x4D415049,
+            MapNodeType.Boss => 0x4D415042,
+            _ => 0x50415448
+        };
+        MethodInfo method = typeof(RunCoordinator).GetMethod("BuildPathSequence", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        List<EnemyPath> sequence = (List<EnemyPath>)method.Invoke(null, new object[] { entries, index, seed ^ nodeTypeSeed });
+        Assert.That(sequence.Count, Is.GreaterThan(index));
+        return sequence[index];
     }
 
     private string CreateMapTemplateAsset(string assetName, string templateId, string displayName, bool isDefaultStartTemplate = false, MapTemplateDef nextActTemplate = null)
@@ -2039,6 +2228,29 @@ public class RunFlowEditorTests
         }
 
         return false;
+    }
+
+    private static void AssertTemplateHasRequiredNodeConfigs(MapTemplateDef template)
+    {
+        Assert.NotNull(template.GetNodeConfig(MapNodeType.Fight), $"{template.name} is missing a Fight node config.");
+        Assert.NotNull(template.GetNodeConfig(MapNodeType.Shop), $"{template.name} is missing a Shop node config.");
+        Assert.NotNull(template.GetNodeConfig(MapNodeType.Rest), $"{template.name} is missing a Rest node config.");
+        Assert.NotNull(template.GetNodeConfig(MapNodeType.Miniboss), $"{template.name} is missing a Miniboss node config.");
+        Assert.NotNull(template.GetNodeConfig(MapNodeType.Boss), $"{template.name} is missing a Boss node config.");
+
+        AssertCombatNodeConfig(template, MapNodeType.Fight);
+        AssertCombatNodeConfig(template, MapNodeType.Miniboss);
+        AssertCombatNodeConfig(template, MapNodeType.Boss);
+    }
+
+    private static void AssertCombatNodeConfig(MapTemplateDef template, MapNodeType nodeType)
+    {
+        CombatNodeConfigDef config = template.GetNodeConfig(nodeType) as CombatNodeConfigDef;
+        Assert.NotNull(config, $"{template.name} {nodeType} config must be a combat node config.");
+        Assert.NotNull(config.encounterPool, $"{template.name} {nodeType} config is missing an enemy-set pool.");
+        Assert.That(config.encounterPool.GetValidEntries().Count, Is.GreaterThan(0), $"{template.name} {nodeType} config has no valid enemy sets.");
+        Assert.NotNull(config.pathPool, $"{template.name} {nodeType} config is missing an EnemyPath pool.");
+        Assert.That(config.pathPool.GetValidEntries().Count, Is.GreaterThan(0), $"{template.name} {nodeType} config has no valid EnemyPath entries.");
     }
 
     private static RunMapStateData CreateBranchingMapState(string templateId)
