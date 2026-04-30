@@ -14,13 +14,6 @@ namespace RunFlow
         [SerializeField] private EnemySpawner enemySpawner;
         [SerializeField] private Transform pathAnchor;
 
-        [Header("Debug Fallback")]
-        [Tooltip("Assign an encounter here to preview a fight directly in the Combat scene without entering through the run map.")]
-        [SerializeField] private EncounterDef debugEncounter;
-        [SerializeField] private List<OwnedCard> debugDeck = new();
-        [SerializeField] private int debugCurrentHealth = 20;
-        [SerializeField] private int debugMaxHealth = 20;
-
         private PauseMenuController pauseMenuController;
 
         private void Start()
@@ -28,13 +21,13 @@ namespace RunFlow
             EnsurePauseMenu();
 
             CombatSceneRequest request = GetRequest();
-            if (request == null || request.encounter == null || request.run == null)
+            if (request == null || request.encounter == null || request.pathPrefab == null || request.run == null)
             {
                 Debug.LogError("Combat scene could not find a valid combat request.");
                 return;
             }
 
-            EnemyPath runtimePath = SpawnPath(request.pathPrefab, request.encounter);
+            EnemyPath runtimePath = SpawnPath(request.pathPrefab);
             if (enemySpawner != null)
             {
                 enemySpawner.ConfigureEncounter(request.encounter, runtimePath, combatSessionDriver);
@@ -49,7 +42,7 @@ namespace RunFlow
 
         private CombatSessionSetup BuildSessionSetup(CombatSceneRequest request)
         {
-            CombatSessionSetup setup = request?.sessionOverrides?.Clone() ?? combatSessionDriver?.ConfiguredSetup ?? new CombatSessionSetup();
+            CombatSessionSetup setup = combatSessionDriver?.ConfiguredSetup?.Clone() ?? new CombatSessionSetup();
 
             if (request?.run != null)
             {
@@ -64,29 +57,10 @@ namespace RunFlow
         private CombatSceneRequest GetRequest()
         {
             RunCoordinator coordinator = GameFlowRoot.Instance != null ? GameFlowRoot.Instance.Coordinator : null;
-            if (coordinator?.CurrentCombatRequest != null)
-                return coordinator.CurrentCombatRequest;
-
-            if (debugEncounter == null)
-                return null;
-
-            RunSaveData debugRun = new()
-            {
-                runId = "debug",
-                currentHealth = debugCurrentHealth,
-                maxHealth = debugMaxHealth,
-                gold = 0,
-                deck = new List<OwnedCard>(debugDeck),
-                ownedRelics = new List<OwnedRelic>(),
-                completedNodeIds = new List<string>(),
-                mapState = new RunMapStateData(),
-                seed = 1
-            };
-
-            return new CombatSceneRequest("debug", debugEncounter, debugRun);
+            return coordinator?.CurrentCombatRequest;
         }
 
-        private EnemyPath SpawnPath(EnemyPath pathPrefab, EncounterDef legacyEncounter)
+        private EnemyPath SpawnPath(EnemyPath pathPrefab)
         {
             if (pathAnchor == null)
                 pathAnchor = transform;
@@ -94,18 +68,11 @@ namespace RunFlow
             for (int i = pathAnchor.childCount - 1; i >= 0; i--)
                 Destroy(pathAnchor.GetChild(i).gameObject);
 
-            GameObject pathObjectPrefab = pathPrefab != null
-                ? pathPrefab.gameObject
-                : legacyEncounter != null ? legacyEncounter.pathPrefab : null;
+            if (pathPrefab == null)
+                return null;
 
-            if (pathObjectPrefab == null)
-                return pathAnchor.GetComponentInChildren<EnemyPath>(true);
-
-            string pathName = pathPrefab != null
-                ? pathPrefab.name
-                : legacyEncounter != null ? legacyEncounter.DisplayNameOrFallback : "Combat";
-            GameObject pathObject = Instantiate(pathObjectPrefab, pathAnchor);
-            pathObject.name = $"{pathName} Path";
+            GameObject pathObject = Instantiate(pathPrefab.gameObject, pathAnchor);
+            pathObject.name = $"{pathPrefab.name} Path";
             return pathObject.GetComponent<EnemyPath>();
         }
 

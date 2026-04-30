@@ -48,7 +48,7 @@ public class RunFlowPlayModeTests
         Assert.NotNull(request);
         Assert.That(request.encounter.encounterKind, Is.Not.EqualTo(EncounterKind.Boss));
 
-        coordinator.HandleCombatResult(new CombatSceneResult(firstFight.nodeId, request.encounter, true, coordinator.CurrentRun.currentHealth));
+        coordinator.HandleCombatResult(new CombatSceneResult(firstFight.nodeId, true, coordinator.CurrentRun.currentHealth));
         yield return WaitForScene(SceneNames.RunMap);
 
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
@@ -65,7 +65,16 @@ public class RunFlowPlayModeTests
         yield return WaitForScene(SceneNames.RunMap);
 
         RunMapSceneController controller = Object.FindAnyObjectByType<RunMapSceneController>();
-        ScrollRect scrollRect = Object.FindAnyObjectByType<ScrollRect>();
+        ScrollRect scrollRect = null;
+        ScrollRect[] scrollRects = Object.FindObjectsByType<ScrollRect>();
+        for (int i = 0; i < scrollRects.Length; i++)
+        {
+            if (scrollRects[i] != null && scrollRects[i].horizontal && scrollRects[i].vertical)
+            {
+                scrollRect = scrollRects[i];
+                break;
+            }
+        }
 
         Assert.NotNull(controller);
         Assert.NotNull(scrollRect);
@@ -127,15 +136,15 @@ public class RunFlowPlayModeTests
         try
         {
             ShopOfferData originalCard = FindFirstCardOffer(originalOffers);
-            ShopOfferData originalAugment = FindFirstAugmentOffer(originalOffers);
+            CardAugmentDef augment = GetFirstRuntimeAugment(repository);
             Assert.NotNull(originalCard);
-            Assert.NotNull(originalAugment);
+            Assert.NotNull(augment);
 
             inventory.choiceCount = 2;
             inventory.offers = new List<ShopOfferData>
             {
                 new() { id = "weighted-card", displayName = "Weighted Card", offerType = ShopOfferType.Card, price = 9, card = originalCard.card, weight = 10 },
-                new() { id = "weighted-augment", displayName = "Weighted Augment", offerType = ShopOfferType.Augment, price = 11, augment = originalAugment.augment, weight = 3 },
+                new() { id = "weighted-augment", displayName = "Weighted Augment", offerType = ShopOfferType.Augment, price = 11, augment = augment, weight = 3 },
                 new() { id = "weighted-heal", displayName = "Weighted Heal", offerType = ShopOfferType.Heal, price = 7, healAmount = 5, weight = 0 }
             };
 
@@ -202,22 +211,46 @@ public class RunFlowPlayModeTests
         yield return AdvanceUntilNodeTypeAvailable(coordinator, MapNodeType.Shop, node => shopNode = node);
         Assert.NotNull(shopNode);
 
-        coordinator.SelectNode(shopNode.nodeId);
-        yield return null;
+        RunContentRepository repository = GameFlowRoot.Instance.ContentRepository;
+        ShopInventoryDef inventory = repository.GetShopInventoryById(shopNode.shopInventoryId);
+        Assert.NotNull(inventory);
 
-        List<ShopOfferData> offers = coordinator.GetAvailableShopOffers(shopNode.nodeId);
-        ShopOfferData augmentOffer = offers.Find(candidate => candidate.offerType == ShopOfferType.Augment);
-        Assert.NotNull(augmentOffer);
+        int originalChoiceCount = inventory.choiceCount;
+        List<ShopOfferData> originalOffers = new(inventory.offers);
 
-        coordinator.CurrentRun.gold = Mathf.Max(coordinator.CurrentRun.gold, augmentOffer.price);
-        int goldBefore = coordinator.CurrentRun.gold;
-        int ownedAugmentCountBefore = coordinator.GetOwnedAugments().Count;
-        Assert.True(coordinator.TryPurchaseShopOffer(shopNode.nodeId, augmentOffer.OfferId));
-        Assert.That(coordinator.GetOwnedAugments().Count, Is.EqualTo(ownedAugmentCountBefore + 1));
-        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(goldBefore - augmentOffer.price));
+        try
+        {
+            CardAugmentDef augment = GetFirstRuntimeAugment(repository);
+            Assert.NotNull(augment);
 
-        yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
-        Assert.That(coordinator.GetOwnedAugments().Count, Is.EqualTo(ownedAugmentCountBefore + 1));
+            inventory.choiceCount = 1;
+            inventory.offers = new List<ShopOfferData>
+            {
+                new() { id = "test-augment", displayName = "Test Augment", offerType = ShopOfferType.Augment, price = 11, augment = augment, weight = 1 }
+            };
+
+            coordinator.SelectNode(shopNode.nodeId);
+            yield return null;
+
+            List<ShopOfferData> offers = coordinator.GetAvailableShopOffers(shopNode.nodeId);
+            ShopOfferData augmentOffer = offers.Find(candidate => candidate.offerType == ShopOfferType.Augment);
+            Assert.NotNull(augmentOffer);
+
+            coordinator.CurrentRun.gold = Mathf.Max(coordinator.CurrentRun.gold, augmentOffer.price);
+            int goldBefore = coordinator.CurrentRun.gold;
+            int ownedAugmentCountBefore = coordinator.GetOwnedAugments().Count;
+            Assert.True(coordinator.TryPurchaseShopOffer(shopNode.nodeId, augmentOffer.OfferId));
+            Assert.That(coordinator.GetOwnedAugments().Count, Is.EqualTo(ownedAugmentCountBefore + 1));
+            Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(goldBefore - augmentOffer.price));
+
+            yield return SceneManager.LoadSceneAsync(SceneNames.RunMap);
+            Assert.That(coordinator.GetOwnedAugments().Count, Is.EqualTo(ownedAugmentCountBefore + 1));
+        }
+        finally
+        {
+            inventory.choiceCount = originalChoiceCount;
+            inventory.offers = originalOffers;
+        }
     }
 
     [UnityTest]
@@ -243,9 +276,9 @@ public class RunFlowPlayModeTests
         try
         {
             ShopOfferData originalCard = FindFirstCardOffer(originalOffers);
-            ShopOfferData originalAugment = FindFirstAugmentOffer(originalOffers);
+            CardAugmentDef augment = GetFirstRuntimeAugment(repository);
             Assert.NotNull(originalCard);
-            Assert.NotNull(originalAugment);
+            Assert.NotNull(augment);
 
             inventory.choiceCount = 1;
             inventory.offers = new List<ShopOfferData>
@@ -265,7 +298,7 @@ public class RunFlowPlayModeTests
                     displayName = "Hidden Offer",
                     offerType = ShopOfferType.Augment,
                     price = 12,
-                    augment = originalAugment.augment,
+                    augment = augment,
                     weight = 1
                 }
             };
@@ -410,6 +443,8 @@ public class RunFlowPlayModeTests
         MapTemplateDef act1 = repository.GetMapTemplateById("act_1");
         MapTemplateDef act2 = repository.GetMapTemplateById("act_2");
         EncounterDef bossEncounter = repository.GetEncountersByKind(EncounterKind.Boss)[0];
+        NodeRewardRule rewardRule = act1.GetRewardRule(MapNodeType.Boss);
+        Assert.NotNull(rewardRule);
         OwnedCard card = new(GetFirstRuntimeCard(repository), "linked-boss-card", null);
         CardAugmentDef augment = FindCompatibleAugment(repository, new List<OwnedCard> { card }, out _);
         RunSaveData run = CreateSingleBossRun("linked-boss-run", act1.TemplateId, bossEncounter.EncounterId, card, augment != null ? new OwnedAugment(augment, "linked-boss-augment") : null);
@@ -431,7 +466,7 @@ public class RunFlowPlayModeTests
         yield return WaitForScene(SceneNames.Combat);
         Assert.That(coordinator.CurrentCombatRequest.encounter.encounterKind, Is.EqualTo(EncounterKind.Boss));
 
-        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", coordinator.CurrentCombatRequest.encounter, true, 13));
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", true, 13));
         yield return WaitForScene(SceneNames.RunMap);
 
         Assert.NotNull(coordinator.CurrentRun);
@@ -446,7 +481,7 @@ public class RunFlowPlayModeTests
         Assert.That(coordinator.CurrentMapTemplate, Is.EqualTo(act2));
         Assert.That(coordinator.CurrentRun.mapState.mapTemplateId, Is.EqualTo("act_2"));
         Assert.That(coordinator.CurrentRun.currentHealth, Is.EqualTo(13));
-        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(goldBeforeCombat + bossEncounter.goldReward));
+        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(goldBeforeCombat + rewardRule.goldReward));
         Assert.That(coordinator.CurrentRun.deck.Count, Is.EqualTo(deckCountBefore));
         Assert.That(coordinator.GetOwnedAugments().Count, Is.EqualTo(augmentCountBefore));
         Assert.That(coordinator.CurrentRun.runId, Is.EqualTo("linked-boss-run"));
@@ -476,7 +511,7 @@ public class RunFlowPlayModeTests
         coordinator.SelectNode("boss-node");
         yield return WaitForScene(SceneNames.Combat);
 
-        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", coordinator.CurrentCombatRequest.encounter, true, 18));
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", true, 18));
         yield return WaitForScene(SceneNames.RunMap);
 
         Assert.NotNull(coordinator.CurrentRun);
@@ -542,7 +577,7 @@ public class RunFlowPlayModeTests
             {
                 coordinator.SelectNode(nextNode.nodeId);
                 yield return WaitForScene(SceneNames.Combat);
-                coordinator.HandleCombatResult(new CombatSceneResult(nextNode.nodeId, coordinator.CurrentCombatRequest.encounter, true, coordinator.CurrentRun.currentHealth));
+                coordinator.HandleCombatResult(new CombatSceneResult(nextNode.nodeId, true, coordinator.CurrentRun.currentHealth));
 
                 if (nextNode.nodeType == MapNodeType.Boss)
                     yield break;
@@ -624,6 +659,18 @@ public class RunFlowPlayModeTests
     private static ShopOfferData FindFirstAugmentOffer(List<ShopOfferData> offers)
     {
         return offers.Find(offer => offer != null && offer.offerType == ShopOfferType.Augment && offer.augment != null);
+    }
+
+    private static CardAugmentDef GetFirstRuntimeAugment(RunContentRepository repository)
+    {
+        foreach (CardAugmentDef augment in repository.Augments)
+        {
+            if (augment != null)
+                return augment;
+        }
+
+        Assert.Fail("Expected at least one runtime augment.");
+        return null;
     }
 
     private static CardAugmentDef FindCompatibleAugment(RunContentRepository repository, List<OwnedCard> deck, out OwnedCard compatibleCard)

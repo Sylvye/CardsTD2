@@ -23,7 +23,6 @@ namespace RunFlow
         public int maxColumns = 7;
         [Range(0f, 1f)] public float branchChance = 0.45f;
         [Range(0f, 1f)] public float mergeChance = 0.35f;
-        public ShopInventoryDef defaultShopInventory;
 
         public string TemplateId => string.IsNullOrWhiteSpace(id) ? null : id.Trim();
 

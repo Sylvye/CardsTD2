@@ -15,7 +15,6 @@ MonoBehaviour:
   id: act_3_miniboss
   displayName: Act 3 Miniboss
   encounterKind: 1
-  pathPrefab: {fileID: 222235461983059477, guid: 31dc4bb34c15844ec9885b43b4e2aeff, type: 3}
   spawnBatches:
   - enemyDef: {fileID: 11400000, guid: 69ed3973e26e43d4cb7047f6e2cad04f, type: 2}
     spawnCount: 12
@@ -25,6 +24,3 @@ MonoBehaviour:
     spawnCount: 24
     spawnInterval: 0.2
     waitTime: 1.25
-  rewardPool: {fileID: 11400000, guid: f6241c2e7602c4a499aab9caceed5ecb, type: 2}
-  goldReward: 20
-  metaCurrencyReward: 2

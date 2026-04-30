@@ -48,7 +48,6 @@ namespace RunFlow
 
             CombatSceneResult result = new(
                 request.nodeId,
-                request.encounter,
                 victory,
                 combatSessionDriver.PlayerState.CurrentHealth
             );

@@ -30,9 +30,12 @@ namespace RunFlow
                 return new ProfileSaveData();
 
             string json = File.ReadAllText(path);
-            return string.IsNullOrWhiteSpace(json)
-                ? new ProfileSaveData()
-                : JsonUtility.FromJson<ProfileSaveData>(json) ?? new ProfileSaveData();
+            if (string.IsNullOrWhiteSpace(json))
+                return new ProfileSaveData();
+
+            ProfileSaveData profile = JsonUtility.FromJson<ProfileSaveData>(json) ?? new ProfileSaveData();
+            profile.activeRunId = string.IsNullOrWhiteSpace(profile.activeRunId) ? null : profile.activeRunId;
+            return profile;
         }
 
         public void SaveProfile(ProfileSaveData profile)
@@ -241,8 +244,6 @@ namespace RunFlow
                         run.ownedRelics.Add(new OwnedRelic(relic));
                 }
             }
-
-            run.pendingReward?.MigrateLegacyEntries();
 
             return run;
         }

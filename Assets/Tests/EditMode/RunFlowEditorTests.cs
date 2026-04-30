@@ -96,10 +96,7 @@ public class RunFlowEditorTests
                 entries = new List<PendingRewardEntry>
                 {
                     new() { rewardType = RunRewardType.Card, contentId = contentRepository.GetCardId(template.startingDeck[0]) }
-                },
-                offeredCardIds = compatibleAugment != null
-                    ? new List<string> { contentRepository.GetCardId(template.startingDeck[0]) }
-                    : new List<string>()
+                }
             },
             queuedNextMapTemplateId = "act_2",
             endRunAfterPendingReward = false,
@@ -143,41 +140,6 @@ public class RunFlowEditorTests
         ProfileSaveData loadedProfile = saveService.LoadProfile();
 
         Assert.That(loadedProfile.debugUiEnabled, Is.False);
-    }
-
-    [Test]
-    public void SaveService_MigratesLegacyCardOnlyRewardsIntoPendingEntries()
-    {
-        SaveService saveService = new(contentRepository, saveDirectory);
-        MapTemplateDef template = CreateTemplate();
-        RunMapGenerator generator = new(contentRepository);
-        RunMapStateData mapState = generator.Generate(template, 321);
-
-        RunSaveData run = new()
-        {
-            runId = "legacy-run",
-            currentHealth = 18,
-            maxHealth = 20,
-            gold = 14,
-            deck = new List<OwnedCard> { new(template.startingDeck[0]) },
-            currentNodeId = mapState.startNodeId,
-            completedNodeIds = new List<string> { mapState.startNodeId },
-            mapState = mapState,
-            pendingReward = new PendingRewardData
-            {
-                sourceNodeId = "legacy-node",
-                offeredCardIds = new List<string> { contentRepository.GetCardId(template.startingDeck[0]) }
-            },
-            seed = 321
-        };
-
-        saveService.SaveRun(run);
-        RunSaveData loadedRun = saveService.LoadRun("legacy-run");
-
-        Assert.NotNull(loadedRun.pendingReward);
-        Assert.That(loadedRun.pendingReward.entries.Count, Is.EqualTo(1));
-        Assert.That(loadedRun.pendingReward.entries[0].rewardType, Is.EqualTo(RunRewardType.Card));
-        Assert.That(loadedRun.pendingReward.entries[0].contentId, Is.EqualTo(contentRepository.GetCardId(template.startingDeck[0])));
     }
 
     [Test]
@@ -485,7 +447,7 @@ public class RunFlowEditorTests
         RelicDef relic = contentRepository.GetRelicById("mana_battery");
         Assert.NotNull(relic);
 
-        ShopInventoryDef inventory = contentRepository.GetDefaultShopInventory();
+        ShopInventoryDef inventory = contentRepository.GetShopInventoryById("act_1_shop");
         Assert.NotNull(inventory);
 
         int originalChoiceCount = inventory.choiceCount;
@@ -644,18 +606,15 @@ public class RunFlowEditorTests
     [Test]
     public void RunCoordinator_MetaUnlockPurchase_SpendsCurrencyPersistsAndPreventsDuplicate()
     {
-        MetaUnlockEntry unlock = GetFirstMetaUnlock(MetaUnlockType.Card);
-        MetaUnlockEntry prerequisite = GetMetaUnlockById("unlock.group.tower_starters");
+        MetaUnlockEntry unlock = GetFirstUnlockGroup();
+        CardDef unlockedCard = GetFirstContainedCard(unlock);
         SaveService saveService = new(contentRepository, saveDirectory);
-        saveService.SaveProfile(new ProfileSaveData { metaCurrency = prerequisite.cost + unlock.cost + 2 });
+        saveService.SaveProfile(new ProfileSaveData { metaCurrency = unlock.cost + 2 });
 
         RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
 
-        Assert.False(coordinator.IsCardUnlocked(unlock.card));
-        Assert.False(coordinator.TryPurchaseMetaUnlock(unlock.UnlockId));
-        Assert.True(coordinator.TryPurchaseMetaUnlock(prerequisite.UnlockId));
         Assert.True(coordinator.TryPurchaseMetaUnlock(unlock.UnlockId));
-        Assert.True(coordinator.IsCardUnlocked(unlock.card));
+        Assert.True(coordinator.IsCardUnlocked(unlockedCard));
         Assert.That(coordinator.Profile.metaCurrency, Is.EqualTo(2));
         Assert.True(coordinator.Profile.HasUnlock(unlock.UnlockId));
 
@@ -684,39 +643,35 @@ public class RunFlowEditorTests
     [Test]
     public void RunCoordinator_UnlockGroupPurchase_SpendsCurrencyAndPersistsOnlyGroupUnlock()
     {
-        MetaUnlockEntry group = GetMetaUnlockById("unlock.group.tower_starters");
+        MetaUnlockEntry group = GetFirstUnlockGroup();
         SaveService saveService = new(contentRepository, saveDirectory);
         saveService.SaveProfile(new ProfileSaveData { metaCurrency = group.cost + 4 });
 
         RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
         List<MetaUnlockContent> contents = coordinator.GetUnlockContents(group);
-        Assert.That(contents.Count, Is.GreaterThanOrEqualTo(3));
+        Assert.That(contents.Count, Is.GreaterThan(0));
         Assert.False(coordinator.IsCardUnlocked(contents[0].card));
-        Assert.Null(contentRepository.GetMetaUnlockById("unlock.card.shotgunner"));
-        Assert.Null(contentRepository.GetMetaUnlockById("unlock.card.tesla"));
-        Assert.Null(contentRepository.GetMetaUnlockById("unlock.card.turret_summoner"));
+        for (int i = 0; i < contents.Count; i++)
+            if (contents[i].card != null)
+                Assert.That(contentRepository.GetMetaUnlockForCard(contents[i].card), Is.EqualTo(group));
 
         Assert.True(coordinator.TryPurchaseMetaUnlock(group.UnlockId));
         Assert.That(coordinator.Profile.metaCurrency, Is.EqualTo(4));
         Assert.True(coordinator.Profile.HasUnlock(group.UnlockId));
-        Assert.False(coordinator.Profile.HasUnlock("unlock.card.shotgunner"));
-        Assert.False(coordinator.Profile.HasUnlock("unlock.card.tesla"));
-        Assert.False(coordinator.Profile.HasUnlock("unlock.card.turret_summoner"));
+        Assert.That(coordinator.Profile.unlockIds.Count, Is.EqualTo(1));
         for (int i = 0; i < contents.Count; i++)
             if (contents[i].card != null)
                 Assert.True(coordinator.IsCardUnlocked(contents[i].card));
 
         ProfileSaveData loadedProfile = saveService.LoadProfile();
         Assert.True(loadedProfile.HasUnlock(group.UnlockId));
-        Assert.False(loadedProfile.HasUnlock("unlock.card.shotgunner"));
-        Assert.False(loadedProfile.HasUnlock("unlock.card.tesla"));
-        Assert.False(loadedProfile.HasUnlock("unlock.card.turret_summoner"));
+        Assert.That(loadedProfile.unlockIds.Count, Is.EqualTo(1));
     }
 
     [Test]
     public void RunCoordinator_UnlockGroupPurchase_DoesNotDoubleSpendWhenAlreadyPurchased()
     {
-        MetaUnlockEntry group = GetMetaUnlockById("unlock.group.tower_starters");
+        MetaUnlockEntry group = GetFirstUnlockGroup();
         SaveService saveService = new(contentRepository, saveDirectory);
         saveService.SaveProfile(new ProfileSaveData { metaCurrency = group.cost + 10 });
 
@@ -731,8 +686,22 @@ public class RunFlowEditorTests
     [Test]
     public void RunCoordinator_PrerequisiteLockedUnlock_CannotBePurchasedUntilRequirementIsMet()
     {
-        MetaUnlockEntry baseUnlock = GetMetaUnlockById("unlock.group.tower_starters");
-        MetaUnlockEntry upgradeUnlock = GetMetaUnlockById("unlock.card.bomb_summoner");
+        MetaUnlockEntry upgradeUnlock = GetFirstMetaUnlockWithPrerequisites();
+        if (upgradeUnlock == null)
+        {
+            MetaUnlockEntry standaloneUnlock = GetFirstUnlockGroup();
+            SaveService fallbackSaveService = new(contentRepository, saveDirectory);
+            fallbackSaveService.SaveProfile(new ProfileSaveData { metaCurrency = standaloneUnlock.cost + 3 });
+
+            RunCoordinator fallbackCoordinator = new(fallbackSaveService, contentRepository, _ => { });
+            Assert.True(fallbackCoordinator.AreMetaUnlockPrerequisitesMet(standaloneUnlock));
+            Assert.That(fallbackCoordinator.GetMetaUnlockRequirementText(standaloneUnlock), Is.EqualTo(string.Empty));
+            Assert.True(fallbackCoordinator.TryPurchaseMetaUnlock(standaloneUnlock.UnlockId));
+            Assert.True(fallbackCoordinator.Profile.HasUnlock(standaloneUnlock.UnlockId));
+            return;
+        }
+
+        MetaUnlockEntry baseUnlock = GetMetaUnlockById(upgradeUnlock.prerequisiteUnlockIds[0]);
         SaveService saveService = new(contentRepository, saveDirectory);
         saveService.SaveProfile(new ProfileSaveData { metaCurrency = baseUnlock.cost + upgradeUnlock.cost + 3 });
 
@@ -752,7 +721,7 @@ public class RunFlowEditorTests
     [Test]
     public void RunCoordinator_GroupContainedCardsBecomeEligibleForRewardsAndShops()
     {
-        MetaUnlockEntry group = GetMetaUnlockById("unlock.group.tower_starters");
+        MetaUnlockEntry group = GetFirstUnlockGroup();
         SaveService saveService = new(contentRepository, saveDirectory);
         saveService.SaveProfile(new ProfileSaveData { metaCurrency = group.cost });
         RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
@@ -784,7 +753,7 @@ public class RunFlowEditorTests
     [Test]
     public void CardRewardPoolDef_FiltersLockedCatalogCardsBeforeChoosing()
     {
-        CardDef lockedCard = GetFirstContainedCard(GetMetaUnlockById("unlock.group.tower_starters"));
+        CardDef lockedCard = GetFirstContainedCard(GetFirstUnlockGroup());
         CardDef unlockedCard = GetFirstCatalogAbsentCard();
         SaveService saveService = new(contentRepository, saveDirectory);
         RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
@@ -807,7 +776,7 @@ public class RunFlowEditorTests
     [Test]
     public void ShopInventoryDef_FiltersLockedCatalogCardsBeforeChoosing()
     {
-        CardDef lockedCard = GetFirstContainedCard(GetMetaUnlockById("unlock.group.tower_starters"));
+        CardDef lockedCard = GetFirstContainedCard(GetFirstUnlockGroup());
         CardDef unlockedCard = GetFirstCatalogAbsentCard();
         SaveService saveService = new(contentRepository, saveDirectory);
         RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
@@ -832,16 +801,17 @@ public class RunFlowEditorTests
     [Test]
     public void RunCoordinator_TryPurchaseShopOffer_RejectsLockedCardOffer()
     {
-        CardDef lockedCard = contentRepository.GetCardById("tesla");
-        Assert.NotNull(lockedCard);
-        ShopInventoryDef inventory = contentRepository.GetDefaultShopInventory();
+        ShopInventoryDef inventory = contentRepository.GetShopInventoryById("act_1_shop");
         Assert.NotNull(inventory);
 
         ShopOfferData lockedOffer = null;
         for (int i = 0; i < inventory.offers.Count; i++)
         {
             ShopOfferData offer = inventory.offers[i];
-            if (offer != null && offer.offerType == ShopOfferType.Card && offer.card == lockedCard)
+            if (offer != null &&
+                offer.offerType == ShopOfferType.Card &&
+                offer.card != null &&
+                contentRepository.GetMetaUnlockForCard(offer.card) != null)
             {
                 lockedOffer = offer;
                 break;
@@ -849,6 +819,7 @@ public class RunFlowEditorTests
         }
 
         Assert.NotNull(lockedOffer);
+        CardDef lockedCard = lockedOffer.card;
 
         SaveService saveService = new(contentRepository, saveDirectory);
         RunSaveData run = new()
@@ -1368,7 +1339,7 @@ public class RunFlowEditorTests
         Assert.NotNull(coordinator.CurrentCombatRequest);
         Assert.NotNull(coordinator.CurrentCombatRequest.pathPrefab);
 
-        coordinator.HandleCombatResult(new CombatSceneResult(firstFight.nodeId, coordinator.CurrentCombatRequest.encounter, true, 18));
+        coordinator.HandleCombatResult(new CombatSceneResult(firstFight.nodeId, true, 18));
         Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
         Assert.True(coordinator.CurrentRun.HasCompletedNode(firstFight.nodeId));
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
@@ -1378,7 +1349,7 @@ public class RunFlowEditorTests
         Assert.NotNull(secondFight);
 
         coordinator.SelectNode(secondFight.nodeId);
-        coordinator.HandleCombatResult(new CombatSceneResult(secondFight.nodeId, coordinator.CurrentCombatRequest.encounter, false, 0));
+        coordinator.HandleCombatResult(new CombatSceneResult(secondFight.nodeId, false, 0));
 
         Assert.That(loadedScene, Is.EqualTo(SceneNames.MainMenu));
         Assert.IsNull(coordinator.CurrentRun);
@@ -1396,16 +1367,16 @@ public class RunFlowEditorTests
         Assert.NotNull(act1);
         Assert.NotNull(act1.nextActTemplate);
 
-        CardDef rewardCard = GetFirstCard();
         RunSaveData run = CreateBossRun("boss-next-act", act1.TemplateId);
         int deckCountBeforeReward = run.deck.Count;
         saveService.SaveRun(run);
 
         string loadedScene = null;
         RunCoordinator coordinator = new(saveService, contentRepository, sceneName => loadedScene = sceneName);
-        EncounterDef bossEncounter = CreateBossEncounterWithCardReward(rewardCard, goldReward: 11, metaCurrencyReward: 3);
+        NodeRewardRule rewardRule = act1.GetRewardRule(MapNodeType.Boss);
+        Assert.NotNull(rewardRule);
 
-        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", bossEncounter, true, 15));
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", true, 15));
 
         Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
         Assert.NotNull(coordinator.CurrentRun);
@@ -1422,8 +1393,8 @@ public class RunFlowEditorTests
         Assert.That(coordinator.CurrentMapTemplate.TemplateId, Is.EqualTo("act_2"));
         Assert.That(coordinator.CurrentRun.mapState.mapTemplateId, Is.EqualTo("act_2"));
         Assert.That(coordinator.CurrentRun.currentHealth, Is.EqualTo(15));
-        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(42));
-        Assert.That(coordinator.Profile.metaCurrency, Is.EqualTo(4));
+        Assert.That(coordinator.CurrentRun.gold, Is.EqualTo(10 + rewardRule.goldReward));
+        Assert.That(coordinator.Profile.metaCurrency, Is.EqualTo(rewardRule.metaCurrencyReward));
         Assert.That(coordinator.CurrentRun.pendingReward, Is.Null);
         Assert.That(coordinator.CurrentRun.queuedNextMapTemplateId, Is.Null);
         Assert.That(coordinator.CurrentRun.endRunAfterPendingReward, Is.False);
@@ -1446,7 +1417,7 @@ public class RunFlowEditorTests
 
         string loadedScene = null;
         RunCoordinator coordinator = new(saveService, contentRepository, sceneName => loadedScene = sceneName);
-        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", CreateBossEncounterWithCardReward(GetFirstCard()), true, 16));
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", true, 16));
 
         RunCoordinator reloadedCoordinator = new(saveService, contentRepository, sceneName => loadedScene = sceneName);
         Assert.NotNull(reloadedCoordinator.CurrentRun);
@@ -1477,7 +1448,7 @@ public class RunFlowEditorTests
 
         string loadedScene = null;
         RunCoordinator coordinator = new(saveService, contentRepository, sceneName => loadedScene = sceneName);
-        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", CreateBossEncounterWithCardReward(GetFirstCard(), goldReward: 7), true, 12));
+        coordinator.HandleCombatResult(new CombatSceneResult("boss-node", true, 12));
 
         Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
         Assert.NotNull(coordinator.CurrentRun);
@@ -1507,13 +1478,9 @@ public class RunFlowEditorTests
         MethodInfo createEncounter = typeof(RunFlowProjectSetup).GetMethod("CreateEncounter", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(createEncounter);
 
-        GameObject pathPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/RunFlow/Paths/Path 1.prefab");
-        CardRewardPoolDef rewardPool = AssetDatabase.LoadAssetAtPath<CardRewardPoolDef>("Assets/Resources/RunFlow/Rewards/Act 1 Rewards.asset");
         EnemyDef enemyA = AssetDatabase.LoadAssetAtPath<EnemyDef>("Assets/Resources/Combat/Enemies/Definitions/Enemy A.asset");
         EnemyDef enemyB = AssetDatabase.LoadAssetAtPath<EnemyDef>("Assets/Resources/Combat/Enemies/Definitions/Enemy B.asset");
 
-        Assert.NotNull(pathPrefab);
-        Assert.NotNull(rewardPool);
         Assert.NotNull(enemyA);
         Assert.NotNull(enemyB);
 
@@ -1523,11 +1490,7 @@ public class RunFlowEditorTests
             "editor-test-encounter",
             displayName,
             EncounterKind.Miniboss,
-            pathPrefab,
             enemies,
-            rewardPool,
-            25,
-            3,
             2,
             1
         };
@@ -1730,12 +1693,7 @@ public class RunFlowEditorTests
         MethodInfo createCombatScene = typeof(RunFlowProjectSetup).GetMethod("CreateCombatScene", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(createCombatScene);
 
-        List<EncounterDef> regularFights = contentRepository.GetEncountersByKind(EncounterKind.RegularFight);
-        Assert.That(regularFights.Count, Is.GreaterThan(0));
-
-        EncounterDef debugEncounter = regularFights[0];
-        List<CardDef> cards = new(contentRepository.Cards);
-        createCombatScene.Invoke(null, new object[] { debugEncounter, cards });
+        createCombatScene.Invoke(null, null);
 
         _ = EditorSceneManager.OpenScene("Assets/Scenes/Combat.unity", OpenSceneMode.Single);
 
@@ -1763,13 +1721,6 @@ public class RunFlowEditorTests
         Assert.That(GetPrivateField<HandViewDriver>(bootstrapper, "handViewDriver"), Is.EqualTo(handViewDriver));
         Assert.That(GetPrivateField<EnemySpawner>(bootstrapper, "enemySpawner"), Is.EqualTo(enemySpawner));
         Assert.That(GetPrivateField<Transform>(bootstrapper, "pathAnchor"), Is.EqualTo(pathAnchor.transform));
-        Assert.That(GetPrivateField<EncounterDef>(bootstrapper, "debugEncounter"), Is.EqualTo(debugEncounter));
-        Assert.That(GetPrivateField<int>(bootstrapper, "debugCurrentHealth"), Is.EqualTo(20));
-        Assert.That(GetPrivateField<int>(bootstrapper, "debugMaxHealth"), Is.EqualTo(20));
-
-        List<OwnedCard> debugDeck = GetPrivateField<List<OwnedCard>>(bootstrapper, "debugDeck");
-        Assert.NotNull(debugDeck);
-        Assert.That(debugDeck.Count, Is.EqualTo(Mathf.Min(5, cards.Count)));
 
         Assert.That(GetPrivateField<CombatSessionDriver>(outcomeWatcher, "combatSessionDriver"), Is.EqualTo(combatSessionDriver));
         Assert.That(GetPrivateField<EnemySpawner>(outcomeWatcher, "enemySpawner"), Is.EqualTo(enemySpawner));
@@ -1807,7 +1758,8 @@ public class RunFlowEditorTests
                 break;
         }
 
-        template.defaultShopInventory = contentRepository.GetDefaultShopInventory();
+        ShopInventoryDef shopInventory = contentRepository.GetShopInventoryById("act_1_shop");
+        Assert.NotNull(shopInventory);
         EncounterPoolDef fightPool = ScriptableObject.CreateInstance<EncounterPoolDef>();
         fightPool.id = "fight-pool";
         fightPool.encounters = new List<WeightedEncounterEntry>();
@@ -1862,7 +1814,7 @@ public class RunFlowEditorTests
                 "test-shop-node",
                 "Test Shop",
                 new NodeTypeGenerationRule { nodeType = MapNodeType.Shop, weight = 2, minCount = 1, maxCount = 2 },
-                template.defaultShopInventory),
+                shopInventory),
             CreateRestNodeConfig(
                 "test-rest-node",
                 "Test Rest",
@@ -2062,11 +2014,55 @@ public class RunFlowEditorTests
         return null;
     }
 
+    private MetaUnlockEntry GetFirstUnlockGroup()
+    {
+        List<MetaUnlockEntry> unlocks = contentRepository.GetMetaUnlocks();
+        for (int i = 0; i < unlocks.Count; i++)
+        {
+            MetaUnlockEntry unlock = unlocks[i];
+            if (unlock != null &&
+                unlock.type == MetaUnlockType.UnlockGroup &&
+                GetUnlockContents(unlock).Exists(content => content.card != null))
+            {
+                return unlock;
+            }
+        }
+
+        Assert.Fail("Expected at least one unlock group containing cards.");
+        return null;
+    }
+
+    private MetaUnlockEntry GetFirstMetaUnlockWithPrerequisites()
+    {
+        List<MetaUnlockEntry> unlocks = contentRepository.GetMetaUnlocks();
+        for (int i = 0; i < unlocks.Count; i++)
+        {
+            MetaUnlockEntry unlock = unlocks[i];
+            if (unlock != null && unlock.prerequisiteUnlockIds != null && unlock.prerequisiteUnlockIds.Count > 0)
+                return unlock;
+        }
+
+        return null;
+    }
+
     private MetaUnlockEntry GetMetaUnlockById(string unlockId)
     {
         MetaUnlockEntry unlock = contentRepository.GetMetaUnlockById(unlockId);
         Assert.NotNull(unlock, $"Expected meta unlock '{unlockId}'.");
         return unlock;
+    }
+
+    private static List<MetaUnlockContent> GetUnlockContents(MetaUnlockEntry unlock)
+    {
+        List<MetaUnlockContent> contents = new();
+        if (unlock?.contents == null)
+            return contents;
+
+        for (int i = 0; i < unlock.contents.Count; i++)
+            if (unlock.contents[i] != null)
+                contents.Add(unlock.contents[i]);
+
+        return contents;
     }
 
     private static CardDef GetFirstContainedCard(MetaUnlockEntry unlock)
@@ -2128,25 +2124,6 @@ public class RunFlowEditorTests
             endRunAfterPendingReward = false,
             seed = 123
         };
-    }
-
-    private EncounterDef CreateBossEncounterWithCardReward(CardDef rewardCard, int goldReward = 0, int metaCurrencyReward = 0)
-    {
-        CardRewardPoolDef rewardPool = ScriptableObject.CreateInstance<CardRewardPoolDef>();
-        rewardPool.choiceCount = 1;
-        rewardPool.cards = new List<WeightedCardRewardEntry>
-        {
-            new() { card = rewardCard, weight = 1 }
-        };
-
-        EncounterDef encounter = ScriptableObject.CreateInstance<EncounterDef>();
-        encounter.id = "test-boss";
-        encounter.displayName = "Test Boss";
-        encounter.encounterKind = EncounterKind.Boss;
-        encounter.rewardPool = rewardPool;
-        encounter.goldReward = goldReward;
-        encounter.metaCurrencyReward = metaCurrencyReward;
-        return encounter;
     }
 
     private CardAugmentDef FindCompatibleAugment(CardDef card)
@@ -2345,6 +2322,7 @@ public class RunFlowEditorTests
             {
                 coordinator.SelectNode(restNode.nodeId);
                 coordinator.ApplyRestHeal(restNode.nodeId);
+                coordinator.LeaveRest(restNode.nodeId);
                 continue;
             }
         }

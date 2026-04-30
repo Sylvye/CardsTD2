@@ -37,6 +37,28 @@ MonoBehaviour:
         and shops.
       icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
       card: {fileID: 11400000, guid: ecdf9eccd6ca02541bffd4ad1a4fc0a1, type: 2}
+  - id: unlock.group.sniper_turret
+    type: 2
+    cost: 30
+    displayName: Unlock Sniper Turret
+    description: Unlocks the Sniper and its upgrades. Can appear in card rewards
+      and shops.
+    icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
+    card: {fileID: 0}
+    prerequisiteUnlockIds: []
+    contents:
+    - type: 0
+      displayName: Turret Summoner
+      description: Unlocks the Sniper Turret. It can appear in future card rewards
+        and shops.
+      icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
+      card: {fileID: 11400000, guid: f69429529f4954e50a31f9b7c1f846ff, type: 2}
+    - type: 0
+      displayName: Turret Summoner+
+      description: Unlocks the Sniper Turret+. It can appear in future card rewards
+        and shops.
+      icon: {fileID: 5763093087370572314, guid: 6030ffa31ab5ffc4685f70a2624a8d40, type: 3}
+      card: {fileID: 11400000, guid: aaefd297a82bc423187cf5353c2d0bec, type: 2}
   - id: unlock.group.tesla
     type: 2
     cost: 20
@@ -89,4 +111,9 @@ MonoBehaviour:
     icon: {fileID: 21300000, guid: 2417909203dd29945802e57a9a6ff5ee, type: 3}
     card: {fileID: 0}
     prerequisiteUnlockIds: []
-    contents: []
+    contents:
+    - type: 1
+      displayName: 
+      description: 
+      icon: {fileID: 0}
+      card: {fileID: 0}

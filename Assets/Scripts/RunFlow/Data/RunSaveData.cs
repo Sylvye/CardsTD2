@@ -147,26 +147,6 @@ namespace RunFlow
     {
         public string sourceNodeId;
         public List<PendingRewardEntry> entries = new();
-        public List<string> offeredCardIds = new();
-
-        public void MigrateLegacyEntries()
-        {
-            entries ??= new List<PendingRewardEntry>();
-            if (entries.Count > 0 || offeredCardIds == null || offeredCardIds.Count == 0)
-                return;
-
-            for (int i = 0; i < offeredCardIds.Count; i++)
-            {
-                if (string.IsNullOrWhiteSpace(offeredCardIds[i]))
-                    continue;
-
-                entries.Add(new PendingRewardEntry
-                {
-                    rewardType = RunRewardType.Card,
-                    contentId = offeredCardIds[i]
-                });
-            }
-        }
     }
 
     [Serializable]

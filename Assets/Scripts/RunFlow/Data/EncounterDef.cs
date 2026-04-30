@@ -10,11 +10,7 @@ namespace RunFlow
         public string id;
         public string displayName;
         public EncounterKind encounterKind;
-        public GameObject pathPrefab;
         public List<SpawnBatch> spawnBatches = new();
-        public CardRewardPoolDef rewardPool;
-        public int goldReward = 10;
-        public int metaCurrencyReward = 1;
 
         public string EncounterId => string.IsNullOrWhiteSpace(id) ? name : id;
         public string DisplayNameOrFallback => string.IsNullOrWhiteSpace(displayName) ? name : displayName;

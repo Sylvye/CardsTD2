@@ -15,7 +15,6 @@ MonoBehaviour:
   id: fight_1a
   displayName: Regular Fight I
   encounterKind: 0
-  pathPrefab: {fileID: 222235461983059477, guid: 57c8d953f37782c4580c359284f59da3, type: 3}
   spawnBatches:
   - enemyDef: {fileID: 11400000, guid: 26884c280f342d24093eb372eece73fd, type: 2}
     spawnCount: 16
@@ -25,6 +24,3 @@ MonoBehaviour:
     spawnCount: 8
     spawnInterval: 0.4
     waitTime: 1
-  rewardPool: {fileID: 11400000, guid: 6f5304e7a01c79941b946c59023f100c, type: 2}
-  goldReward: 10
-  metaCurrencyReward: 1

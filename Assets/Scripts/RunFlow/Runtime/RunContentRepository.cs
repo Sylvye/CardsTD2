@@ -13,10 +13,7 @@ namespace RunFlow
         private readonly Dictionary<string, RelicDef> relicsById = new();
         private readonly Dictionary<string, MapTemplateDef> mapTemplatesById = new();
         private readonly List<MapTemplateDef> mapTemplates = new();
-        private readonly Dictionary<string, CombatMapPoolDef> combatMapPoolsById = new();
         private readonly Dictionary<string, EncounterDef> encountersById = new();
-        private readonly Dictionary<string, EncounterPoolDef> encounterPoolsById = new();
-        private readonly Dictionary<string, CardRewardPoolDef> rewardPoolsById = new();
         private readonly Dictionary<string, ShopInventoryDef> shopInventoriesById = new();
         private readonly Dictionary<string, MetaUnlockEntry> metaUnlocksById = new();
         private readonly Dictionary<string, List<MetaUnlockEntry>> cardMetaUnlocksByCardId = new();
@@ -27,7 +24,6 @@ namespace RunFlow
         public IReadOnlyCollection<CardDef> Cards => cardsById.Values;
         public IReadOnlyCollection<CardAugmentDef> Augments => augmentsById.Values;
         public IReadOnlyCollection<RelicDef> Relics => relicsById.Values;
-        public IReadOnlyList<MetaUnlockEntry> MetaUnlocks => metaUnlocks;
 
         public void Refresh()
         {
@@ -36,10 +32,7 @@ namespace RunFlow
             relicsById.Clear();
             mapTemplatesById.Clear();
             mapTemplates.Clear();
-            combatMapPoolsById.Clear();
             encountersById.Clear();
-            encounterPoolsById.Clear();
-            rewardPoolsById.Clear();
             shopInventoriesById.Clear();
             metaUnlocksById.Clear();
             cardMetaUnlocksByCardId.Clear();
@@ -50,10 +43,7 @@ namespace RunFlow
             LoadRelics();
             LoadMetaUnlockCatalogs();
             LoadMapTemplates();
-            LoadCombatMapPools();
             LoadEncounters();
-            LoadEncounterPools();
-            LoadRewardPools();
             LoadShopInventories();
 
             isLoaded = true;
@@ -87,18 +77,6 @@ namespace RunFlow
         {
             EnsureLoaded();
             return !string.IsNullOrWhiteSpace(id) && encountersById.TryGetValue(id, out EncounterDef encounter) ? encounter : null;
-        }
-
-        public CombatMapPoolDef GetCombatMapPoolById(string id)
-        {
-            EnsureLoaded();
-            return !string.IsNullOrWhiteSpace(id) && combatMapPoolsById.TryGetValue(id, out CombatMapPoolDef combatMapPool) ? combatMapPool : null;
-        }
-
-        public EncounterPoolDef GetEncounterPoolById(string id)
-        {
-            EnsureLoaded();
-            return !string.IsNullOrWhiteSpace(id) && encounterPoolsById.TryGetValue(id, out EncounterPoolDef encounterPool) ? encounterPool : null;
         }
 
         public ShopInventoryDef GetShopInventoryById(string id)
@@ -164,32 +142,9 @@ namespace RunFlow
             return encounter == null ? null : encounter.EncounterId;
         }
 
-        public string GetCombatMapPoolId(CombatMapPoolDef combatMapPool)
-        {
-            return combatMapPool == null ? null : combatMapPool.PoolId;
-        }
-
-        public string GetEncounterPoolId(EncounterPoolDef encounterPool)
-        {
-            return encounterPool == null ? null : encounterPool.PoolId;
-        }
-
         public string GetShopInventoryId(ShopInventoryDef inventory)
         {
             return inventory == null ? null : inventory.InventoryId;
-        }
-
-        public ShopInventoryDef GetDefaultShopInventory()
-        {
-            EnsureLoaded();
-
-            if (shopInventoriesById.TryGetValue("act_1_shop", out ShopInventoryDef starterShop))
-                return starterShop;
-
-            foreach (ShopInventoryDef inventory in shopInventoriesById.Values)
-                return inventory;
-
-            return null;
         }
 
         public List<EncounterDef> GetEncountersByKind(EncounterKind encounterKind)
@@ -388,63 +343,6 @@ namespace RunFlow
                 }
 
                 encountersById[encounterId] = encounter;
-            }
-        }
-
-        private void LoadCombatMapPools()
-        {
-            CombatMapPoolDef[] combatMapPools = Resources.LoadAll<CombatMapPoolDef>("RunFlow");
-            for (int i = 0; i < combatMapPools.Length; i++)
-            {
-                CombatMapPoolDef combatMapPool = combatMapPools[i];
-                if (combatMapPool == null)
-                    continue;
-
-                string poolId = combatMapPool.PoolId;
-                if (string.IsNullOrWhiteSpace(poolId))
-                    continue;
-
-                if (combatMapPoolsById.ContainsKey(poolId))
-                {
-                    Debug.LogWarning($"Duplicate combat map pool id '{poolId}' found on '{combatMapPool.name}'. Combat map pool ids should be unique.");
-                    continue;
-                }
-
-                combatMapPoolsById[poolId] = combatMapPool;
-            }
-        }
-
-        private void LoadEncounterPools()
-        {
-            EncounterPoolDef[] encounterPools = Resources.LoadAll<EncounterPoolDef>("RunFlow");
-            for (int i = 0; i < encounterPools.Length; i++)
-            {
-                EncounterPoolDef encounterPool = encounterPools[i];
-                if (encounterPool == null)
-                    continue;
-
-                string poolId = encounterPool.PoolId;
-                if (string.IsNullOrWhiteSpace(poolId))
-                    continue;
-
-                if (encounterPoolsById.ContainsKey(poolId))
-                {
-                    Debug.LogWarning($"Duplicate encounter pool id '{poolId}' found on '{encounterPool.name}'. Encounter pool ids should be unique.");
-                    continue;
-                }
-
-                encounterPoolsById[poolId] = encounterPool;
-            }
-        }
-
-        private void LoadRewardPools()
-        {
-            CardRewardPoolDef[] rewardPools = Resources.LoadAll<CardRewardPoolDef>("RunFlow/Rewards");
-            for (int i = 0; i < rewardPools.Length; i++)
-            {
-                CardRewardPoolDef rewardPool = rewardPools[i];
-                if (rewardPool != null)
-                    rewardPoolsById[rewardPool.PoolId] = rewardPool;
             }
         }
 

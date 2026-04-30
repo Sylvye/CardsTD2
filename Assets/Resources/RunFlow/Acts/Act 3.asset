@@ -38,4 +38,3 @@ MonoBehaviour:
   maxColumns: 12
   branchChance: 0.5
   mergeChance: 0.5
-  defaultShopInventory: {fileID: 11400000, guid: 4aa76f3f89e7fde4a9bd0b6e57e177f6, type: 2}

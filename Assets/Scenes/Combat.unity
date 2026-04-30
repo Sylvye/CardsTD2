@@ -634,7 +634,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: -100
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
@@ -1429,25 +1429,6 @@ MonoBehaviour:
   handViewDriver: {fileID: 465495816}
   enemySpawner: {fileID: 287364997}
   pathAnchor: {fileID: 668597721}
-  debugEncounter: {fileID: 11400000, guid: 10b7e26a95c3bf047ab1efd04a06e4b2, type: 2}
-  debugDeck:
-  - uniqueId: 27fefe4d86ec41129ab4e67ca179639e
-    currentDefinition: {fileID: 11400000, guid: f3cd7e76dccab714aafe89d7edafd689, type: 2}
-    appliedAugments: []
-  - uniqueId: d474ba43e4524182ab839b8fe38dabce
-    currentDefinition: {fileID: 11400000, guid: cfb67d3bb856a1444a1a5241d773589b, type: 2}
-    appliedAugments: []
-  - uniqueId: f1b2d824671047e49534fbd96d87ad39
-    currentDefinition: {fileID: 11400000, guid: 7616c717da96d44498a586eaeaa0de0c, type: 2}
-    appliedAugments: []
-  - uniqueId: 22f8b9066d794f9c87dd2f99d0b44e19
-    currentDefinition: {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
-    appliedAugments: []
-  - uniqueId: 7db9d7cb669f48189e80d3ca8b9e288e
-    currentDefinition: {fileID: 11400000, guid: 312818d6e7d1e6a4881f7858cea62544, type: 2}
-    appliedAugments: []
-  debugCurrentHealth: 20
-  debugMaxHealth: 20
 --- !u!4 &562392165
 Transform:
   m_ObjectHideFlags: 0

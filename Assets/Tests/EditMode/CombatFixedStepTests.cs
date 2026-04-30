@@ -1,8 +1,10 @@
 using Cards;
 using Combat;
+using Enemies;
 using NUnit.Framework;
 using RunFlow;
 using System.Reflection;
+using Towers;
 using UnityEngine;
 
 public class CombatFixedStepTests
@@ -106,7 +108,7 @@ public class CombatFixedStepTests
         CombatSceneBootstrapper bootstrapper = bootstrapperObject.AddComponent<CombatSceneBootstrapper>();
         SetPrivateField(bootstrapper, "combatSessionDriver", driver);
 
-        CombatSceneRequest request = new("node", null, new RunSaveData
+        CombatSceneRequest request = new("node", null, null, new RunSaveData
         {
             currentHealth = 13,
             maxHealth = 21
@@ -193,6 +195,49 @@ public class CombatFixedStepTests
 
         controller.FixedTick(0.5f);
         Assert.That(playerState.CurrentMana, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void TowerProjectile_FixedUpdate_SweepsBetweenPositions()
+    {
+        GameObject enemyObject = new("Projectile Sweep Enemy");
+        enemyObject.transform.position = new Vector3(1f, 0f, 0f);
+        CircleCollider2D enemyCollider = enemyObject.AddComponent<CircleCollider2D>();
+        enemyCollider.radius = 0.2f;
+        EnemyAgent enemy = enemyObject.AddComponent<EnemyAgent>();
+        SetPrivateField(enemy, "currentHealth", 10f);
+
+        GameObject projectileObject = new("Projectile Sweep Projectile");
+        projectileObject.transform.position = Vector3.zero;
+        projectileObject.AddComponent<Rigidbody2D>();
+        CircleCollider2D projectileCollider = projectileObject.AddComponent<CircleCollider2D>();
+        projectileCollider.radius = 0.05f;
+        projectileCollider.isTrigger = true;
+        TowerProjectile projectile = projectileObject.AddComponent<TowerProjectile>();
+
+        Physics2D.SyncTransforms();
+
+        projectile.Initialize(
+            null,
+            enemy,
+            Vector3.right,
+            1f,
+            null,
+            100f,
+            1f,
+            false,
+            1,
+            null
+        );
+
+        MethodInfo fixedUpdate = typeof(TowerProjectile).GetMethod("FixedUpdate", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(fixedUpdate);
+        fixedUpdate.Invoke(projectile, null);
+
+        Assert.That(enemy.CurrentHealth, Is.EqualTo(9f));
+
+        Object.DestroyImmediate(projectileObject);
+        Object.DestroyImmediate(enemyObject);
     }
 
     private static void SetPrivateField<TTarget>(TTarget target, string fieldName, object value)

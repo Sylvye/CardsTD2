@@ -42,37 +42,38 @@ namespace RunFlow
                 return new DebugConsoleCommandResult(false, "Debug console is unavailable.");
 
             string normalized = Normalize(commandText);
-            if (string.IsNullOrWhiteSpace(normalized))
+            string normalizedLower = normalized.ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(normalizedLower))
                 return new DebugConsoleCommandResult(false, "Enter a command.");
 
-            if (normalized == "help")
+            if (normalizedLower == "help")
                 return new DebugConsoleCommandResult(true, HelpMessage);
 
-            if (normalized == "meta reset")
+            if (normalizedLower == "meta reset")
             {
                 coordinator.ResetMetaProgress();
                 return new DebugConsoleCommandResult(true, "Meta progress reset.");
             }
 
-            if (normalized.StartsWith("money add", StringComparison.Ordinal))
+            if (normalizedLower.StartsWith("money add", StringComparison.Ordinal))
             {
-                if (!TryMatchAmountCommand(normalized, "money add", out int currencyAmount, out string amountError))
+                if (!TryMatchAmountCommand(normalizedLower, "money add", out int currencyAmount, out string amountError))
                     return new DebugConsoleCommandResult(false, amountError);
 
                 return BuildResult(coordinator.TryGainCurrency(currencyAmount, out string message), message);
             }
 
-            if (normalized.StartsWith("meta add", StringComparison.Ordinal))
+            if (normalizedLower.StartsWith("meta add", StringComparison.Ordinal))
             {
-                if (!TryMatchAmountCommand(normalized, "meta add", out int metaAmount, out string amountError))
+                if (!TryMatchAmountCommand(normalizedLower, "meta add", out int metaAmount, out string amountError))
                     return new DebugConsoleCommandResult(false, amountError);
 
                 return BuildResult(coordinator.TryGainMetaCurrency(metaAmount, out string message), message);
             }
 
-            if (normalized.StartsWith("lives ", StringComparison.Ordinal))
+            if (normalizedLower.StartsWith("lives ", StringComparison.Ordinal))
             {
-                if (!TryMatchLivesCommand(normalized, out bool setLives, out int livesValue, out string amountError))
+                if (!TryMatchLivesCommand(normalizedLower, out bool setLives, out int livesValue, out string amountError))
                     return new DebugConsoleCommandResult(false, amountError);
 
                 return setLives
@@ -80,13 +81,13 @@ namespace RunFlow
                     : BuildResult(coordinator.TryAddLives(livesValue, out message), message);
             }
 
-            if (TryMatchIdCommand(normalized, "card add", out string cardId))
+            if (TryMatchIdCommand(normalized, normalizedLower, "card add", out string cardId))
                 return BuildResult(coordinator.TryAddCardById(cardId, out string message), message);
 
-            if (TryMatchIdCommand(normalized, "augment add", out string augmentId))
+            if (TryMatchIdCommand(normalized, normalizedLower, "augment add", out string augmentId))
                 return BuildResult(coordinator.TryAddAugmentById(augmentId, out string message), message);
 
-            return new DebugConsoleCommandResult(false, $"Unknown command: {normalized}");
+            return new DebugConsoleCommandResult(false, $"Unknown command: {normalizedLower}");
         }
 
         private static DebugConsoleCommandResult BuildResult(bool success, string message)
@@ -97,7 +98,7 @@ namespace RunFlow
         private static string Normalize(string commandText)
         {
             string trimmed = commandText?.Trim() ?? string.Empty;
-            return Regex.Replace(trimmed.ToLowerInvariant(), "\\s+", " ");
+            return Regex.Replace(trimmed, "\\s+", " ");
         }
 
         private static bool TryMatchAmountCommand(string normalized, string prefix, out int amount, out string error)
@@ -149,10 +150,10 @@ namespace RunFlow
             return true;
         }
 
-        private static bool TryMatchIdCommand(string normalized, string prefix, out string id)
+        private static bool TryMatchIdCommand(string normalized, string normalizedLower, string prefix, out string id)
         {
             id = null;
-            if (!normalized.StartsWith(prefix + " ", StringComparison.Ordinal))
+            if (!normalizedLower.StartsWith(prefix + " ", StringComparison.Ordinal))
                 return false;
 
             string remainder = normalized.Substring(prefix.Length).Trim();

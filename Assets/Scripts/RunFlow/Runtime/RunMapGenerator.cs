@@ -420,14 +420,7 @@ namespace RunFlow
         private string ResolveShopInventoryId(MapTemplateDef template)
         {
             ShopInventoryDef configuredInventory = template.GetShopInventory(MapNodeType.Shop);
-            if (configuredInventory != null)
-                return contentRepository.GetShopInventoryId(configuredInventory);
-
-            if (template.defaultShopInventory != null)
-                return contentRepository.GetShopInventoryId(template.defaultShopInventory);
-
-            ShopInventoryDef inventory = contentRepository.GetDefaultShopInventory();
-            return contentRepository.GetShopInventoryId(inventory);
+            return contentRepository.GetShopInventoryId(configuredInventory);
         }
 
         private static EncounterKind GetEncounterKind(MapNodeType nodeType)

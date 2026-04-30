@@ -15,12 +15,8 @@ namespace RunFlow.Editor
             DrawProperty("id");
             DrawProperty("displayName");
             DrawProperty("encounterKind");
-            DrawProperty("pathPrefab");
             DrawProperty("spawnBatches", includeChildren: true);
             DrawWaveSummary((EncounterDef)target);
-            DrawProperty("rewardPool");
-            DrawProperty("goldReward");
-            DrawProperty("metaCurrencyReward");
 
             serializedObject.ApplyModifiedProperties();
         }

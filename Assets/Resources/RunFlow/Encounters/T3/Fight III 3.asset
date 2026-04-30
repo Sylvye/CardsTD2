@@ -15,7 +15,6 @@ MonoBehaviour:
   id: regular-fight-c-3
   displayName: Regular Fight III
   encounterKind: 0
-  pathPrefab: {fileID: 222235461983059477, guid: 57c8d953f37782c4580c359284f59da3, type: 3}
   spawnBatches:
   - enemyDef: {fileID: 11400000, guid: ef2726eebcc4d2045b4d906b5b3b6e25, type: 2}
     spawnCount: 6
@@ -33,6 +32,3 @@ MonoBehaviour:
     spawnCount: 12
     spawnInterval: 0.1
     waitTime: 1
-  rewardPool: {fileID: 11400000, guid: 6f5304e7a01c79941b946c59023f100c, type: 2}
-  goldReward: 14
-  metaCurrencyReward: 1

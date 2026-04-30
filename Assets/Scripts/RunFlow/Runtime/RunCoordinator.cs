@@ -430,30 +430,18 @@ namespace RunFlow
                 case MapNodeType.Miniboss:
                 case MapNodeType.Boss:
                     EncounterDef encounter = contentRepository.GetEncounterById(node.encounterId);
-                    EnemyPath pathPrefab = ResolvePathPrefab(node, encounter);
+                    EnemyPath pathPrefab = ResolvePathPrefab(node);
+                    if (encounter == null || pathPrefab == null)
+                    {
+                        Debug.LogError($"Unable to start combat for node '{node.nodeId}' because its encounter or path was not resolved.");
+                        return;
+                    }
+
                     CurrentCombatRequest = new CombatSceneRequest(node.nodeId, encounter, pathPrefab, CurrentRun);
                     SaveCurrentRun();
                     loadScene?.Invoke(SceneNames.Combat);
                     break;
             }
-        }
-
-        public List<CardDef> GetPendingRewardCards()
-        {
-            List<CardDef> cards = new();
-            List<PendingRewardEntry> rewards = GetPendingRewards();
-            for (int i = 0; i < rewards.Count; i++)
-            {
-                PendingRewardEntry entry = rewards[i];
-                if (entry == null || entry.rewardType != RunRewardType.Card)
-                    continue;
-
-                CardDef card = contentRepository.GetCardById(entry.contentId);
-                if (card != null)
-                    cards.Add(card);
-            }
-
-            return cards;
         }
 
         public List<PendingRewardEntry> GetPendingRewards()
@@ -462,7 +450,6 @@ namespace RunFlow
             if (CurrentRun?.pendingReward == null)
                 return rewards;
 
-            CurrentRun.pendingReward.MigrateLegacyEntries();
             if (CurrentRun.pendingReward.entries == null)
                 return rewards;
 
@@ -476,17 +463,11 @@ namespace RunFlow
             return rewards;
         }
 
-        public bool ClaimRewardCard(string cardId)
-        {
-            return ClaimPendingReward(RunRewardType.Card, cardId);
-        }
-
         public bool ClaimPendingReward(RunRewardType rewardType, string contentId)
         {
             if (CurrentRun?.pendingReward == null || string.IsNullOrWhiteSpace(contentId))
                 return false;
 
-            CurrentRun.pendingReward.MigrateLegacyEntries();
             if (CurrentRun.pendingReward.entries == null)
                 return false;
 
@@ -778,16 +759,16 @@ namespace RunFlow
             CompleteNode(result.nodeId, saveAfterComplete: false);
 
             NodeRewardRule rewardRule = ResolveRewardRule(node);
-            CurrentRun.gold += Mathf.Max(0, ResolveGoldReward(rewardRule, result.encounter));
-            Profile.metaCurrency += Mathf.Max(0, ResolveMetaCurrencyReward(rewardRule, result.encounter));
+            CurrentRun.gold += Mathf.Max(0, rewardRule?.goldReward ?? 0);
+            Profile.metaCurrency += Mathf.Max(0, rewardRule?.metaCurrencyReward ?? 0);
 
-            if (node?.nodeType == MapNodeType.Miniboss || (node == null && result.encounter?.encounterKind == EncounterKind.Miniboss))
+            if (node?.nodeType == MapNodeType.Miniboss)
             {
                 Profile.AddUnlock(FirstMinibossUnlockId);
             }
 
-            bool isBossVictory = node?.nodeType == MapNodeType.Boss || result.encounter?.encounterKind == EncounterKind.Boss;
-            PopulatePendingRewards(ResolveRewardPool(rewardRule, result.encounter), result.nodeId);
+            bool isBossVictory = node?.nodeType == MapNodeType.Boss;
+            PopulatePendingRewards(rewardRule?.rewardPool, result.nodeId);
 
             if (isBossVictory)
             {
@@ -1054,8 +1035,7 @@ namespace RunFlow
             PendingRewardData pendingReward = new()
             {
                 sourceNodeId = nodeId,
-                entries = new List<PendingRewardEntry>(),
-                offeredCardIds = new List<string>()
+                entries = new List<PendingRewardEntry>()
             };
 
             for (int i = 0; i < rewardChoices.Count; i++)
@@ -1082,22 +1062,7 @@ namespace RunFlow
                 : null;
         }
 
-        private static CardRewardPoolDef ResolveRewardPool(NodeRewardRule rewardRule, EncounterDef fallbackEncounter)
-        {
-            return rewardRule != null ? rewardRule.rewardPool : fallbackEncounter?.rewardPool;
-        }
-
-        private static int ResolveGoldReward(NodeRewardRule rewardRule, EncounterDef fallbackEncounter)
-        {
-            return rewardRule != null ? rewardRule.goldReward : fallbackEncounter != null ? fallbackEncounter.goldReward : 0;
-        }
-
-        private static int ResolveMetaCurrencyReward(NodeRewardRule rewardRule, EncounterDef fallbackEncounter)
-        {
-            return rewardRule != null ? rewardRule.metaCurrencyReward : fallbackEncounter != null ? fallbackEncounter.metaCurrencyReward : 0;
-        }
-
-        private EnemyPath ResolvePathPrefab(RunMapNodeData node, EncounterDef fallbackEncounter)
+        private EnemyPath ResolvePathPrefab(RunMapNodeData node)
         {
             CombatMapPoolDef pool = CurrentMapTemplate?.GetCombatMapPool(node != null ? node.nodeType : MapNodeType.Fight);
             if (pool != null)
@@ -1105,11 +1070,6 @@ namespace RunFlow
                 List<WeightedEnemyPathEntry> entries = pool.GetValidEntries();
                 if (entries.Count > 0)
                     return BuildPathSequence(entries, GetNodeTypeIndex(node), GetPathSeed(node)).FindLast(path => path != null);
-            }
-
-            if (fallbackEncounter?.pathPrefab != null)
-            {
-                return fallbackEncounter.pathPrefab.GetComponent<EnemyPath>();
             }
 
             return null;

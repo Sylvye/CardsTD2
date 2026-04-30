@@ -1,6 +1,4 @@
 using System;
-using Cards;
-using Combat;
 using Enemies;
 
 namespace RunFlow
@@ -12,12 +10,6 @@ namespace RunFlow
         public EncounterDef encounter;
         public EnemyPath pathPrefab;
         public RunSaveData run;
-        public CombatSessionSetup sessionOverrides;
-
-        public CombatSceneRequest(string nodeId, EncounterDef encounter, RunSaveData run)
-            : this(nodeId, encounter, null, run)
-        {
-        }
 
         public CombatSceneRequest(string nodeId, EncounterDef encounter, EnemyPath pathPrefab, RunSaveData run)
         {

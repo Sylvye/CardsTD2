@@ -47,11 +47,11 @@ public static class RunFlowProjectSetup
         CreateMetaUnlockCatalog(cards);
         CardRewardPoolDef rewardPool = CreateRewardPool(cards, augments);
         ShopInventoryDef shopInventory = CreateShopInventory(cards, augments, relics);
-        EncounterDef regularFightA = CreateEncounter("regular-fight-a", "Regular Fight I", EncounterKind.RegularFight, pathPrefab, enemies, rewardPool, 10, 1, 4, 0);
-        EncounterDef regularFightB = CreateEncounter("regular-fight-b", "Regular Fight II", EncounterKind.RegularFight, pathPrefab, enemies, rewardPool, 12, 1, 6, 0);
-        EncounterDef regularFightC = CreateEncounter("regular-fight-c", "Regular Fight III", EncounterKind.RegularFight, pathPrefab, enemies, rewardPool, 14, 1, 4, 1);
-        EncounterDef miniboss = CreateEncounter("starter-miniboss", "Starter Miniboss", EncounterKind.Miniboss, pathPrefab, enemies, rewardPool, 20, 2, 0, 6);
-        EncounterDef boss = CreateEncounter("starter-boss", "Starter Boss", EncounterKind.Boss, pathPrefab, enemies, rewardPool, 32, 4, 6, 6);
+        EncounterDef regularFightA = CreateEncounter("regular-fight-a", "Regular Fight I", EncounterKind.RegularFight, enemies, 4, 0);
+        EncounterDef regularFightB = CreateEncounter("regular-fight-b", "Regular Fight II", EncounterKind.RegularFight, enemies, 6, 0);
+        EncounterDef regularFightC = CreateEncounter("regular-fight-c", "Regular Fight III", EncounterKind.RegularFight, enemies, 4, 1);
+        EncounterDef miniboss = CreateEncounter("starter-miniboss", "Starter Miniboss", EncounterKind.Miniboss, enemies, 0, 6);
+        EncounterDef boss = CreateEncounter("starter-boss", "Starter Boss", EncounterKind.Boss, enemies, 6, 6);
         EncounterPoolDef regularPool = CreateEncounterPool("starter-fight-pool", "Starter Fight Pool", regularFightA, regularFightB, regularFightC);
         EncounterPoolDef minibossPool = CreateEncounterPool("starter-miniboss-pool", "Starter Miniboss Pool", miniboss);
         EncounterPoolDef bossPool = CreateEncounterPool("starter-boss-pool", "Starter Boss Pool", boss);
@@ -64,7 +64,7 @@ public static class RunFlowProjectSetup
         CreateBootstrapScene();
         CreateControllerScene<MainMenuSceneController>(MainMenuScenePath, "Main Menu");
         CreateControllerScene<RunMapSceneController>(RunMapScenePath, "Run Map");
-        CreateCombatScene(regularFightA, cards);
+        CreateCombatScene();
         UpdateBuildSettings();
 
         AssetDatabase.SaveAssets();
@@ -322,11 +322,7 @@ public static class RunFlowProjectSetup
         string id,
         string displayName,
         EncounterKind kind,
-        GameObject pathPrefab,
         List<EnemyDef> enemies,
-        CardRewardPoolDef rewardPool,
-        int goldReward,
-        int metaCurrencyReward,
         int enemyACount,
         int enemyBCount)
     {
@@ -334,10 +330,6 @@ public static class RunFlowProjectSetup
         encounter.id = id;
         encounter.displayName = displayName;
         encounter.encounterKind = kind;
-        encounter.pathPrefab = pathPrefab;
-        encounter.rewardPool = rewardPool;
-        encounter.goldReward = goldReward;
-        encounter.metaCurrencyReward = metaCurrencyReward;
         if (created)
             encounter.spawnBatches = BuildStarterSpawnBatches(enemies, enemyACount, enemyBCount);
 
@@ -448,7 +440,6 @@ public static class RunFlowProjectSetup
         map.maxColumns = 6;
         map.branchChance = 0.5f;
         map.mergeChance = 0.4f;
-        map.defaultShopInventory = shopInventory;
         map.nodeConfigs = new List<MapNodeConfigDef>
         {
             CreateFightNodeConfig(
@@ -657,7 +648,7 @@ public static class RunFlowProjectSetup
         EditorSceneManager.SaveScene(scene, scenePath);
     }
 
-    private static void CreateCombatScene(EncounterDef debugEncounter, List<CardDef> cards)
+    private static void CreateCombatScene()
     {
         SceneAsset combatSceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(CombatScenePath);
         if (combatSceneAsset == null)
@@ -681,10 +672,6 @@ public static class RunFlowProjectSetup
         SetField(bootstrapper, "handViewDriver", handViewDriver);
         SetField(bootstrapper, "enemySpawner", enemySpawner);
         SetField(bootstrapper, "pathAnchor", pathAnchor.transform);
-        SetField(bootstrapper, "debugEncounter", debugEncounter);
-        SetField(bootstrapper, "debugDeck", BuildOwnedCardDeck(cards));
-        SetField(bootstrapper, "debugCurrentHealth", 20);
-        SetField(bootstrapper, "debugMaxHealth", 20);
 
         SetField(outcomeWatcher, "combatSessionDriver", combatSessionDriver);
         SetField(outcomeWatcher, "enemySpawner", enemySpawner);
@@ -735,16 +722,6 @@ public static class RunFlowProjectSetup
             new EditorBuildSettingsScene(RunMapScenePath, true),
             new EditorBuildSettingsScene(CombatScenePath, true)
         };
-    }
-
-    private static List<OwnedCard> BuildOwnedCardDeck(List<CardDef> cards)
-    {
-        List<OwnedCard> deck = new();
-        List<CardDef> startingDeck = BuildStartingDeck(cards);
-        for (int i = 0; i < startingDeck.Count; i++)
-            deck.Add(new OwnedCard(startingDeck[i]));
-
-        return deck;
     }
 
     private static T LoadOrCreateAsset<T>(string path) where T : ScriptableObject
