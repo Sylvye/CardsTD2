@@ -10,21 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5161b0368f8d87418fd372260815a17, type: 3}
-  m_Name: Tesla
+  m_Name: Piercing Turret+
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerDef
-  prefab: {fileID: 77660494436261291, guid: 937b1c762cb15af4b8ff9d50ce9452c3, type: 3}
-  effectRadius: 5
-  id: tesla
-  displayName: Tesla
-  placementRadius: 0.4
+  prefab: {fileID: 77660494436261291, guid: 99b2b75a3f0b246429a4c3b135ea877b, type: 3}
+  effectRadius: 3
+  id: basic_turret_PLUS
+  displayName: Basic Turret+
+  placementRadius: 0.5
   baseStats:
-    maxHealth: 8
-    range: 5
-    fireInterval: 0.6
+    maxHealth: 14
+    range: 3
+    fireInterval: 0.4
     damage: 1
   defaultTargetPriority: 0
   tags: []
   defaultModifiers: []
   attacks:
-  - {fileID: 11400000, guid: 1b24f0493e6e37043bed22573be62cc9, type: 2}
-  triggeredEffects: []
+  - {fileID: 11400000, guid: 1b7610861bd8d594b942262adec518fc, type: 2}
+  triggeredEffects:
+  - trigger: 1
+    effectType: 0
+    amount: 0
+    damageType: {fileID: 0}

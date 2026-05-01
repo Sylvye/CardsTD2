@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5161b0368f8d87418fd372260815a17, type: 3}
   m_Name: Sniper Turret
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerDef
-  prefab: {fileID: 77660494436261291, guid: 99b2b75a3f0b246429a4c3b135ea877b, type: 3}
+  prefab: {fileID: 77660494436261291, guid: 18b568f11e59b4afbbdf6e288c1881bd, type: 3}
   effectRadius: 6
   id: sniper_turret
   displayName: Sniper Turret
@@ -21,7 +21,7 @@ MonoBehaviour:
     maxHealth: 10
     range: 6
     fireInterval: 1
-    damage: 3
+    damage: 4
   defaultTargetPriority: 2
   tags: []
   defaultModifiers: []

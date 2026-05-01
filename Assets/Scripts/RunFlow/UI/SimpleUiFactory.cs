@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -9,6 +10,7 @@ namespace RunFlow
     public static class SimpleUiFactory
     {
         private static Font cachedRuntimeFont;
+        private static RunFlowItemTileView cachedItemTilePrefab;
 
         public static Canvas EnsureCanvas(string name = "Canvas")
         {
@@ -277,7 +279,45 @@ namespace RunFlow
             string subtitle,
             string detail,
             UnityAction onClick,
-            bool interactable = true)
+            bool interactable = true,
+            IReadOnlyList<Sprite> detailIcons = null)
+        {
+            RunFlowItemTileView prefab = GetItemTilePrefab();
+            if (prefab != null)
+            {
+                if (prefab.TryGetMissingFieldReport(out string missingFieldReport))
+                {
+                    RunFlowItemTileView tileView = Object.Instantiate(prefab, parent, false);
+                    tileView.name = "ItemTile";
+                    tileView.Bind(icon, title, subtitle, detail, onClick, interactable, detailIcons);
+                    return tileView.Button;
+                }
+
+                Debug.LogError($"{missingFieldReport}. Falling back to generated ItemTile UI.", prefab);
+            }
+            else
+            {
+                Debug.LogError($"Missing ItemTile prefab at Resources/{RunFlowItemTileView.ResourcePath}. Falling back to generated ItemTile UI.");
+            }
+
+            return CreateGeneratedItemTile(parent, icon, title, subtitle, detail, onClick, interactable, detailIcons);
+        }
+
+        private static RunFlowItemTileView GetItemTilePrefab()
+        {
+            cachedItemTilePrefab ??= Resources.Load<RunFlowItemTileView>(RunFlowItemTileView.ResourcePath);
+            return cachedItemTilePrefab;
+        }
+
+        private static Button CreateGeneratedItemTile(
+            Transform parent,
+            Sprite icon,
+            string title,
+            string subtitle,
+            string detail,
+            UnityAction onClick,
+            bool interactable,
+            IReadOnlyList<Sprite> detailIcons)
         {
             GameObject tileObject = new("ItemTile", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement), typeof(HorizontalLayoutGroup));
             tileObject.transform.SetParent(parent, false);
@@ -305,7 +345,7 @@ namespace RunFlow
                 button.onClick.AddListener(onClick);
 
             CreateIconFrame(tileObject.transform, icon, string.IsNullOrWhiteSpace(title) ? "?" : title.Substring(0, 1));
-            CreateTileTextColumn(tileObject.transform, title, subtitle, detail, interactable);
+            CreateTileTextColumn(tileObject.transform, title, subtitle, detail, interactable, detailIcons);
             return button;
         }
 
@@ -354,7 +394,13 @@ namespace RunFlow
             fallbackRect.offsetMax = Vector2.zero;
         }
 
-        private static void CreateTileTextColumn(Transform parent, string title, string subtitle, string detail, bool interactable)
+        private static void CreateTileTextColumn(
+            Transform parent,
+            string title,
+            string subtitle,
+            string detail,
+            bool interactable,
+            IReadOnlyList<Sprite> detailIcons)
         {
             GameObject textColumnObject = new("TextColumn", typeof(RectTransform), typeof(LayoutElement));
             textColumnObject.transform.SetParent(parent, false);
@@ -376,10 +422,55 @@ namespace RunFlow
                 subtitleText.color = new Color(0.78f, 0.84f, 0.9f, 1f);
             }
 
+            CreateDetailIconRow(textColumn, detailIcons, interactable);
+
             if (!string.IsNullOrWhiteSpace(detail))
             {
                 Text detailText = CreateText(textColumn, detail, 18);
                 detailText.color = new Color(0.65f, 0.72f, 0.82f, 1f);
+            }
+        }
+
+        private static void CreateDetailIconRow(Transform parent, IReadOnlyList<Sprite> icons, bool interactable)
+        {
+            if (icons == null || icons.Count == 0)
+                return;
+
+            GameObject rowObject = new("DetailIconRow", typeof(RectTransform), typeof(LayoutElement), typeof(HorizontalLayoutGroup));
+            rowObject.transform.SetParent(parent, false);
+
+            LayoutElement rowLayoutElement = rowObject.GetComponent<LayoutElement>();
+            rowLayoutElement.minHeight = 28f;
+            rowLayoutElement.preferredHeight = 28f;
+
+            HorizontalLayoutGroup rowLayout = rowObject.GetComponent<HorizontalLayoutGroup>();
+            rowLayout.spacing = 6f;
+            rowLayout.childAlignment = TextAnchor.MiddleLeft;
+            rowLayout.childControlWidth = false;
+            rowLayout.childControlHeight = false;
+            rowLayout.childForceExpandWidth = false;
+            rowLayout.childForceExpandHeight = false;
+
+            for (int i = 0; i < icons.Count; i++)
+            {
+                Sprite icon = icons[i];
+                if (icon == null)
+                    continue;
+
+                GameObject badgeObject = new("DetailIcon", typeof(RectTransform), typeof(LayoutElement), typeof(Image));
+                badgeObject.transform.SetParent(rowObject.transform, false);
+
+                LayoutElement badgeLayout = badgeObject.GetComponent<LayoutElement>();
+                badgeLayout.minWidth = 28f;
+                badgeLayout.preferredWidth = 28f;
+                badgeLayout.minHeight = 28f;
+                badgeLayout.preferredHeight = 28f;
+
+                Image badgeImage = badgeObject.GetComponent<Image>();
+                badgeImage.sprite = icon;
+                badgeImage.preserveAspect = true;
+                badgeImage.raycastTarget = false;
+                badgeImage.color = interactable ? Color.white : new Color(0.72f, 0.76f, 0.82f, 0.8f);
             }
         }
 

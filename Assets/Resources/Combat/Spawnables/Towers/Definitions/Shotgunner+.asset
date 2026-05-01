@@ -18,11 +18,11 @@ MonoBehaviour:
   displayName: Shotgun Turret+
   placementRadius: 0.5
   baseStats:
-    maxHealth: 12
+    maxHealth: 18
     range: 2.5
     fireInterval: 0.6
     damage: 1
-  defaultTargetPriority: 2
+  defaultTargetPriority: 0
   tags: []
   defaultModifiers: []
   attacks:

@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 67434829231964391}
   - component: {fileID: 7918414170168565174}
   m_Layer: 0
-  m_Name: Summoner B
+  m_Name: Bomb Summoner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -9,6 +9,9 @@ namespace Towers
     [RequireComponent(typeof(Collider2D))]
     public class TowerProjectile : MonoBehaviour
     {
+        [Tooltip("Degrees added to the projectile's travel-facing rotation.")]
+        public float DegreesOffset;
+
         private TowerAgent ownerTower;
         private EnemyAgent target;
         private Rigidbody2D rb;
@@ -50,6 +53,7 @@ namespace Towers
             travelDirection = initialTravelDirection.sqrMagnitude > 0.0001f
                 ? ((Vector2)initialTravelDirection).normalized
                 : Vector2.right;
+            FaceTravelDirection();
             damage = projectileDamage;
             damageType = projectileDamageType;
             speed = Mathf.Max(0.01f, projectileSpeed);
@@ -84,7 +88,10 @@ namespace Towers
             {
                 Vector2 updatedDirection = (Vector2)target.transform.position - rb.position;
                 if (updatedDirection.sqrMagnitude > 0.0001f)
+                {
                     travelDirection = updatedDirection.normalized;
+                    FaceTravelDirection();
+                }
             }
 
             Vector2 nextPosition = rb.position + (travelDirection * (speed * Time.fixedDeltaTime));
@@ -94,6 +101,15 @@ namespace Towers
 
             rb.MovePosition(nextPosition);
             trailRuntime?.RecordPosition(nextPosition);
+        }
+
+        private void FaceTravelDirection()
+        {
+            if (travelDirection.sqrMagnitude <= 0.0001f)
+                return;
+
+            float angle = Mathf.Atan2(travelDirection.y, travelDirection.x) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Euler(0f, 0f, angle + DegreesOffset);
         }
 
         private void OnTriggerEnter2D(Collider2D other)

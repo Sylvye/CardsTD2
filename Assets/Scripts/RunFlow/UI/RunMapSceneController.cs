@@ -417,7 +417,8 @@ namespace RunFlow
                             {
                                 if (coordinator.ApplyRestUpgrade(node.nodeId, uniqueId))
                                     RefreshUi();
-                            });
+                            },
+                            detailIcons: GetAppliedAugmentIcons(card));
                     }
                 }
             }
@@ -572,7 +573,8 @@ namespace RunFlow
                             RefreshUi();
                         }
                     },
-                    interactable: canAfford);
+                    interactable: canAfford,
+                    detailIcons: GetAppliedAugmentIcons(card));
             }
         }
 
@@ -680,6 +682,25 @@ namespace RunFlow
                 return string.Empty;
 
             return $"Augments {card.AppliedAugments.Count}/{card.GetTotalAugmentSlots()}\n{card.CurrentDefinition.description}";
+        }
+
+        private static IReadOnlyList<Sprite> GetAppliedAugmentIcons(OwnedCard card)
+        {
+            if (card?.AppliedAugments == null || card.AppliedAugments.Count == 0)
+                return null;
+
+            List<Sprite> icons = null;
+            for (int i = 0; i < card.AppliedAugments.Count; i++)
+            {
+                Sprite icon = card.AppliedAugments[i] != null ? card.AppliedAugments[i].icon : null;
+                if (icon == null)
+                    continue;
+
+                icons ??= new List<Sprite>();
+                icons.Add(icon);
+            }
+
+            return icons;
         }
 
         private static RectTransform CreateLayer(Transform parent, string name)

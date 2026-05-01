@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 67434829231964391}
   - component: {fileID: 2003181560470799978}
   m_Layer: 0
-  m_Name: Turret A
+  m_Name: Piercing Turret
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

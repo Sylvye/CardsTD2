@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Towers.ProjectileTowerAttackDef
   targetFilters: []
   damageType: {fileID: 11400000, guid: ceb65f1a0a404858bbfa385ea1b90127, type: 2}
-  projectilePrefab: {fileID: -4105005071899899272, guid: 95a5c9ccfc67b37409f9f9b6cd492b35, type: 3}
+  projectilePrefab: {fileID: 3227845555419554271, guid: e987623bf52de48e6a0775e226d4cbbf, type: 3}
   projectileCount: 1
   damageBonus: 0
   projectileSpeed: 30

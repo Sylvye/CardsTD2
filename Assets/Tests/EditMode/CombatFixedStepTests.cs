@@ -240,6 +240,98 @@ public class CombatFixedStepTests
         Object.DestroyImmediate(enemyObject);
     }
 
+    [Test]
+    public void TowerProjectile_Initialize_FacesTravelDirection()
+    {
+        GameObject projectileObject = new("Projectile Rotation Projectile");
+        projectileObject.AddComponent<Rigidbody2D>();
+        CircleCollider2D projectileCollider = projectileObject.AddComponent<CircleCollider2D>();
+        projectileCollider.isTrigger = true;
+        TowerProjectile projectile = projectileObject.AddComponent<TowerProjectile>();
+
+        projectile.Initialize(
+            null,
+            null,
+            Vector3.up,
+            1f,
+            null,
+            1f,
+            1f,
+            false,
+            0,
+            null
+        );
+
+        Assert.That(Mathf.DeltaAngle(90f, projectileObject.transform.eulerAngles.z), Is.EqualTo(0f).Within(0.001f));
+
+        Object.DestroyImmediate(projectileObject);
+    }
+
+    [Test]
+    public void TowerProjectile_Initialize_AddsDegreesOffsetToTravelRotation()
+    {
+        GameObject projectileObject = new("Projectile Offset Rotation Projectile");
+        projectileObject.AddComponent<Rigidbody2D>();
+        CircleCollider2D projectileCollider = projectileObject.AddComponent<CircleCollider2D>();
+        projectileCollider.isTrigger = true;
+        TowerProjectile projectile = projectileObject.AddComponent<TowerProjectile>();
+        projectile.DegreesOffset = -90f;
+
+        projectile.Initialize(
+            null,
+            null,
+            Vector3.up,
+            1f,
+            null,
+            1f,
+            1f,
+            false,
+            0,
+            null
+        );
+
+        Assert.That(Mathf.DeltaAngle(0f, projectileObject.transform.eulerAngles.z), Is.EqualTo(0f).Within(0.001f));
+
+        Object.DestroyImmediate(projectileObject);
+    }
+
+    [Test]
+    public void TowerProjectile_FixedUpdate_FollowTargetFacesUpdatedTravelDirection()
+    {
+        GameObject enemyObject = new("Projectile Rotation Target");
+        enemyObject.transform.position = Vector3.up;
+        EnemyAgent enemy = enemyObject.AddComponent<EnemyAgent>();
+
+        GameObject projectileObject = new("Projectile Homing Rotation Projectile");
+        projectileObject.transform.position = Vector3.zero;
+        projectileObject.AddComponent<Rigidbody2D>();
+        CircleCollider2D projectileCollider = projectileObject.AddComponent<CircleCollider2D>();
+        projectileCollider.isTrigger = true;
+        TowerProjectile projectile = projectileObject.AddComponent<TowerProjectile>();
+
+        projectile.Initialize(
+            null,
+            enemy,
+            Vector3.right,
+            1f,
+            null,
+            1f,
+            1f,
+            true,
+            0,
+            null
+        );
+
+        MethodInfo fixedUpdate = typeof(TowerProjectile).GetMethod("FixedUpdate", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(fixedUpdate);
+        fixedUpdate.Invoke(projectile, null);
+
+        Assert.That(Mathf.DeltaAngle(90f, projectileObject.transform.eulerAngles.z), Is.EqualTo(0f).Within(0.001f));
+
+        Object.DestroyImmediate(projectileObject);
+        Object.DestroyImmediate(enemyObject);
+    }
+
     private static void SetPrivateField<TTarget>(TTarget target, string fieldName, object value)
     {
         FieldInfo field = typeof(TTarget).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
