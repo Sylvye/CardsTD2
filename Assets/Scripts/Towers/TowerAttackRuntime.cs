@@ -105,6 +105,7 @@ namespace Towers
                     target,
                     projectileDirection,
                     damage,
+                    attackDef,
                     attackDef.DamageType,
                     attackDef.projectileSpeed,
                     attackDef.projectileLifetime,
@@ -170,11 +171,7 @@ namespace Towers
                 if (!tower.IsTargetValid(target, attackDef.TargetFilters))
                     continue;
 
-                bool wasAliveBeforeHit = !target.IsDeadOrEscaped;
-                target.TakeDamage(damage, attackDef.DamageType);
-                tower.ReportHit(target, damage, target.transform.position);
-                if (wasAliveBeforeHit && target.IsDeadOrEscaped)
-                    tower.ReportKill(target, damage, target.transform.position);
+                TowerHitResolver.ApplyHit(tower, attackDef, target, damage, attackDef.DamageType, target.transform.position);
             }
 
             tickTimer = stats.FireInterval;

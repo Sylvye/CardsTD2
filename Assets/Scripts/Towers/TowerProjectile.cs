@@ -13,6 +13,7 @@ namespace Towers
         public float DegreesOffset;
 
         private TowerAgent ownerTower;
+        private TowerAttackDef attackDef;
         private EnemyAgent target;
         private Rigidbody2D rb;
         private Collider2D projectileCollider;
@@ -46,9 +47,38 @@ namespace Towers
             int pierceCount,
             ProjectileTrailSettings trail)
         {
+            Initialize(
+                sourceTower,
+                targetEnemy,
+                initialTravelDirection,
+                projectileDamage,
+                null,
+                projectileDamageType,
+                projectileSpeed,
+                lifetime,
+                shouldFollowTarget,
+                pierceCount,
+                trail
+            );
+        }
+
+        public void Initialize(
+            TowerAgent sourceTower,
+            EnemyAgent targetEnemy,
+            Vector3 initialTravelDirection,
+            float projectileDamage,
+            TowerAttackDef sourceAttackDef,
+            DamageTypeDef projectileDamageType,
+            float projectileSpeed,
+            float lifetime,
+            bool shouldFollowTarget,
+            int pierceCount,
+            ProjectileTrailSettings trail)
+        {
             EnsureComponents();
 
             ownerTower = sourceTower;
+            attackDef = sourceAttackDef;
             target = targetEnemy;
             travelDirection = initialTravelDirection.sqrMagnitude > 0.0001f
                 ? ((Vector2)initialTravelDirection).normalized
@@ -144,11 +174,7 @@ namespace Towers
             if (remainingHits <= 0)
                 Expire();
 
-            bool wasAliveBeforeHit = !enemy.IsDeadOrEscaped;
-            enemy.TakeDamage(damage, damageType);
-            ownerTower?.ReportHit(enemy, damage, hitPosition);
-            if (wasAliveBeforeHit && enemy.IsDeadOrEscaped)
-                ownerTower?.ReportKill(enemy, damage, hitPosition);
+            TowerHitResolver.ApplyHit(ownerTower, attackDef, enemy, damage, damageType, hitPosition);
         }
 
         private void SweepForHits(Vector2 startPosition, Vector2 endPosition)

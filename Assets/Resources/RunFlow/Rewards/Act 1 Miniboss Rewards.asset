@@ -23,6 +23,10 @@ MonoBehaviour:
     weight: 3
   - card: {fileID: 11400000, guid: 941482cdfeb3f21408567eb408f47c4d, type: 2}
     weight: 3
+  - card: {fileID: 11400000, guid: f69429529f4954e50a31f9b7c1f846ff, type: 2}
+    weight: 3
+  - card: {fileID: 11400000, guid: 791a6cdac814648e3920c82b47f3197e, type: 2}
+    weight: 3
   - card: {fileID: 11400000, guid: 531c69a24aa7e49e1a2a2700babf351c, type: 2}
     weight: 2
   - card: {fileID: 11400000, guid: 9597b314491050c4a8d5d3bc6bf627a2, type: 2}
@@ -31,9 +35,13 @@ MonoBehaviour:
     weight: 2
   - card: {fileID: 11400000, guid: a815cb27a4c214fa5a6690af4d6efbf5, type: 2}
     weight: 2
-  - card: {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
+  - card: {fileID: 11400000, guid: aaefd297a82bc423187cf5353c2d0bec, type: 2}
+    weight: 2
+  - card: {fileID: 11400000, guid: f86a80fcd0fa34afeaed6cdbcea87d4b, type: 2}
     weight: 2
   - card: {fileID: 11400000, guid: 7616c717da96d44498a586eaeaa0de0c, type: 2}
+    weight: 2
+  - card: {fileID: 11400000, guid: 4a7fd16138d18ac4eb4f585cbba90510, type: 2}
     weight: 2
   augments:
   - augment: {fileID: 11400000, guid: 8f0ef76124d3941599d1cdaca3178b07, type: 2}

@@ -8,6 +8,7 @@ namespace Enemies
     public class EnemyAgent : MonoBehaviour
     {
         private readonly List<IEnemyStatModifier> runtimeModifiers = new();
+        private readonly List<ActiveEnemyStatusEffect> activeStatusEffects = new();
         private PathFollower pathFollower;
         private SpriteRenderer[] spriteRenderers;
         private Color[] spriteBaseColors;
@@ -41,11 +42,7 @@ namespace Enemies
 
         private void Awake()
         {
-            pathFollower = GetComponent<PathFollower>();
-            spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
-            spriteBaseColors = new Color[spriteRenderers.Length];
-            CacheSpriteBaseColors();
-            effectResolver = new EnemyEffectResolver();
+            EnsureRuntimeDependencies();
         }
 
         public void Initialize(
@@ -56,6 +53,8 @@ namespace Enemies
             EnemyDef def,
             float startingTrackDistance = 0f)
         {
+            EnsureRuntimeDependencies();
+
             enemyManager = manager;
             enemySpawner = spawner;
             playerEffects = effects;
@@ -77,11 +76,9 @@ namespace Enemies
             CacheSpriteBaseColors();
             ApplyBaseSpriteColors();
 
-            if (pathFollower == null)
-                pathFollower = GetComponent<PathFollower>();
-
             pathFollower.SetPath(path, startingTrackDistance);
             runtimeModifiers.Clear();
+            activeStatusEffects.Clear();
             ApplyResolvedStats();
 
             enemyManager?.RegisterEnemy(this);
@@ -95,6 +92,7 @@ namespace Enemies
                 return;
 
             UpdateDamageFlash(Time.deltaTime);
+            UpdateStatusEffects(Time.deltaTime);
         }
 
         private void FixedUpdate()
@@ -108,10 +106,10 @@ namespace Enemies
             }
         }
 
-        public void TakeDamage(float amount, DamageTypeDef damageType = null)
+        public EnemyDamageResult TakeDamage(float amount, DamageTypeDef damageType = null)
         {
             if (isDeadOrEscaped || amount <= 0f)
-                return;
+                return new EnemyDamageResult(0f, EnemyDamageResponseType.Normal, false);
 
             EnemyResolvedStats stats = GetResolvedStats();
             EnemyDamageResponse damageResponse = enemyDef != null
@@ -124,7 +122,7 @@ namespace Enemies
                 if (damageResponse.ResponseType == EnemyDamageResponseType.Resistance)
                     TriggerDamageFlash(GetDamageFlashColor(damageResponse.ResponseType));
 
-                return;
+                return new EnemyDamageResult(0f, damageResponse.ResponseType, false);
             }
 
             currentHealth -= damageAmount;
@@ -136,6 +134,38 @@ namespace Enemies
             {
                 Die();
             }
+
+            return new EnemyDamageResult(damageAmount, damageResponse.ResponseType, isDeadOrEscaped);
+        }
+
+        public void ApplyStatusEffect(EnemyStatusEffectApplication application)
+        {
+            if (!isInitialized || isDeadOrEscaped || application == null || !application.IsValid)
+                return;
+
+            ActiveEnemyStatusEffect incoming = ActiveEnemyStatusEffect.Create(application);
+            if (incoming == null)
+                return;
+
+            bool statsDirty = incoming.AffectsStats;
+            switch (incoming.StackingMode)
+            {
+                case EnemyStatusStackingMode.StackingInstances:
+                    activeStatusEffects.Add(incoming);
+                    break;
+
+                case EnemyStatusStackingMode.RefreshLongest:
+                    RefreshLongest(incoming);
+                    break;
+
+                case EnemyStatusStackingMode.NonStackingStrongest:
+                default:
+                    ApplyNonStackingStrongest(incoming);
+                    break;
+            }
+
+            if (statsDirty)
+                ApplyResolvedStats();
         }
 
         public void AddModifier(IEnemyStatModifier modifier)
@@ -155,6 +185,13 @@ namespace Enemies
             runtimeModifiers.Remove(modifier);
             ApplyResolvedStats();
         }
+
+        internal void TickStatusEffectsForTest(float deltaTime)
+        {
+            UpdateStatusEffects(deltaTime);
+        }
+
+        internal int ActiveStatusEffectCount => activeStatusEffects.Count;
 
         private void Die()
         {
@@ -222,6 +259,71 @@ namespace Enemies
             ApplyFlashColor(normalized);
         }
 
+        private void UpdateStatusEffects(float deltaTime)
+        {
+            if (activeStatusEffects.Count == 0 || deltaTime <= 0f)
+                return;
+
+            bool statsDirty = false;
+            for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
+            {
+                ActiveEnemyStatusEffect statusEffect = activeStatusEffects[i];
+                statusEffect.Tick(this, deltaTime);
+                if (isDeadOrEscaped)
+                    return;
+
+                if (statusEffect.DurationRemaining > 0f)
+                    continue;
+
+                statsDirty |= statusEffect.AffectsStats;
+                activeStatusEffects.RemoveAt(i);
+            }
+
+            if (statsDirty)
+                ApplyResolvedStats();
+        }
+
+        private void ApplyNonStackingStrongest(ActiveEnemyStatusEffect incoming)
+        {
+            ActiveEnemyStatusEffect existing = FindRefreshableStatusEffect(incoming);
+            if (existing == null)
+            {
+                activeStatusEffects.Add(incoming);
+                return;
+            }
+
+            existing.Strength = Mathf.Max(existing.Strength, incoming.Strength);
+            existing.DurationRemaining = Mathf.Max(existing.DurationRemaining, incoming.DurationRemaining);
+            existing.TickInterval = incoming.TickInterval;
+            existing.TickDamage = Mathf.Max(existing.TickDamage, incoming.TickDamage);
+            existing.DamageType = incoming.DamageType != null ? incoming.DamageType : existing.DamageType;
+        }
+
+        private void RefreshLongest(ActiveEnemyStatusEffect incoming)
+        {
+            ActiveEnemyStatusEffect existing = FindRefreshableStatusEffect(incoming);
+            if (existing == null)
+            {
+                activeStatusEffects.Add(incoming);
+                return;
+            }
+
+            existing.DurationRemaining = Mathf.Max(existing.DurationRemaining, incoming.DurationRemaining);
+            existing.Strength = Mathf.Max(existing.Strength, incoming.Strength);
+        }
+
+        private ActiveEnemyStatusEffect FindRefreshableStatusEffect(ActiveEnemyStatusEffect incoming)
+        {
+            for (int i = 0; i < activeStatusEffects.Count; i++)
+            {
+                ActiveEnemyStatusEffect activeStatusEffect = activeStatusEffects[i];
+                if (activeStatusEffect.HasSameStack(incoming))
+                    return activeStatusEffect;
+            }
+
+            return null;
+        }
+
         private void CacheSpriteBaseColors()
         {
             if (spriteRenderers == null)
@@ -267,6 +369,21 @@ namespace Enemies
             }
         }
 
+        private void EnsureRuntimeDependencies()
+        {
+            if (pathFollower == null)
+                pathFollower = GetComponent<PathFollower>();
+
+            if (spriteRenderers == null || spriteBaseColors == null)
+            {
+                spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+                spriteBaseColors = new Color[spriteRenderers.Length];
+                CacheSpriteBaseColors();
+            }
+
+            effectResolver ??= new EnemyEffectResolver();
+        }
+
         private void FireTrigger(EnemyTriggerType trigger)
         {
             if (enemyDef == null || effectResolver == null)
@@ -290,6 +407,9 @@ namespace Enemies
             for (int i = 0; i < runtimeModifiers.Count; i++)
                 runtimeModifiers[i].ModifyStats(this, ref stats);
 
+            for (int i = 0; i < activeStatusEffects.Count; i++)
+                activeStatusEffects[i].ModifyStats(ref stats);
+
             stats.Clamp();
             return stats;
         }
@@ -301,6 +421,107 @@ namespace Enemies
 
             EnemyResolvedStats stats = GetResolvedStats();
             pathFollower.SetSpeed(stats.MoveSpeed);
+        }
+
+        private sealed class ActiveEnemyStatusEffect
+        {
+            private const int MaxDotTicksPerFrame = 32;
+
+            private readonly EnemyStatusEffectDef effect;
+            private readonly string stackKey;
+
+            private ActiveEnemyStatusEffect(
+                EnemyStatusEffectDef effect,
+                string stackKey,
+                float duration,
+                float strength,
+                float tickInterval,
+                float tickDamage,
+                DamageTypeDef damageType)
+            {
+                this.effect = effect;
+                this.stackKey = stackKey;
+                DurationRemaining = duration;
+                Strength = strength;
+                TickInterval = tickInterval;
+                TickDamage = tickDamage;
+                DamageType = damageType;
+                TickTimer = tickInterval;
+            }
+
+            public EnemyStatusStackingMode StackingMode => effect.stackingMode;
+            public EnemyStatusEffectBehaviorType BehaviorType => effect.behaviorType;
+            public float DurationRemaining { get; set; }
+            public float Strength { get; set; }
+            public float TickInterval { get; set; }
+            public float TickDamage { get; set; }
+            public DamageTypeDef DamageType { get; set; }
+            private float TickTimer { get; set; }
+
+            public bool AffectsStats =>
+                BehaviorType == EnemyStatusEffectBehaviorType.Slow ||
+                BehaviorType == EnemyStatusEffectBehaviorType.Stun;
+
+            public static ActiveEnemyStatusEffect Create(EnemyStatusEffectApplication application)
+            {
+                EnemyStatusEffectDef effect = application.effect;
+                if (effect == null)
+                    return null;
+
+                string resolvedStackKey = effect.ResolvedStackKey;
+                if (string.IsNullOrWhiteSpace(resolvedStackKey))
+                    resolvedStackKey = effect.name;
+
+                return new ActiveEnemyStatusEffect(
+                    effect,
+                    resolvedStackKey,
+                    application.ResolveDuration(),
+                    application.ResolveStrength(),
+                    application.ResolveTickInterval(),
+                    application.ResolveTickDamage(),
+                    application.ResolveDamageType()
+                );
+            }
+
+            public bool HasSameStack(ActiveEnemyStatusEffect other)
+            {
+                return other != null &&
+                    BehaviorType == other.BehaviorType &&
+                    string.Equals(stackKey, other.stackKey, System.StringComparison.Ordinal);
+            }
+
+            public void Tick(EnemyAgent enemy, float deltaTime)
+            {
+                DurationRemaining -= deltaTime;
+
+                if (BehaviorType != EnemyStatusEffectBehaviorType.DamageOverTime || TickDamage <= 0f)
+                    return;
+
+                TickTimer -= deltaTime;
+                int ticksApplied = 0;
+                while (TickTimer <= 0f && ticksApplied < MaxDotTicksPerFrame && !enemy.IsDeadOrEscaped)
+                {
+                    enemy.TakeDamage(TickDamage, DamageType);
+                    TickTimer += TickInterval;
+                    ticksApplied++;
+                }
+            }
+
+            public void ModifyStats(ref EnemyResolvedStats stats)
+            {
+                switch (BehaviorType)
+                {
+                    case EnemyStatusEffectBehaviorType.Slow:
+                        stats.MoveSpeed *= Mathf.Max(0f, 1f - Mathf.Clamp01(Strength));
+                        break;
+
+                    case EnemyStatusEffectBehaviorType.Stun:
+                        stats.MoveSpeed = 0f;
+                        break;
+                }
+
+                stats.Clamp();
+            }
         }
     }
 }

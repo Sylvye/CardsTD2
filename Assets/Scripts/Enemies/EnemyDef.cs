@@ -23,6 +23,20 @@ namespace Enemies
         public EnemyDamageResponseType ResponseType { get; }
     }
 
+    public readonly struct EnemyDamageResult
+    {
+        public EnemyDamageResult(float appliedAmount, EnemyDamageResponseType responseType, bool wasKill)
+        {
+            AppliedAmount = appliedAmount;
+            ResponseType = responseType;
+            WasKill = wasKill;
+        }
+
+        public float AppliedAmount { get; }
+        public EnemyDamageResponseType ResponseType { get; }
+        public bool WasKill { get; }
+    }
+
     [CreateAssetMenu(menuName = "Enemies/Enemy Definition", fileName = "New Enemy")]
     public class EnemyDef : ScriptableObject
     {
