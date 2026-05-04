@@ -266,7 +266,7 @@ namespace Cards
                         foreach (TowerAgent tower in towersInZone)
                         {
                             if (tower != null && !tower.IsDead && TryTrackTowerAuraEffect(tower, effect))
-                                tower.AddModifier(effect.towerModifier);
+                                tower.AddModifier(effect.towerModifier, TowerModifierSource.Spell, TowerModifierDuration.Active);
                         }
                         break;
                 }
@@ -382,11 +382,11 @@ namespace Cards
                 if (effect.modifierApplicationMode == SpellModifierApplicationMode.WhileInside)
                 {
                     if (TryTrackTowerAuraEffect(tower, effect))
-                        tower.AddModifier(effect.towerModifier);
+                        tower.AddModifier(effect.towerModifier, TowerModifierSource.Spell, TowerModifierDuration.Active);
                     return;
                 }
 
-                tower.AddModifier(effect.towerModifier);
+                tower.AddModifier(effect.towerModifier, TowerModifierSource.Spell, TowerModifierDuration.Permanent);
             });
         }
 

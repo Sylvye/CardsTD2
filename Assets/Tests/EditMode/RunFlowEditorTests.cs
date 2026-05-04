@@ -1728,6 +1728,14 @@ public class RunFlowEditorTests
         Assert.NotNull(GetPrivateField<Object>(battleHUD, "speedButton"));
         Assert.NotNull(GetPrivateField<Object>(battleHUD, "speedButtonText"));
         Assert.NotNull(GetPrivateField<Object>(battleHUD, "resolvedSessionText"));
+        battleHUD.EnsureInspectorUi();
+        Assert.NotNull(battleHUD.TowerInspectorRoot);
+        Assert.NotNull(battleHUD.TowerNameLabel);
+        Assert.NotNull(battleHUD.TargetingButtonControl);
+        Assert.NotNull(battleHUD.TargetingButtonLabel);
+        Assert.NotNull(battleHUD.AugmentEmptyLabel);
+        Assert.NotNull(battleHUD.ActiveEffectsEmptyLabel);
+        Assert.NotNull(battleHUD.PermanentModifiersEmptyLabel);
         Assert.False(GetPrivateField<bool>(handViewDriver, "autoInitializeOnStart"));
         Assert.False(GetPrivateField<bool>(enemySpawner, "startOnPlay"));
     }

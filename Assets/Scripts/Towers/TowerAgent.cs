@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cards;
 using Enemies;
 using UnityEngine;
 
@@ -6,13 +7,29 @@ namespace Towers
 {
     public class TowerAgent : MonoBehaviour
     {
+        private sealed class TrackedModifier
+        {
+            public TrackedModifier(IStatModifier modifier, TowerModifierSource source, TowerModifierDuration duration)
+            {
+                Modifier = modifier;
+                Source = source;
+                Duration = duration;
+            }
+
+            public IStatModifier Modifier { get; }
+            public TowerModifierSource Source { get; }
+            public TowerModifierDuration Duration { get; }
+        }
+
         private readonly List<IStatModifier> runtimeModifiers = new();
+        private readonly List<TrackedModifier> trackedModifiers = new();
         private readonly List<TowerAgent> inheritedModifierSources = new();
         private readonly List<IAttackExecution> attackExecutions = new();
         private readonly List<EnemyAgent> targetBuffer = new();
         private readonly HashSet<EnemyAgent> inRangeEnemies = new();
         private readonly HashSet<EnemyAgent> previousInRangeEnemies = new();
         private readonly List<TowerAttackDef> runtimeAttackDefinitions = new();
+        private readonly List<CardAugmentDef> appliedAugments = new();
 
         private static readonly ITargetingStrategy DefaultTargetingStrategy = new PriorityTargetingStrategy();
 
@@ -36,6 +53,9 @@ namespace Towers
         public float PlacementRadius => towerDef != null ? towerDef.placementRadius : legacyPlacementRadius;
         public float Range => GetResolvedStats().Range;
         public TargetPriority CurrentPriority => currentPriority;
+        public string DisplayName => towerDef != null && !string.IsNullOrWhiteSpace(towerDef.displayName) ? towerDef.displayName : gameObject.name;
+        public IReadOnlyList<CardAugmentDef> AppliedAugments => appliedAugments;
+        internal int TrackedModifierCount => trackedModifiers.Count;
 
         public virtual void Initialize(TowerDef def, TowerRuntimeContext context)
         {
@@ -49,7 +69,9 @@ namespace Towers
             isInitialized = true;
 
             runtimeModifiers.Clear();
+            trackedModifiers.Clear();
             inheritedModifierSources.Clear();
+            appliedAugments.Clear();
             runtimeAttackDefinitions.Clear();
             useRuntimeAttackDefinitions = false;
             inRangeEnemies.Clear();
@@ -59,7 +81,7 @@ namespace Towers
                 foreach (TowerStatModifierDef modifier in def.defaultModifiers)
                 {
                     if (modifier != null)
-                        runtimeModifiers.Add(modifier);
+                        AddModifier(modifier, TowerModifierSource.Base, TowerModifierDuration.Permanent);
                 }
             }
 
@@ -90,7 +112,9 @@ namespace Towers
             isDead = false;
             isInitialized = true;
             runtimeModifiers.Clear();
+            trackedModifiers.Clear();
             inheritedModifierSources.Clear();
+            appliedAugments.Clear();
             runtimeAttackDefinitions.Clear();
             useRuntimeAttackDefinitions = false;
             inRangeEnemies.Clear();
@@ -114,12 +138,45 @@ namespace Towers
             currentPriority = priority;
         }
 
+        public TargetPriority CycleTargetPriority()
+        {
+            currentPriority = currentPriority switch
+            {
+                TargetPriority.First => TargetPriority.Last,
+                TargetPriority.Last => TargetPriority.Strong,
+                _ => TargetPriority.First
+            };
+
+            return currentPriority;
+        }
+
+        public void SetAppliedAugments(IReadOnlyList<CardAugmentDef> augments)
+        {
+            appliedAugments.Clear();
+
+            if (augments == null)
+                return;
+
+            for (int i = 0; i < augments.Count; i++)
+            {
+                CardAugmentDef augment = augments[i];
+                if (augment != null)
+                    appliedAugments.Add(augment);
+            }
+        }
+
         public void AddModifier(IStatModifier modifier)
+        {
+            AddModifier(modifier, TowerModifierSource.Unknown, TowerModifierDuration.Permanent);
+        }
+
+        public void AddModifier(IStatModifier modifier, TowerModifierSource source, TowerModifierDuration duration)
         {
             if (modifier == null)
                 return;
 
             runtimeModifiers.Add(modifier);
+            trackedModifiers.Add(new TrackedModifier(modifier, source, duration));
         }
 
         public void RemoveModifier(IStatModifier modifier)
@@ -128,6 +185,7 @@ namespace Towers
                 return;
 
             runtimeModifiers.Remove(modifier);
+            RemoveTrackedModifier(modifier);
         }
 
         public void InheritModifiersFrom(TowerAgent sourceTower, bool append = true)
@@ -138,6 +196,7 @@ namespace Towers
             if (!append)
             {
                 runtimeModifiers.Clear();
+                trackedModifiers.Clear();
                 inheritedModifierSources.Clear();
             }
 
@@ -164,6 +223,21 @@ namespace Towers
 
             if (isInitialized)
                 BuildAttackExecutions();
+        }
+
+        public List<TowerInspectorModifierEntry> GetActiveEffectEntries()
+        {
+            List<TowerInspectorModifierEntry> entries = new();
+            AppendOwnInspectorEntries(entries, TowerModifierDuration.Active, null, null);
+            return entries;
+        }
+
+        public List<TowerInspectorModifierEntry> GetPermanentModifierEntries()
+        {
+            List<TowerInspectorModifierEntry> entries = new();
+            AppendOwnInspectorEntries(entries, TowerModifierDuration.Permanent, null, null);
+            AppendInheritedInspectorEntries(entries);
+            return entries;
         }
 
         public TowerResolvedStats GetResolvedStats()
@@ -196,6 +270,93 @@ namespace Towers
                         modifier.ModifyStats(this, ref stats);
                 }
             }
+        }
+
+        private void RemoveTrackedModifier(IStatModifier modifier)
+        {
+            for (int i = trackedModifiers.Count - 1; i >= 0; i--)
+            {
+                if (!ReferenceEquals(trackedModifiers[i].Modifier, modifier))
+                    continue;
+
+                trackedModifiers.RemoveAt(i);
+                return;
+            }
+        }
+
+        private void AppendOwnInspectorEntries(
+            List<TowerInspectorModifierEntry> entries,
+            TowerModifierDuration durationFilter,
+            TowerModifierSource? sourceOverride,
+            TowerModifierDuration? durationOverride)
+        {
+            for (int i = 0; i < trackedModifiers.Count; i++)
+            {
+                TrackedModifier trackedModifier = trackedModifiers[i];
+                if (trackedModifier == null || trackedModifier.Duration != durationFilter)
+                    continue;
+
+                entries.Add(
+                    CreateInspectorEntry(
+                        trackedModifier.Modifier,
+                        sourceOverride ?? trackedModifier.Source,
+                        durationOverride ?? trackedModifier.Duration));
+            }
+        }
+
+        private void AppendInheritedInspectorEntries(List<TowerInspectorModifierEntry> entries)
+        {
+            for (int i = 0; i < inheritedModifierSources.Count; i++)
+            {
+                TowerAgent sourceTower = inheritedModifierSources[i];
+                if (sourceTower == null || sourceTower.IsDead)
+                    continue;
+
+                sourceTower.AppendOwnInspectorEntries(entries, TowerModifierDuration.Permanent, TowerModifierSource.Inherited, TowerModifierDuration.Permanent);
+                sourceTower.AppendOwnInspectorEntries(entries, TowerModifierDuration.Active, TowerModifierSource.Inherited, TowerModifierDuration.Permanent);
+            }
+        }
+
+        private static TowerInspectorModifierEntry CreateInspectorEntry(
+            IStatModifier modifier,
+            TowerModifierSource source,
+            TowerModifierDuration duration)
+        {
+            if (modifier is TowerStatModifierDef towerModifier)
+            {
+                return new TowerInspectorModifierEntry(
+                    towerModifier.DisplayName,
+                    towerModifier.Icon,
+                    towerModifier.Tone,
+                    source,
+                    duration);
+            }
+
+            string fallbackName = modifier != null ? NicifyTypeName(modifier.GetType().Name) : "Unknown Effect";
+            return new TowerInspectorModifierEntry(
+                fallbackName,
+                null,
+                TowerModifierTone.Neutral,
+                source,
+                duration);
+        }
+
+        private static string NicifyTypeName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "Unknown Effect";
+
+            System.Text.StringBuilder builder = new(value.Length + 8);
+            for (int i = 0; i < value.Length; i++)
+            {
+                char current = value[i];
+                if (i > 0 && char.IsUpper(current) && !char.IsWhiteSpace(value[i - 1]))
+                    builder.Append(' ');
+
+                builder.Append(current);
+            }
+
+            return builder.ToString();
         }
 
         public EnemyAgent AcquireTarget(IReadOnlyList<TowerTargetFilterDef> filters)

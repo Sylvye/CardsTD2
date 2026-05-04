@@ -11,6 +11,7 @@ namespace Cards
         public string Description { get; }
         public Sprite Icon { get; }
         public IReadOnlyList<Sprite> AugmentIcons { get; }
+        public IReadOnlyList<CardAugmentDef> AppliedAugments { get; }
         public CardType Type { get; }
         public int ManaCost { get; }
         public int Tier { get; }
@@ -28,6 +29,7 @@ namespace Cards
             string description,
             Sprite icon,
             IReadOnlyList<Sprite> augmentIcons,
+            IReadOnlyList<CardAugmentDef> appliedAugments,
             CardType type,
             int manaCost,
             int tier,
@@ -44,6 +46,7 @@ namespace Cards
             Description = description;
             Icon = icon;
             AugmentIcons = augmentIcons;
+            AppliedAugments = appliedAugments;
             Type = type;
             ManaCost = manaCost;
             Tier = tier;

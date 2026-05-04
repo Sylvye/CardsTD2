@@ -44,6 +44,10 @@ public class CardAugmentBadgeTests
         Assert.That(instance.ResolvedData, Is.Not.Null);
         Assert.That(instance.AugmentIcons.Count, Is.EqualTo(2));
         Assert.That(instance.ResolvedData.AugmentIcons.Count, Is.EqualTo(2));
+        Assert.That(instance.ResolvedData.AppliedAugments.Count, Is.EqualTo(3));
+        Assert.That(instance.ResolvedData.AppliedAugments[0], Is.SameAs(firstAugment));
+        Assert.That(instance.ResolvedData.AppliedAugments[1], Is.SameAs(hiddenAugment));
+        Assert.That(instance.ResolvedData.AppliedAugments[2], Is.SameAs(secondAugment));
         Assert.That(instance.AugmentIcons[0], Is.SameAs(firstSprite));
         Assert.That(instance.AugmentIcons[1], Is.SameAs(secondSprite));
     }

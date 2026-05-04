@@ -660,6 +660,7 @@ public static class RunFlowProjectSetup
         HandViewDriver handViewDriver = RequireSceneComponent<HandViewDriver>(CombatScenePath);
         EnemySpawner enemySpawner = RequireSceneComponent<EnemySpawner>(CombatScenePath);
         EnemyManager enemyManager = RequireSceneComponent<EnemyManager>(CombatScenePath);
+        _ = RequireSceneComponent<BattleHUD>(CombatScenePath);
 
         GameObject pathAnchor = GameObject.Find("Path Anchor");
         if (pathAnchor == null)
@@ -676,7 +677,6 @@ public static class RunFlowProjectSetup
         SetField(outcomeWatcher, "combatSessionDriver", combatSessionDriver);
         SetField(outcomeWatcher, "enemySpawner", enemySpawner);
         SetField(outcomeWatcher, "enemyManager", enemyManager);
-
         SetField(handViewDriver, "autoInitializeOnStart", false);
         SetField(enemySpawner, "startOnPlay", false);
 

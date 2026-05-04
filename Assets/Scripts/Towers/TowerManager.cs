@@ -154,6 +154,7 @@ namespace Towers
                 return null;
 
             tower.Initialize(resolvedCard.TowerDefinition, BuildRuntimeContext());
+            tower.SetAppliedAugments(resolvedCard.AppliedAugments);
 
             if (resolvedCard.AdditionalTowerModifiers != null)
             {
@@ -161,7 +162,7 @@ namespace Towers
                 {
                     IStatModifier modifier = resolvedCard.AdditionalTowerModifiers[i];
                     if (modifier != null)
-                        tower.AddModifier(modifier);
+                        tower.AddModifier(modifier, TowerModifierSource.Augment, TowerModifierDuration.Permanent);
                 }
             }
 

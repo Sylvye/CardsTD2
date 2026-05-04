@@ -194,7 +194,10 @@ namespace Cards
         private void HideAllAugmentBadges()
         {
             if (augmentBadgeTemplate != null && !augmentBadgePool.Contains(augmentBadgeTemplate))
+            {
+                augmentBadgeTemplate.name = "AugmentBadge0";
                 augmentBadgePool.Add(augmentBadgeTemplate);
+            }
 
             for (int i = 0; i < augmentBadgePool.Count; i++)
             {

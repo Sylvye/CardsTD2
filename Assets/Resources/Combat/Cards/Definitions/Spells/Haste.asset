@@ -12,12 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d2fe7064acd5794c94ba169cf2a4e68, type: 3}
   m_Name: Haste
   m_EditorClassIdentifier: Assembly-CSharp::Cards.CardDef
-  id: J
+  id: haste_spell
   displayName: Haste
   icon: {fileID: 1178460889840726108, guid: 96989d419b98bf94c93e1c46dfe974d4, type: 3}
   type: 1
   description: Doubles attack speed of affected towers
   baseManaCost: 7
+  exhaust: 0
   cardFamilyId: J
   baseTier: 1
   upgradeTier: 1

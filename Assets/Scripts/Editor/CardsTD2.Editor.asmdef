@@ -2,7 +2,8 @@
   "name": "CardsTD2.Editor",
   "rootNamespace": "",
   "references": [
-    "CardsTD2"
+    "CardsTD2",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [
     "Editor"

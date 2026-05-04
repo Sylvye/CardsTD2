@@ -1,6 +1,8 @@
 using Combat;
 using Towers;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 namespace Cards
 {
@@ -19,6 +21,7 @@ namespace Cards
         [SerializeField] private BattleHUD battleHUD;
 
         private CardPlacementValidator cardPlacementValidator;
+        private SelectedCardController selectedCardController;
 
         public void Initialize(
             CombatCardState combatCardState,
@@ -28,6 +31,13 @@ namespace Cards
         {
             if (handController == null)
                 return;
+
+            if (this.selectedCardController != null)
+                this.selectedCardController.OnSelectedCardChanged -= HandleSelectedCardChanged;
+
+            this.selectedCardController = selectedCardController;
+            if (this.selectedCardController != null)
+                this.selectedCardController.OnSelectedCardChanged += HandleSelectedCardChanged;
 
             combatSessionDriver?.InitializeSession(handController);
             cardPlacementValidator = new CardPlacementValidator(towerManager);
@@ -80,6 +90,39 @@ namespace Cards
             }
         }
 
+        private void OnDestroy()
+        {
+            if (selectedCardController != null)
+                selectedCardController.OnSelectedCardChanged -= HandleSelectedCardChanged;
+        }
+
+        private void Update()
+        {
+            if (battleHUD == null || selectedCardController == null || playFieldRaycaster == null)
+                return;
+
+            if (IsGameplayInputBlocked() || selectedCardController.HasSelection)
+                return;
+
+            if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame)
+                return;
+
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+                return;
+
+            if (!playFieldRaycaster.TryGetMouseWorldPoint(out Vector3 point))
+                return;
+
+            TowerAgent tower = FindTowerAtPoint(point);
+            if (tower != null)
+            {
+                battleHUD.ShowTowerInspector(tower);
+                return;
+            }
+
+            battleHUD.HideTowerInspector();
+        }
+
         private int GetManualDrawCost()
         {
             return combatSessionDriver != null ? combatSessionDriver.ManualDrawCost : 0;
@@ -96,6 +139,29 @@ namespace Cards
         private bool IsGameplayInputBlocked()
         {
             return combatSessionDriver != null && combatSessionDriver.IsPaused;
+        }
+
+        private void HandleSelectedCardChanged(CardInstance selectedCard)
+        {
+            if (selectedCard != null)
+                battleHUD?.HideTowerInspector();
+        }
+
+        private static TowerAgent FindTowerAtPoint(Vector3 point)
+        {
+            Collider2D[] hits = Physics2D.OverlapPointAll(point);
+            for (int i = 0; i < hits.Length; i++)
+            {
+                Collider2D hit = hits[i];
+                if (hit == null)
+                    continue;
+
+                TowerAgent tower = hit.GetComponentInParent<TowerAgent>();
+                if (tower != null && !tower.IsDead)
+                    return tower;
+            }
+
+            return null;
         }
     }
 }

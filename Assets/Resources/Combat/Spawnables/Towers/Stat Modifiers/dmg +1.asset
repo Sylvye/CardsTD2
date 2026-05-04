@@ -12,6 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40ee971a81b020a42a580e40c7bf25b2, type: 3}
   m_Name: dmg +1
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerFlatStatModifierDef
+  displayName: 
+  icon: {fileID: 21300000, guid: 6f53366cafc8a46f9908c21e95b77064, type: 3}
+  tone: 1
   healthAdd: 0
   rangeAdd: 0
   fireIntervalAdd: 0
