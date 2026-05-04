@@ -1,5 +1,6 @@
 using Combat;
 using System;
+using Towers;
 using UnityEngine;
 
 namespace Cards
@@ -15,6 +16,7 @@ namespace Cards
         private PlayFieldRaycaster playFieldRaycaster;
         private CardPlacementValidator validator;
         private Func<bool> isInputBlocked;
+        private TowerAgent inspectedTower;
 
         public void Initialize(
             SelectedCardController selectedController,
@@ -41,28 +43,65 @@ namespace Cards
 
         private void Update()
         {
-            if (!ShouldShowPreview())
+            if (ShouldShowCardPreview())
             {
-                HideAll();
+                CardInstance card = selectedCardController.SelectedCard;
+
+                if (!playFieldRaycaster.TryGetMouseWorldPoint(out Vector3 point))
+                {
+                    HideAll();
+                    return;
+                }
+
+                bool isValid = validator.IsValid(card, point);
+                UpdatePreview(card, point, isValid);
                 return;
             }
 
-            CardInstance card = selectedCardController.SelectedCard;
-
-            if (!playFieldRaycaster.TryGetMouseWorldPoint(out Vector3 point))
+            if (ShouldShowInspectedTowerPreview())
             {
-                HideAll();
+                UpdateInspectedTowerPreview();
                 return;
             }
 
-            bool isValid = validator.IsValid(card, point);
-            UpdatePreview(card, point, isValid);
+            HideAll();
+        }
+
+        public void ShowTowerRange(TowerAgent tower)
+        {
+            inspectedTower = tower != null && !tower.IsDead ? tower : null;
+
+            if (inspectedTower == null && !ShouldShowCardPreview())
+                HideAll();
+        }
+
+        public void HideTowerRange()
+        {
+            inspectedTower = null;
+
+            if (!ShouldShowCardPreview())
+                HideAll();
         }
 
         private void HandleSelectedCardChanged(CardInstance selectedCard)
         {
             if (selectedCard is null)
+                return;
+
+            HideTowerRange();
+        }
+
+        private void UpdateInspectedTowerPreview()
+        {
+            if (inspectedTower == null || inspectedTower.IsDead)
+            {
+                HideTowerRange();
                 HideAll();
+                return;
+            }
+
+            HideCircle(primaryRadiusVisual);
+            ShowCircle(secondaryRadiusVisual, inspectedTower.transform.position, inspectedTower.Range, validColor);
         }
 
         private void UpdatePreview(CardInstance card, Vector3 point, bool isValid)
@@ -151,9 +190,16 @@ namespace Cards
             return card.ResolvedData.SpawnableObject != null ? card.ResolvedData.SpawnableObject.effectRadius : 0f;
         }
 
-        private bool ShouldShowPreview()
+        private bool ShouldShowCardPreview()
         {
             return !IsInputBlocked() && selectedCardController is not null && selectedCardController.HasSelection;
+        }
+
+        private bool ShouldShowInspectedTowerPreview()
+        {
+            return inspectedTower != null
+                && !inspectedTower.IsDead
+                && (selectedCardController == null || !selectedCardController.HasSelection);
         }
 
         private bool IsInputBlocked()

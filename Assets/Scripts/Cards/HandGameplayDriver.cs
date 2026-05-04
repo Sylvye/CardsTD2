@@ -117,10 +117,12 @@ namespace Cards
             if (tower != null)
             {
                 battleHUD.ShowTowerInspector(tower);
+                cardPreviewController?.ShowTowerRange(tower);
                 return;
             }
 
             battleHUD.HideTowerInspector();
+            cardPreviewController?.HideTowerRange();
         }
 
         private int GetManualDrawCost()
@@ -144,7 +146,10 @@ namespace Cards
         private void HandleSelectedCardChanged(CardInstance selectedCard)
         {
             if (selectedCard != null)
+            {
                 battleHUD?.HideTowerInspector();
+                cardPreviewController?.HideTowerRange();
+            }
         }
 
         private static TowerAgent FindTowerAtPoint(Vector3 point)

@@ -180,6 +180,48 @@ public class CombatFixedStepTests
     }
 
     [Test]
+    public void CardPreviewController_Update_ShowsTowerRangeForInspectedTower()
+    {
+        GameObject controllerObject = new("CardPreviewController Tower Range Test");
+        CardPreviewController controller = controllerObject.AddComponent<CardPreviewController>();
+        GameObject primaryVisual = new("Primary Visual");
+        GameObject secondaryVisual = new("Secondary Visual");
+
+        SetPrivateField(controller, "primaryRadiusVisual", primaryVisual);
+        SetPrivateField(controller, "secondaryRadiusVisual", secondaryVisual);
+        SetPrivateField(controller, "validColor", Color.cyan);
+
+        controller.Initialize(new SelectedCardController(), null, null, () => false);
+
+        TowerDef towerDef = ScriptableObject.CreateInstance<TowerDef>();
+        towerDef.baseStats.range = 3.5f;
+
+        GameObject towerObject = new("Tower", typeof(TowerAgent));
+        towerObject.transform.position = new Vector3(4f, -2f, 0f);
+        TowerAgent tower = towerObject.GetComponent<TowerAgent>();
+        tower.Initialize(towerDef, new TowerRuntimeContext(null, null));
+
+        controller.ShowTowerRange(tower);
+
+        MethodInfo update = typeof(CardPreviewController).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(update);
+        update.Invoke(controller, null);
+
+        Assert.That(primaryVisual.activeSelf, Is.False);
+        Assert.That(secondaryVisual.activeSelf, Is.True);
+        Assert.That(secondaryVisual.transform.position.x, Is.EqualTo(4f).Within(0.001f));
+        Assert.That(secondaryVisual.transform.position.y, Is.EqualTo(-2f).Within(0.001f));
+        Assert.That(secondaryVisual.transform.localScale.x, Is.EqualTo(7f).Within(0.001f));
+        Assert.That(secondaryVisual.transform.localScale.y, Is.EqualTo(7f).Within(0.001f));
+
+        Object.DestroyImmediate(towerObject);
+        Object.DestroyImmediate(towerDef);
+        Object.DestroyImmediate(primaryVisual);
+        Object.DestroyImmediate(secondaryVisual);
+        Object.DestroyImmediate(controllerObject);
+    }
+
+    [Test]
     public void BattleFlowController_FixedTick_UsesFixedDeltaForDeterministicManaRegen()
     {
         CombatCardState cardState = new();
