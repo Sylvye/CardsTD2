@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40ee971a81b020a42a580e40c7bf25b2, type: 3}
   m_Name: atkSpd x2
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerFlatStatModifierDef
-  displayName: 
+  displayName: x2 attack speed
   icon: {fileID: 21300000, guid: ddcf679a7916a453dba631cf902ebe46, type: 3}
   tone: 1
   healthAdd: 0

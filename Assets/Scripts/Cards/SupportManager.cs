@@ -518,8 +518,27 @@ namespace Cards
                 }
             }
 
-            if (rangeAdd != 0f || damageAdd != 0f || !Mathf.Approximately(fireIntervalMultiplier, 1f))
-                statModifiers.Add(new RuntimeSupportStatModifier("Support Network", 0f, rangeAdd, fireIntervalMultiplier, damageAdd));
+            if (rangeAdd != 0f)
+            {
+                statModifiers.Add(new RuntimeSupportStatModifier(
+                    $"{FormatSignedStatValue(rangeAdd)} Range",
+                    rangeAdd: rangeAdd));
+            }
+
+            if (damageAdd != 0f)
+            {
+                statModifiers.Add(new RuntimeSupportStatModifier(
+                    $"{FormatSignedStatValue(damageAdd)} Damage",
+                    damageAdd: damageAdd));
+            }
+
+            if (!Mathf.Approximately(fireIntervalMultiplier, 1f))
+            {
+                float attackSpeedMultiplier = 1f / Mathf.Max(0.01f, fireIntervalMultiplier);
+                statModifiers.Add(new RuntimeSupportStatModifier(
+                    $"Attack Speed x{FormatMultiplierValue(attackSpeedMultiplier)}",
+                    fireIntervalMultiplier: fireIntervalMultiplier));
+            }
 
             if (pierceAdd != 0 || !Mathf.Approximately(projectileCountMultiplier, 1f))
             {
@@ -676,6 +695,20 @@ namespace Cards
             return support != null && support.IsConduit
                 ? new Color(0.7f, 0.7f, 0.7f, 0.95f)
                 : new Color(0.95f, 0.95f, 0.95f, 0.95f);
+        }
+
+        private static string FormatSignedStatValue(float value)
+        {
+            return value >= 0f
+                ? $"+{FormatMultiplierValue(value)}"
+                : $"-{FormatMultiplierValue(Mathf.Abs(value))}";
+        }
+
+        private static string FormatMultiplierValue(float value)
+        {
+            return Mathf.Approximately(value, Mathf.Round(value))
+                ? Mathf.RoundToInt(value).ToString()
+                : value.ToString("0.##");
         }
 
         private void ClearDeadSupports()
