@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 400b5274f1258440ca9d148673bfdfc1, type: 3}
+  m_Name: CyanBeacon
+  m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
+  prefab: {fileID: 77660494436261291, guid: 545361a9e5f5c4c75a7fbafbcd80bc46, type: 3}
+  effectRadius: 2
+  supportSubtype: 1
+  placementRadius: 0.3
+  supportRadius: 2
+  buffType: 3
+  baseValues:
+  - 3
+  - 2
+  - 1.5
+  amplifiedValues:
+  - 5
+  - 3
+  - 2
+  linkColor: {r: 0.25098038, g: 1, b: 0.94144326, a: 1}

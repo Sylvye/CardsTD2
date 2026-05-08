@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40ee971a81b020a42a580e40c7bf25b2, type: 3}
-  m_Name: atkSpd x0.5
+  m_Name: rng -1
   m_EditorClassIdentifier: Assembly-CSharp::Towers.TowerFlatStatModifierDef
-  displayName: x0.5 attack speed
-  icon: {fileID: 21300000, guid: ddcf679a7916a453dba631cf902ebe46, type: 3}
+  displayName: -1 range
+  icon: {fileID: 21300000, guid: 72f034594a3dc448f926b380ab3dfdc8, type: 3}
   tone: 2
   healthAdd: 0
-  rangeAdd: 0
+  rangeAdd: -1
   fireIntervalAdd: 0
   damageAdd: 0
   healthMultiplier: 1
   rangeMultiplier: 1
-  fireIntervalMultiplier: 2
+  fireIntervalMultiplier: 1
   damageMultiplier: 1

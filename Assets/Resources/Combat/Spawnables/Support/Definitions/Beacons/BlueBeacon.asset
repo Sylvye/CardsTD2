@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 400b5274f1258440ca9d148673bfdfc1, type: 3}
-  m_Name: TestBeaconSupport
+  m_Name: BlueBeacon
   m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
-  prefab: {fileID: 77660494436261291, guid: 2fccf4055be884e1cab7d65762d1e2ae, type: 3}
+  prefab: {fileID: 77660494436261291, guid: 8d2b13f8132764dc3ab363c26632d116, type: 3}
   effectRadius: 2
   supportSubtype: 1
-  placementRadius: 0.25
+  placementRadius: 0.3
   supportRadius: 2
-  buffType: 2
+  buffType: 7
   baseValues:
-  - 3
-  - 2
-  - 1
+  - 0.5
+  - 0.3
+  - 0.1
   amplifiedValues:
-  - 5
-  - 3
-  - 2
-  linkColor: {r: 1, g: 0.25, b: 0.25, a: 1}
+  - 0.8
+  - 0.5
+  - 0.2
+  linkColor: {r: 0.25098038, g: 0.3107992, b: 1, a: 1}

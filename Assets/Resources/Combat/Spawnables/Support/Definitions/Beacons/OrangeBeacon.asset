@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 400b5274f1258440ca9d148673bfdfc1, type: 3}
+  m_Name: OrangeBeacon
+  m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
+  prefab: {fileID: 77660494436261291, guid: 5dbbba862a1324440a9c56ec6d93e41a, type: 3}
+  effectRadius: 2
+  supportSubtype: 1
+  placementRadius: 0.3
+  supportRadius: 2
+  buffType: 2
+  baseValues:
+  - 3
+  - 2
+  - 1
+  amplifiedValues:
+  - 5
+  - 3
+  - 1
+  linkColor: {r: 1, g: 0.52944344, b: 0.25098038, a: 1}
