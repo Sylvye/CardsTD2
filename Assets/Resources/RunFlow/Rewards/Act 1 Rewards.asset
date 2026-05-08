@@ -35,6 +35,14 @@ MonoBehaviour:
     weight: 2
   - card: {fileID: 11400000, guid: 7616c717da96d44498a586eaeaa0de0c, type: 2}
     weight: 2
+  - card: {fileID: 11400000, guid: 5157f20e2e2fc43f2ba33f22768e7048, type: 2}
+    weight: 1
+  - card: {fileID: 11400000, guid: d80897567945a460ea5a70ef032b3cfb, type: 2}
+    weight: 1
+  - card: {fileID: 11400000, guid: a2c9ea3b34f2b4484bbec9a4dab7689e, type: 2}
+    weight: 1
+  - card: {fileID: 11400000, guid: 0057ba025a0f0409db7fbba7bd376f4d, type: 2}
+    weight: 1
   augments:
   - augment: {fileID: 11400000, guid: 8f0ef76124d3941599d1cdaca3178b07, type: 2}
     weight: 1

@@ -12,6 +12,7 @@ namespace Towers
 
         [Header("Generic Value")]
         public float amount = 0f;
+        public float radius = 0f;
         public DamageTypeDef damageType;
     }
 }

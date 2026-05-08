@@ -12,6 +12,7 @@ namespace Cards
 
         [Header("Projectile")]
         public int projectileCountDelta;
+        public float projectileCountMultiplier = 1f;
         public float damageBonusDelta;
         public int pierceDelta;
         public float degreesSpreadDelta;
@@ -20,6 +21,7 @@ namespace Cards
 
         [Header("Beam")]
         public int beamProjectileCountDelta;
+        public float beamProjectileCountMultiplier = 1f;
         public float flatDamageBonusDelta;
         public float damageMultiplierDelta;
 
@@ -43,7 +45,8 @@ namespace Cards
         {
             if (attackDef is ProjectileTowerAttackDef projectileAttack)
             {
-                projectileAttack.projectileCount = Mathf.Max(1, projectileAttack.projectileCount + projectileCountDelta);
+                float projectileCount = (projectileAttack.projectileCount + projectileCountDelta) * Mathf.Max(0f, projectileCountMultiplier);
+                projectileAttack.projectileCount = Mathf.Max(1, Mathf.RoundToInt(projectileCount));
                 projectileAttack.damageBonus = Mathf.Max(0f, projectileAttack.damageBonus + damageBonusDelta);
                 projectileAttack.pierceCount = Mathf.Max(0, projectileAttack.pierceCount + pierceDelta);
                 projectileAttack.AdjustDegreesSpread(degreesSpreadDelta);
@@ -54,7 +57,8 @@ namespace Cards
 
             if (attackDef is BeamTowerAttackDef beamAttack)
             {
-                beamAttack.projectileCount = Mathf.Max(1, beamAttack.projectileCount + beamProjectileCountDelta);
+                float beamCount = (beamAttack.projectileCount + beamProjectileCountDelta) * Mathf.Max(0f, beamProjectileCountMultiplier);
+                beamAttack.projectileCount = Mathf.Max(1, Mathf.RoundToInt(beamCount));
                 beamAttack.flatDamageBonus = Mathf.Max(0f, beamAttack.flatDamageBonus + flatDamageBonusDelta);
                 beamAttack.damageMultiplier = Mathf.Max(0f, beamAttack.damageMultiplier + damageMultiplierDelta);
                 return;

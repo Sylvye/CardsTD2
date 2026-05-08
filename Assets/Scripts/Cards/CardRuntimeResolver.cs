@@ -80,6 +80,9 @@ namespace Cards
             SpawnableObjectDef resolvedSpawnable = definition.spawnableObject;
             TowerDef resolvedTowerDef = null;
             SpellDef resolvedSpellDef = null;
+            SupportDef resolvedSupportDef = null;
+            SupportCardMode supportCardMode = definition.GetSupportCardMode();
+            SupportSubtype supportSubtype = definition.GetSupportSubtype();
             IReadOnlyList<TowerAttackDef> runtimeTowerAttacks = null;
 
             if (definition.spawnableObject is TowerDef towerDef)
@@ -102,6 +105,10 @@ namespace Cards
                     resolvedSpellDef = spellDef;
                 }
             }
+            else if (definition.spawnableObject is SupportDef supportDef)
+            {
+                resolvedSupportDef = supportDef;
+            }
 
             return new ResolvedCardData(
                 definition,
@@ -118,6 +125,12 @@ namespace Cards
                 resolvedSpawnable,
                 resolvedTowerDef,
                 resolvedSpellDef,
+                resolvedSupportDef,
+                supportCardMode,
+                supportSubtype,
+                definition.supportUpgradeTargets,
+                definition.supportConduitRangeIncrease,
+                Mathf.Max(1, definition.supportEffectiveConnectionReduction),
                 towerModifiers,
                 runtimeTowerAttacks
             );

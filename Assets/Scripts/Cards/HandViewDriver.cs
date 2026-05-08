@@ -15,6 +15,7 @@ namespace Cards
 
         [Header("Gameplay")]
         [SerializeField] private TowerManager towerManager;
+        [SerializeField] private SupportManager supportManager;
         [SerializeField] private EnemyManager enemyManager;
         [SerializeField] private MonoBehaviour playerEffectsSource;
         [SerializeField] private HandGameplayDriver handGameplayDriver;
@@ -41,11 +42,13 @@ namespace Cards
                 return;
 
             playerEffects = ResolvePlayerEffects(overridePlayerEffects);
+            if (supportManager == null)
+                supportManager = FindAnyObjectByType<SupportManager>();
             combatCardState = new CombatCardState();
             combatCardState.BuildDrawPileFromOwnedCards(deck ?? startingDeck, activeRelics);
 
             handController = new HandController(combatCardState, ResolveMaxHandSize(playerEffects));
-            effectResolver = new CardEffectResolver(combatCardState, handController, towerManager, enemyManager, playerEffects);
+            effectResolver = new CardEffectResolver(combatCardState, handController, towerManager, supportManager, enemyManager, playerEffects);
             handController.SetEffectResolver(effectResolver);
 
             handCardsPresenter = new HandCardsPresenter(handView);

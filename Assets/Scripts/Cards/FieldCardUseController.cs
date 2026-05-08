@@ -47,6 +47,8 @@ namespace Cards
                 return;
 
             CardInstance card = selectedCardController.SelectedCard;
+            if (card == null)
+                return;
 
             if (!validator.IsValid(card, point))
                 return;

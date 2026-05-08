@@ -11,6 +11,7 @@ namespace Cards
         [Header("Combat Setup")]
         [SerializeField] private CombatSessionDriver combatSessionDriver;
         [SerializeField] private TowerManager towerManager;
+        [SerializeField] private SupportManager supportManager;
         [SerializeField] private PlayFieldRaycaster playFieldRaycaster;
         [SerializeField] private CardPreviewController cardPreviewController;
         [SerializeField] private FieldCardUseController fieldCardUseController;
@@ -39,19 +40,14 @@ namespace Cards
             if (this.selectedCardController != null)
                 this.selectedCardController.OnSelectedCardChanged += HandleSelectedCardChanged;
 
+            if (supportManager == null)
+                supportManager = FindAnyObjectByType<SupportManager>();
+
             combatSessionDriver?.InitializeSession(handController);
-            cardPlacementValidator = new CardPlacementValidator(towerManager);
+            cardPlacementValidator = new CardPlacementValidator(towerManager, supportManager);
 
             if (drawPileView != null)
-            {
-                drawPileView.Initialize(
-                    combatCardState,
-                    handController,
-                    GetManualDrawCost,
-                    () => combatSessionDriver != null && combatSessionDriver.CanManuallyDraw(handController, GetManualDrawCost()),
-                    () => TryManualDraw(handController)
-                );
-            }
+                drawPileView.Initialize(combatCardState, handController);
 
             if (discardPileView != null)
             {
@@ -72,6 +68,7 @@ namespace Cards
                     selectedCardController,
                     playFieldRaycaster,
                     cardPlacementValidator,
+                    supportManager,
                     IsGameplayInputBlocked
                 );
             }
@@ -123,19 +120,6 @@ namespace Cards
 
             battleHUD.HideTowerInspector();
             cardPreviewController?.HideTowerRange();
-        }
-
-        private int GetManualDrawCost()
-        {
-            return combatSessionDriver != null ? combatSessionDriver.ManualDrawCost : 0;
-        }
-
-        private void TryManualDraw(HandController handController)
-        {
-            if (combatSessionDriver == null)
-                return;
-
-            combatSessionDriver.TryManualDraw(handController, GetManualDrawCost());
         }
 
         private bool IsGameplayInputBlocked()

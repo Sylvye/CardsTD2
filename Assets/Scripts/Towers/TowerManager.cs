@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Cards;
+using Combat;
 using Enemies;
 using UnityEngine;
 
@@ -9,8 +10,11 @@ namespace Towers
     {
         [SerializeField] private Transform towerParent;
         [SerializeField] private EnemyManager enemyManager;
+        [SerializeField] private SupportManager supportManager;
+        [SerializeField] private MonoBehaviour playerEffectsSource;
 
         private readonly List<TowerAgent> towers = new();
+        private IPlayerEffects playerEffects;
 
         public IReadOnlyList<TowerAgent> ActiveTowers => towers;
 
@@ -21,6 +25,13 @@ namespace Towers
 
             if (enemyManager == null)
                 enemyManager = FindAnyObjectByType<EnemyManager>();
+
+            if (supportManager == null)
+                supportManager = FindAnyObjectByType<SupportManager>();
+
+            playerEffects = playerEffectsSource as IPlayerEffects;
+            if (playerEffects == null)
+                playerEffects = FindAnyObjectByType<CombatSessionDriver>();
         }
 
         public bool CanPlaceTower(CardDef cardDef, Vector3 position)
@@ -64,6 +75,21 @@ namespace Towers
 
                 if (Vector2.Distance(newPos, towerPos) < combinedRadius)
                     return false;
+            }
+
+            if (supportManager != null)
+            {
+                IReadOnlyList<SupportAgent> supports = supportManager.ActiveSupports;
+                for (int i = 0; i < supports.Count; i++)
+                {
+                    SupportAgent support = supports[i];
+                    if (support == null)
+                        continue;
+
+                    float combinedRadius = placementRadius + support.PlacementRadius;
+                    if (Vector2.Distance(newPos, support.transform.position) < combinedRadius)
+                        return false;
+                }
             }
 
             foreach (SplinePathRenderer pathRenderer in FindObjectsByType<SplinePathRenderer>())
@@ -179,6 +205,7 @@ namespace Towers
                 return;
 
             towers.Add(tower);
+            supportManager?.NotifyTowerLayoutChanged();
         }
 
         public void UnregisterTower(TowerAgent tower)
@@ -187,11 +214,12 @@ namespace Towers
                 return;
 
             towers.Remove(tower);
+            supportManager?.NotifyTowerLayoutChanged();
         }
 
         private TowerRuntimeContext BuildRuntimeContext()
         {
-            return new TowerRuntimeContext(this, enemyManager);
+            return new TowerRuntimeContext(this, enemyManager, playerEffects);
         }
     }
 }

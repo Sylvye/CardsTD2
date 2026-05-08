@@ -10,18 +10,21 @@ namespace Cards
         private readonly CombatCardState cardState;
         private readonly HandController handController;
         private readonly TowerManager towerManager;
+        private readonly SupportManager supportManager;
         private readonly SpellResolver spellResolver;
 
         public CardEffectResolver(
             CombatCardState cardState,
             HandController handController,
             TowerManager towerManager,
+            SupportManager supportManager,
             EnemyManager enemyManager,
             IPlayerEffects playerEffects)
         {
             this.cardState = cardState;
             this.handController = handController;
             this.towerManager = towerManager;
+            this.supportManager = supportManager;
             spellResolver = new SpellResolver(towerManager, enemyManager, playerEffects);
         }
 
@@ -76,6 +79,10 @@ namespace Cards
                 case CardType.Tower:
                     ResolveTower(card, playContext.WorldPosition);
                     break;
+
+                case CardType.Support:
+                    ResolveSupport(card, playContext.WorldPosition);
+                    break;
             }
         }
 
@@ -124,6 +131,24 @@ namespace Cards
                 worldPosition,
                 Quaternion.identity
             );
+        }
+
+        private void ResolveSupport(CardInstance card, Vector3 worldPosition)
+        {
+            if (card?.ResolvedData == null || supportManager == null)
+                return;
+
+            switch (card.ResolvedData.SupportCardMode)
+            {
+                case SupportCardMode.Spawnable:
+                    if (card.ResolvedData.SupportDefinition != null)
+                        supportManager.PlaceSupport(card.ResolvedData, worldPosition);
+                    break;
+
+                case SupportCardMode.Upgrade:
+                    supportManager.ApplySupportUpgrade(card.ResolvedData, worldPosition);
+                    break;
+            }
         }
     }
 }

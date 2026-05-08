@@ -23,6 +23,8 @@ namespace Towers
 
         private readonly List<IStatModifier> runtimeModifiers = new();
         private readonly List<TrackedModifier> trackedModifiers = new();
+        private readonly List<IStatModifier> supportModifiers = new();
+        private readonly List<TrackedModifier> trackedSupportModifiers = new();
         private readonly List<TowerAgent> inheritedModifierSources = new();
         private readonly List<IAttackExecution> attackExecutions = new();
         private readonly List<EnemyAgent> targetBuffer = new();
@@ -30,6 +32,8 @@ namespace Towers
         private readonly HashSet<EnemyAgent> previousInRangeEnemies = new();
         private readonly List<TowerAttackDef> runtimeAttackDefinitions = new();
         private readonly List<CardAugmentDef> appliedAugments = new();
+        private readonly List<TowerTriggeredEffect> supportTriggeredEffects = new();
+        private readonly List<TowerAttackModifierData> supportAttackModifiers = new();
 
         private static readonly ITargetingStrategy DefaultTargetingStrategy = new PriorityTargetingStrategy();
 
@@ -55,6 +59,7 @@ namespace Towers
         public TargetPriority CurrentPriority => currentPriority;
         public string DisplayName => towerDef != null && !string.IsNullOrWhiteSpace(towerDef.displayName) ? towerDef.displayName : gameObject.name;
         public IReadOnlyList<CardAugmentDef> AppliedAugments => appliedAugments;
+        internal IReadOnlyList<TowerTriggeredEffect> SupportTriggeredEffects => supportTriggeredEffects;
         internal int TrackedModifierCount => trackedModifiers.Count;
 
         public virtual void Initialize(TowerDef def, TowerRuntimeContext context)
@@ -70,10 +75,14 @@ namespace Towers
 
             runtimeModifiers.Clear();
             trackedModifiers.Clear();
+            supportModifiers.Clear();
+            trackedSupportModifiers.Clear();
             inheritedModifierSources.Clear();
             appliedAugments.Clear();
             runtimeAttackDefinitions.Clear();
             useRuntimeAttackDefinitions = false;
+            supportTriggeredEffects.Clear();
+            supportAttackModifiers.Clear();
             inRangeEnemies.Clear();
             previousInRangeEnemies.Clear();
             if (def != null && def.defaultModifiers != null)
@@ -113,10 +122,14 @@ namespace Towers
             isInitialized = true;
             runtimeModifiers.Clear();
             trackedModifiers.Clear();
+            supportModifiers.Clear();
+            trackedSupportModifiers.Clear();
             inheritedModifierSources.Clear();
             appliedAugments.Clear();
             runtimeAttackDefinitions.Clear();
             useRuntimeAttackDefinitions = false;
+            supportTriggeredEffects.Clear();
+            supportAttackModifiers.Clear();
             inRangeEnemies.Clear();
             previousInRangeEnemies.Clear();
         }
@@ -225,6 +238,53 @@ namespace Towers
                 BuildAttackExecutions();
         }
 
+        public void SetSupportState(
+            IReadOnlyList<IStatModifier> modifiers,
+            IReadOnlyList<TowerAttackModifierData> attackModifiers,
+            IReadOnlyList<TowerTriggeredEffect> triggeredEffects)
+        {
+            supportModifiers.Clear();
+            trackedSupportModifiers.Clear();
+            supportAttackModifiers.Clear();
+            supportTriggeredEffects.Clear();
+
+            if (modifiers != null)
+            {
+                for (int i = 0; i < modifiers.Count; i++)
+                {
+                    IStatModifier modifier = modifiers[i];
+                    if (modifier == null)
+                        continue;
+
+                    supportModifiers.Add(modifier);
+                    trackedSupportModifiers.Add(new TrackedModifier(modifier, TowerModifierSource.Support, TowerModifierDuration.Active));
+                }
+            }
+
+            if (attackModifiers != null)
+            {
+                for (int i = 0; i < attackModifiers.Count; i++)
+                {
+                    TowerAttackModifierData modifier = attackModifiers[i];
+                    if (modifier != null)
+                        supportAttackModifiers.Add(modifier);
+                }
+            }
+
+            if (triggeredEffects != null)
+            {
+                for (int i = 0; i < triggeredEffects.Count; i++)
+                {
+                    TowerTriggeredEffect effect = triggeredEffects[i];
+                    if (effect != null)
+                        supportTriggeredEffects.Add(effect);
+                }
+            }
+
+            if (isInitialized)
+                BuildAttackExecutions();
+        }
+
         public List<TowerInspectorModifierEntry> GetActiveEffectEntries()
         {
             List<TowerInspectorModifierEntry> entries = new();
@@ -256,6 +316,9 @@ namespace Towers
         {
             for (int i = 0; i < runtimeModifiers.Count; i++)
                 runtimeModifiers[i].ModifyStats(this, ref stats);
+
+            for (int i = 0; i < supportModifiers.Count; i++)
+                supportModifiers[i].ModifyStats(this, ref stats);
 
             for (int i = 0; i < inheritedModifierSources.Count; i++)
             {
@@ -290,9 +353,20 @@ namespace Towers
             TowerModifierSource? sourceOverride,
             TowerModifierDuration? durationOverride)
         {
-            for (int i = 0; i < trackedModifiers.Count; i++)
+            AppendTrackedInspectorEntries(entries, trackedModifiers, durationFilter, sourceOverride, durationOverride);
+            AppendTrackedInspectorEntries(entries, trackedSupportModifiers, durationFilter, sourceOverride, durationOverride);
+        }
+
+        private static void AppendTrackedInspectorEntries(
+            List<TowerInspectorModifierEntry> entries,
+            List<TrackedModifier> trackedModifierList,
+            TowerModifierDuration durationFilter,
+            TowerModifierSource? sourceOverride,
+            TowerModifierDuration? durationOverride)
+        {
+            for (int i = 0; i < trackedModifierList.Count; i++)
             {
-                TrackedModifier trackedModifier = trackedModifiers[i];
+                TrackedModifier trackedModifier = trackedModifierList[i];
                 if (trackedModifier == null || trackedModifier.Duration != durationFilter)
                     continue;
 
@@ -328,6 +402,16 @@ namespace Towers
                     towerModifier.DisplayName,
                     towerModifier.Icon,
                     towerModifier.Tone,
+                    source,
+                    duration);
+            }
+
+            if (modifier is ITowerInspectorDescribable describable)
+            {
+                return new TowerInspectorModifierEntry(
+                    describable.DisplayName,
+                    describable.Icon,
+                    describable.Tone,
                     source,
                     duration);
             }
@@ -472,7 +556,19 @@ namespace Towers
                 if (attackDef == null)
                     continue;
 
-                IAttackExecution execution = attackDef.CreateExecution(this);
+                TowerAttackDef executionAttackDef = attackDef;
+                if (supportAttackModifiers.Count > 0)
+                {
+                    executionAttackDef = Instantiate(attackDef);
+                    for (int modifierIndex = 0; modifierIndex < supportAttackModifiers.Count; modifierIndex++)
+                    {
+                        TowerAttackModifierData modifier = supportAttackModifiers[modifierIndex];
+                        if (modifier != null && modifier.Matches(executionAttackDef))
+                            modifier.ApplyTo(executionAttackDef);
+                    }
+                }
+
+                IAttackExecution execution = executionAttackDef.CreateExecution(this);
                 if (execution != null)
                     attackExecutions.Add(execution);
             }
@@ -514,7 +610,9 @@ namespace Towers
 
         private void FireTrigger(TowerTriggerType trigger, EnemyAgent enemy, float damageAmount, Vector3 effectPosition, bool wasKill)
         {
-            if (towerDef == null || effectResolver == null || towerDef.triggeredEffects == null || towerDef.triggeredEffects.Count == 0)
+            bool hasTowerEffects = towerDef != null && towerDef.triggeredEffects != null && towerDef.triggeredEffects.Count > 0;
+            bool hasSupportEffects = supportTriggeredEffects.Count > 0;
+            if (effectResolver == null || (!hasTowerEffects && !hasSupportEffects))
                 return;
 
             Vector3 towerPosition = transform.position;
@@ -530,7 +628,7 @@ namespace Towers
                 runtimeContext
             );
 
-            effectResolver.ResolveEffectsForTrigger(towerDef, trigger, effectContext);
+            effectResolver.ResolveEffectsForTrigger(this, trigger, effectContext);
         }
     }
 }

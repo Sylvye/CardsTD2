@@ -15,6 +15,7 @@ namespace Cards
         private SelectedCardController selectedCardController;
         private PlayFieldRaycaster playFieldRaycaster;
         private CardPlacementValidator validator;
+        private SupportManager supportManager;
         private Func<bool> isInputBlocked;
         private TowerAgent inspectedTower;
 
@@ -22,11 +23,13 @@ namespace Cards
             SelectedCardController selectedController,
             PlayFieldRaycaster raycaster,
             CardPlacementValidator placementValidator,
+            SupportManager supportManager,
             Func<bool> inputBlocked = null)
         {
             selectedCardController = selectedController;
             playFieldRaycaster = raycaster;
             validator = placementValidator;
+            this.supportManager = supportManager != null ? supportManager : FindAnyObjectByType<SupportManager>();
             isInputBlocked = inputBlocked;
 
             if (selectedCardController is not null)
@@ -124,6 +127,8 @@ namespace Cards
 
             if (card.Type == CardType.Spell)
             {
+                supportManager?.HideUpgradePreview();
+                supportManager?.HidePlacementPreview();
                 if (card.ResolvedData.SpawnableObject == null)
                 {
                     HideAll();
@@ -136,6 +141,8 @@ namespace Cards
 
             if (card.Type == CardType.Tower)
             {
+                supportManager?.HideUpgradePreview();
+                supportManager?.ShowPlacementPreview(point);
                 if (placementRadius < 0f)
                 {
                     HideAll();
@@ -147,6 +154,38 @@ namespace Cards
                 return;
             }
 
+            if (card.Type == CardType.Support)
+            {
+                supportManager?.ShowPlacementPreview(point);
+
+                if (card.ResolvedData.SupportCardMode == SupportCardMode.Upgrade)
+                {
+                    HideCircle(primaryRadiusVisual);
+                    HideCircle(secondaryRadiusVisual);
+                    supportManager?.ShowUpgradePreview(card, point, validColor, invalidColor);
+                    return;
+                }
+
+                supportManager?.HideUpgradePreview();
+                if (card.ResolvedData.SupportDefinition == null)
+                {
+                    HideAll();
+                    return;
+                }
+
+                if (placementRadius < 0f)
+                {
+                    HideAll();
+                    return;
+                }
+
+                ShowCircle(primaryRadiusVisual, point, placementRadius, color);
+                ShowCircle(secondaryRadiusVisual, point, effectRadius, color);
+                return;
+            }
+
+            supportManager?.HideUpgradePreview();
+            supportManager?.HidePlacementPreview();
             HideAll();
         }
 
@@ -172,6 +211,8 @@ namespace Cards
 
         private void HideAll()
         {
+            supportManager?.HideUpgradePreview();
+            supportManager?.HidePlacementPreview();
             HideCircle(primaryRadiusVisual);
             HideCircle(secondaryRadiusVisual);
         }
@@ -183,6 +224,9 @@ namespace Cards
 
             if (card.ResolvedData.TowerDefinition != null)
                 return card.ResolvedData.TowerDefinition.baseStats.range;
+
+            if (card.ResolvedData.SupportDefinition != null)
+                return card.ResolvedData.SupportDefinition.supportRadius;
 
             if (card.Type == CardType.Spell)
                 return SpawnableColliderUtility.GetPreviewRadius(card.ResolvedData.SpawnableObject);

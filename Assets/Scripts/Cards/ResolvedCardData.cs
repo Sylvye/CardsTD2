@@ -20,6 +20,12 @@ namespace Cards
         public SpawnableObjectDef SpawnableObject { get; }
         public TowerDef TowerDefinition { get; }
         public SpellDef SpellDefinition { get; }
+        public SupportDef SupportDefinition { get; }
+        public SupportCardMode SupportCardMode { get; }
+        public SupportSubtype SupportSubtype { get; }
+        public SupportUpgradeTargetMask SupportUpgradeTargets { get; }
+        public float SupportConduitRangeIncrease { get; }
+        public int SupportEffectiveConnectionReduction { get; }
         public IReadOnlyList<TowerStatModifierDef> AdditionalTowerModifiers { get; }
         public IReadOnlyList<TowerAttackDef> RuntimeTowerAttacks { get; }
 
@@ -38,6 +44,12 @@ namespace Cards
             SpawnableObjectDef spawnableObject,
             TowerDef towerDefinition,
             SpellDef spellDefinition,
+            SupportDef supportDefinition,
+            SupportCardMode supportCardMode,
+            SupportSubtype supportSubtype,
+            SupportUpgradeTargetMask supportUpgradeTargets,
+            float supportConduitRangeIncrease,
+            int supportEffectiveConnectionReduction,
             IReadOnlyList<TowerStatModifierDef> additionalTowerModifiers,
             IReadOnlyList<TowerAttackDef> runtimeTowerAttacks)
         {
@@ -55,6 +67,12 @@ namespace Cards
             SpawnableObject = spawnableObject;
             TowerDefinition = towerDefinition;
             SpellDefinition = spellDefinition;
+            SupportDefinition = supportDefinition;
+            SupportCardMode = supportCardMode;
+            SupportSubtype = supportSubtype;
+            SupportUpgradeTargets = supportUpgradeTargets;
+            SupportConduitRangeIncrease = supportConduitRangeIncrease;
+            SupportEffectiveConnectionReduction = supportEffectiveConnectionReduction;
             AdditionalTowerModifiers = additionalTowerModifiers;
             RuntimeTowerAttacks = runtimeTowerAttacks;
         }

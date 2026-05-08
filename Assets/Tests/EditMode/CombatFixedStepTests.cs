@@ -49,24 +49,6 @@ public class CombatFixedStepTests
     }
 
     [Test]
-    public void CombatSessionDriver_ManualDrawCost_UsesConfiguredSessionValue()
-    {
-        GameObject gameObject = new("CombatSessionDriver Manual Draw Cost Test");
-        CombatSessionDriver driver = gameObject.AddComponent<CombatSessionDriver>();
-
-        Assert.That(driver.ManualDrawCost, Is.EqualTo(2));
-
-        driver.ConfigureSession(new CombatSessionSetup
-        {
-            ManualDrawCost = 7
-        });
-
-        Assert.That(driver.ManualDrawCost, Is.EqualTo(7));
-
-        Object.DestroyImmediate(gameObject);
-    }
-
-    [Test]
     public void CombatSessionDriver_SetPaused_ZeroesTimeScaleAndRestoresSelectedSpeed()
     {
         GameObject gameObject = new("CombatSessionDriver Pause Test");
@@ -101,7 +83,7 @@ public class CombatFixedStepTests
             CurrentHealth = 20,
             MaxHealth = 20,
             OpeningHandSize = 5,
-            ManualDrawCost = 5
+            MaxHandSize = 5
         });
 
         GameObject bootstrapperObject = new("CombatSceneBootstrapper Test");
@@ -120,7 +102,7 @@ public class CombatFixedStepTests
         CombatSessionSetup setup = (CombatSessionSetup)buildSessionSetup.Invoke(bootstrapper, new object[] { request });
 
         Assert.That(setup.StartingMana, Is.EqualTo(10));
-        Assert.That(setup.ManualDrawCost, Is.EqualTo(5));
+        Assert.That(setup.MaxHandSize, Is.EqualTo(5));
         Assert.That(setup.CurrentHealth, Is.EqualTo(13));
         Assert.That(setup.MaxHealth, Is.EqualTo(21));
 
@@ -164,7 +146,7 @@ public class CombatFixedStepTests
         CardDef cardDef = ScriptableObject.CreateInstance<CardDef>();
         selectedCardController.Select(new CardInstance(cardDef, 2));
 
-        controller.Initialize(selectedCardController, null, null, () => true);
+        controller.Initialize(selectedCardController, null, null, null, () => true);
 
         MethodInfo update = typeof(CardPreviewController).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.NotNull(update);
@@ -191,7 +173,7 @@ public class CombatFixedStepTests
         SetPrivateField(controller, "secondaryRadiusVisual", secondaryVisual);
         SetPrivateField(controller, "validColor", Color.cyan);
 
-        controller.Initialize(new SelectedCardController(), null, null, () => false);
+        controller.Initialize(new SelectedCardController(), null, null, null, () => false);
 
         TowerDef towerDef = ScriptableObject.CreateInstance<TowerDef>();
         towerDef.baseStats.range = 3.5f;
@@ -199,7 +181,7 @@ public class CombatFixedStepTests
         GameObject towerObject = new("Tower", typeof(TowerAgent));
         towerObject.transform.position = new Vector3(4f, -2f, 0f);
         TowerAgent tower = towerObject.GetComponent<TowerAgent>();
-        tower.Initialize(towerDef, new TowerRuntimeContext(null, null));
+        tower.Initialize(towerDef, new TowerRuntimeContext(null, null, null));
 
         controller.ShowTowerRange(tower);
 

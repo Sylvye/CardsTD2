@@ -62,7 +62,7 @@ public class TowerInspectorTests
         TowerAgent tower = towerObject.GetComponent<TowerAgent>();
         TowerAgent parentTower = parentTowerObject.GetComponent<TowerAgent>();
 
-        TowerRuntimeContext context = new(null, null);
+        TowerRuntimeContext context = new(null, null, null);
         tower.Initialize(towerDef, context);
         parentTower.Initialize(parentDef, context);
 
@@ -152,7 +152,7 @@ public class TowerInspectorTests
 
         GameObject towerObject = Track(new GameObject(displayName, typeof(TowerAgent)));
         TowerAgent tower = towerObject.GetComponent<TowerAgent>();
-        tower.Initialize(towerDef, new TowerRuntimeContext(null, null));
+        tower.Initialize(towerDef, new TowerRuntimeContext(null, null, null));
         return tower;
     }
 

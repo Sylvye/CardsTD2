@@ -16,8 +16,8 @@ public class CardExhaustTests
         bool played = handController.PlayCard(cardInstance, playerState, playContext: null);
 
         Assert.That(played, Is.True);
-        Assert.That(cardState.Hand.Contains(cardInstance), Is.False);
-        Assert.That(cardState.DiscardPile.Contains(cardInstance), Is.True);
+        Assert.That(cardState.Hand.Contains(cardInstance), Is.True);
+        Assert.That(cardState.DiscardPile.Contains(cardInstance), Is.False);
         Assert.That(cardState.ExhaustPile.Contains(cardInstance), Is.False);
 
         Object.DestroyImmediate(cardDef);
@@ -44,6 +44,38 @@ public class CardExhaustTests
         Assert.That(cardState.ExhaustPile.Contains(cardInstance), Is.True);
 
         Object.DestroyImmediate(cardDef);
+    }
+
+    [Test]
+    public void PlayCard_DrawsReplacementCardIntoFreedHandSlot()
+    {
+        CardDef firstCardDef = CreateCardDef(exhaust: false);
+        firstCardDef.id = "first-card";
+        CardDef secondCardDef = CreateCardDef(exhaust: false);
+        secondCardDef.id = "second-card";
+
+        CombatCardState cardState = new();
+        cardState.BuildDrawPileFromOwnedCards(new[]
+        {
+            new OwnedCard(firstCardDef),
+            new OwnedCard(secondCardDef)
+        });
+
+        CardInstance openingCard = cardState.DrawOne();
+        HandController handController = new(cardState);
+        PlayerState playerState = new(startingMana: 5);
+
+        bool played = handController.PlayCard(openingCard, playerState, playContext: null);
+
+        Assert.That(played, Is.True);
+        Assert.That(cardState.Hand.Count, Is.EqualTo(1));
+        Assert.That(cardState.Hand.Contains(openingCard), Is.False);
+
+        CardInstance replacement = cardState.Hand.Cards[0];
+        Assert.That(replacement.Definition.id, Is.Not.EqualTo(openingCard.Definition.id));
+
+        Object.DestroyImmediate(firstCardDef);
+        Object.DestroyImmediate(secondCardDef);
     }
 
     private static CardDef CreateCardDef(bool exhaust)

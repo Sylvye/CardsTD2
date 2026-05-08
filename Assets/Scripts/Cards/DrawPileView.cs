@@ -9,36 +9,19 @@ namespace Cards
     public class DrawPileView : MonoBehaviour
     {
         [SerializeField] private TMP_Text countText;
-        [SerializeField] private TMP_Text drawCostText;
-        [SerializeField] private Button drawButton;
 
         private CombatCardState cardState;
         private HandController handController;
-        private Func<int> getDrawCost;
-        private Func<bool> canDraw;
-        private Action onDrawRequested;
 
         public void Initialize(
             CombatCardState combatCardState,
-            HandController controller,
-            Func<int> drawCostGetter,
-            Func<bool> canDrawGetter,
-            Action drawRequestedCallback)
+            HandController controller)
         {
             cardState = combatCardState;
             handController = controller;
-            getDrawCost = drawCostGetter;
-            canDraw = canDrawGetter;
-            onDrawRequested = drawRequestedCallback;
 
             if (handController != null)
                 handController.OnHandChanged += Refresh;
-
-            if (drawButton != null)
-            {
-                drawButton.onClick.RemoveAllListeners();
-                drawButton.onClick.AddListener(HandleClicked);
-            }
 
             Refresh();
         }
@@ -61,17 +44,6 @@ namespace Cards
 
             if (countText is not null)
                 countText.text = $"{cardState.DrawPile.Count}";
-
-            if (drawCostText is not null && getDrawCost != null)
-                drawCostText.text = $"Draw ({getDrawCost()})";
-
-            if (drawButton is not null && canDraw != null)
-                drawButton.interactable = canDraw();
-        }
-
-        private void HandleClicked()
-        {
-            onDrawRequested?.Invoke();
         }
     }
 }

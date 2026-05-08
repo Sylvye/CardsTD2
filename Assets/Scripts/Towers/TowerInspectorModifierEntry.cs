@@ -8,7 +8,8 @@ namespace Towers
         Base,
         Augment,
         Spell,
-        Inherited
+        Inherited,
+        Support
     }
 
     public enum TowerModifierDuration
@@ -49,6 +50,7 @@ namespace Towers
                     TowerModifierSource.Augment => "Augment",
                     TowerModifierSource.Spell => "Spell",
                     TowerModifierSource.Inherited => "Inherited",
+                    TowerModifierSource.Support => "Support",
                     _ => "Effect"
                 };
             }

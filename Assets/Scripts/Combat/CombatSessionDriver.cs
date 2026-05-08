@@ -20,7 +20,6 @@ namespace Combat
 
         public PlayerState PlayerState => playerState;
         public float CurrentSpeedMultiplier => SimulationSpeedMultipliers[currentSimulationSpeedIndex];
-        public int ManualDrawCost => GetActiveSetup().ManualDrawCost;
         public int MaxHandSize => GetActiveSetup().MaxHandSize;
         public CombatSessionSetup ConfiguredSetup => GetConfiguredSetup().Clone();
         public CombatSessionSetup ResolvedSetup => GetActiveSetup().Clone();
@@ -70,22 +69,6 @@ namespace Combat
         private void OnDestroy()
         {
             ResetSimulationSpeed();
-        }
-
-        public bool TryManualDraw(HandController handController, int drawCost)
-        {
-            if (handController == null || playerState == null)
-                return false;
-
-            return handController.TryManualDraw(playerState, drawCost);
-        }
-
-        public bool CanManuallyDraw(HandController handController, int drawCost)
-        {
-            if (handController == null || playerState == null)
-                return false;
-
-            return handController.CanManuallyDraw(playerState, drawCost);
         }
 
         public void LoseHealth(int amount)
