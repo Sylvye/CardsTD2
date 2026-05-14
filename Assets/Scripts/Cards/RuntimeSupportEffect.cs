@@ -3,29 +3,39 @@ using UnityEngine;
 
 namespace Cards
 {
-    internal sealed class RuntimeSupportStatModifier : IStatModifier, ITowerInspectorDescribable
+    public sealed class RuntimeSupportEffect : IStatModifier, ITowerInspectorDescribable
     {
-        public RuntimeSupportStatModifier(
+        public RuntimeSupportEffect(
             string displayName,
             float healthAdd = 0f,
             float rangeAdd = 0f,
             float fireIntervalMultiplier = 1f,
-            float damageAdd = 0f)
+            float damageAdd = 0f,
+            TowerAttackModifierData attackModifier = null,
+            TowerTriggeredEffect triggeredEffect = null,
+            Sprite icon = null,
+            TowerModifierTone tone = TowerModifierTone.Buff)
         {
             DisplayName = displayName;
             HealthAdd = healthAdd;
             RangeAdd = rangeAdd;
             FireIntervalMultiplier = Mathf.Max(0.01f, fireIntervalMultiplier);
             DamageAdd = damageAdd;
+            AttackModifier = attackModifier;
+            TriggeredEffect = triggeredEffect;
+            Icon = icon;
+            Tone = tone;
         }
 
         public string DisplayName { get; }
-        public Sprite Icon => null;
-        public TowerModifierTone Tone => TowerModifierTone.Buff;
+        public Sprite Icon { get; }
+        public TowerModifierTone Tone { get; }
         public float HealthAdd { get; }
         public float RangeAdd { get; }
         public float FireIntervalMultiplier { get; }
         public float DamageAdd { get; }
+        public TowerAttackModifierData AttackModifier { get; }
+        public TowerTriggeredEffect TriggeredEffect { get; }
 
         public void ModifyStats(TowerAgent tower, ref TowerResolvedStats stats)
         {

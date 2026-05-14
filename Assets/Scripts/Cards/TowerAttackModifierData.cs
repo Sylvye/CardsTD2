@@ -30,6 +30,9 @@ namespace Cards
         public float spawnRadiusDelta;
         public float summonLifetimeDelta;
 
+        [Header("Shared")]
+        public float splashRadiusDelta;
+
         public bool Matches(TowerAttackDef attackDef)
         {
             if (attackDef == null)
@@ -43,6 +46,8 @@ namespace Cards
 
         public void ApplyTo(TowerAttackDef attackDef)
         {
+            attackDef.AdjustSplashRadius(splashRadiusDelta);
+
             if (attackDef is ProjectileTowerAttackDef projectileAttack)
             {
                 float projectileCount = (projectileAttack.projectileCount + projectileCountDelta) * Mathf.Max(0f, projectileCountMultiplier);

@@ -46,6 +46,7 @@ namespace Towers
 
         public float DegreesSpread => Mathf.Max(MinimumDegreesSpread, degreesSpread);
         public float MinimumDegreesSpread => Mathf.Max(0f, minimumDegreesSpread);
+        public override bool SupportsHitPointSplash => true;
 
         public override IAttackExecution CreateExecution(TowerAgent tower)
         {
@@ -66,8 +67,9 @@ namespace Towers
             trail.ClampValues();
         }
 
-        private void OnValidate()
+        protected override void OnValidate()
         {
+            base.OnValidate();
             ClampSpreadToMinimum();
         }
     }

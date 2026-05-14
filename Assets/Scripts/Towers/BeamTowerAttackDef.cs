@@ -9,6 +9,7 @@ namespace Towers
         [Min(0f)] public float flatDamageBonus;
         [Min(1)] public int projectileCount = 1;
         public LineRenderer beamRendererPrefab;
+        public override bool SupportsHitPointSplash => true;
 
         public override IAttackExecution CreateExecution(TowerAgent tower)
         {

@@ -21,6 +21,9 @@ MonoBehaviour:
     tickInterval: 0
     tickDamage: -1
     damageType: {fileID: 11400000, guid: 990399bbb9c1498fb659dafff749b34d, type: 2}
+  splashRadius: 0
+  splashMaxTargets: 3
+  splashImpactEffectPrefab: {fileID: 7816628624491259970, guid: 6be8b3a23eb1498ab3a2bc289ee8476d, type: 3}
   projectilePrefab: {fileID: 3227845555419554271, guid: e987623bf52de48e6a0775e226d4cbbf, type: 3}
   projectileCount: 3
   damageBonus: 0

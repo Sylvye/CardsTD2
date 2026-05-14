@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Towers.ProjectileTowerAttackDef
   targetFilters: []
   damageType: {fileID: 11400000, guid: ceb65f1a0a404858bbfa385ea1b90127, type: 2}
+  splashRadius: 0
+  splashMaxTargets: 3
+  splashImpactEffectPrefab: {fileID: 7816628624491259970, guid: 6be8b3a23eb1498ab3a2bc289ee8476d, type: 3}
   projectilePrefab: {fileID: 3227845555419554271, guid: e987623bf52de48e6a0775e226d4cbbf, type: 3}
   projectileCount: 1
   damageBonus: 0

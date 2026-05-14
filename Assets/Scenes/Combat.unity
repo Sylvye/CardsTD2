@@ -166,7 +166,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -303,7 +303,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -441,7 +441,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
   m_VerticalFit: 2
@@ -1030,20 +1030,6 @@ MonoBehaviour:
   enemyManager: {fileID: 751640687}
   supportManager: {fileID: 284558779}
   playerEffectsSource: {fileID: 962809201}
---- !u!114 &284558779
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 284558776}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e06a096af1c8b425287e8e4ef853a3b4, type: 3}
-  m_Name: ''
-  m_EditorClassIdentifier: Assembly-CSharp::Cards.SupportManager
-  supportParent: {fileID: 284558778}
-  towerManager: {fileID: 284558777}
 --- !u!4 &284558778
 Transform:
   m_ObjectHideFlags: 0
@@ -1059,6 +1045,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &284558779
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 284558776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e06a096af1c8b425287e8e4ef853a3b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Cards.SupportManager
+  supportParent: {fileID: 284558778}
+  towerManager: {fileID: 284558777}
 --- !u!1 &287364995
 GameObject:
   m_ObjectHideFlags: 0
@@ -2649,8 +2649,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Cards.DrawPileView
   countText: {fileID: 999030583}
-  drawCostText: {fileID: 1656626228}
-  drawButton: {fileID: 122507092}
 --- !u!1 &882685241
 GameObject:
   m_ObjectHideFlags: 0
@@ -2846,7 +2844,6 @@ MonoBehaviour:
     MaxHealth: 20
     OpeningHandSize: 5
     MaxHandSize: 5
-    ManualDrawCost: 5
 --- !u!4 &962809202
 Transform:
   m_ObjectHideFlags: 0
@@ -4646,17 +4643,7 @@ MonoBehaviour:
   resolvedSessionText: {fileID: 309910002}
   speedButton: {fileID: 2055000102}
   speedButtonText: {fileID: 2055000112}
-  towerInspectorRoot: {fileID: 188332703}
-  towerNameText: {fileID: 1584439391}
-  targetingButton: {fileID: 411862815}
-  targetingButtonText: {fileID: 1239996007}
-  augmentListRoot: {fileID: 665246953}
-  augmentEmptyText: {fileID: 1495731946}
-  activeEffectsListRoot: {fileID: 63940115}
-  activeEffectsEmptyText: {fileID: 864110602}
-  permanentModifiersListRoot: {fileID: 2076800765}
-  permanentModifiersEmptyText: {fileID: 1880534587}
-  reservedStatsRoot: {fileID: 981875286}
+  towerInspectorView: {fileID: 0}
 --- !u!114 &1847772221
 MonoBehaviour:
   m_ObjectHideFlags: 0

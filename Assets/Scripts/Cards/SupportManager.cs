@@ -357,7 +357,7 @@ namespace Cards
 
             IReadOnlyList<TowerAgent> towers = towerManager != null ? towerManager.ActiveTowers : System.Array.Empty<TowerAgent>();
             for (int i = 0; i < towers.Count; i++)
-                towers[i]?.SetSupportState(null, null, null);
+                towers[i]?.SetSupportState(null);
 
             Dictionary<TowerAgent, List<SupportPath>> applicationsByTower = new();
             List<SupportAgent> beacons = new();
@@ -466,15 +466,15 @@ namespace Cards
             if (tower == null)
                 return;
 
-            List<IStatModifier> statModifiers = new();
-            List<TowerAttackModifierData> attackModifiers = new();
-            List<TowerTriggeredEffect> triggeredEffects = new();
+            List<RuntimeSupportEffect> supportEffects = new();
 
             float rangeAdd = 0f;
             float damageAdd = 0f;
             float fireIntervalMultiplier = 1f;
             int pierceAdd = 0;
             float projectileCountMultiplier = 1f;
+            float splashRadiusAdd = 0f;
+            float onKillGainManaAdd = 0f;
 
             for (int i = 0; i < applications.Count; i++)
             {
@@ -500,34 +500,24 @@ namespace Cards
                         pierceAdd += Mathf.RoundToInt(application.Value);
                         break;
                     case SupportBuffType.OnHitSplashRadius:
-                        triggeredEffects.Add(new TowerTriggeredEffect
-                        {
-                            trigger = TowerTriggerType.OnHit,
-                            effectType = TowerEffectType.SplashDamageFromHit,
-                            radius = application.Value
-                        });
+                        splashRadiusAdd += application.Value;
                         break;
                     case SupportBuffType.OnKillGainMana:
-                        triggeredEffects.Add(new TowerTriggeredEffect
-                        {
-                            trigger = TowerTriggerType.OnKill,
-                            effectType = TowerEffectType.GainMana,
-                            amount = application.Value
-                        });
+                        onKillGainManaAdd += application.Value;
                         break;
                 }
             }
 
             if (rangeAdd != 0f)
             {
-                statModifiers.Add(new RuntimeSupportStatModifier(
+                supportEffects.Add(new RuntimeSupportEffect(
                     $"{FormatSignedStatValue(rangeAdd)} Range",
                     rangeAdd: rangeAdd));
             }
 
             if (damageAdd != 0f)
             {
-                statModifiers.Add(new RuntimeSupportStatModifier(
+                supportEffects.Add(new RuntimeSupportEffect(
                     $"{FormatSignedStatValue(damageAdd)} Damage",
                     damageAdd: damageAdd));
             }
@@ -535,22 +525,55 @@ namespace Cards
             if (!Mathf.Approximately(fireIntervalMultiplier, 1f))
             {
                 float attackSpeedMultiplier = 1f / Mathf.Max(0.01f, fireIntervalMultiplier);
-                statModifiers.Add(new RuntimeSupportStatModifier(
+                supportEffects.Add(new RuntimeSupportEffect(
                     $"Attack Speed x{FormatMultiplierValue(attackSpeedMultiplier)}",
                     fireIntervalMultiplier: fireIntervalMultiplier));
             }
 
-            if (pierceAdd != 0 || !Mathf.Approximately(projectileCountMultiplier, 1f))
+            if (!Mathf.Approximately(projectileCountMultiplier, 1f))
             {
-                attackModifiers.Add(new TowerAttackModifierData
-                {
-                    pierceDelta = pierceAdd,
-                    projectileCountMultiplier = projectileCountMultiplier,
-                    beamProjectileCountMultiplier = projectileCountMultiplier
-                });
+                supportEffects.Add(new RuntimeSupportEffect(
+                    $"Projectile Count x{FormatMultiplierValue(projectileCountMultiplier)}",
+                    attackModifier: new TowerAttackModifierData
+                    {
+                        projectileCountMultiplier = projectileCountMultiplier,
+                        beamProjectileCountMultiplier = projectileCountMultiplier
+                    }));
             }
 
-            tower.SetSupportState(statModifiers, attackModifiers, triggeredEffects);
+            if (pierceAdd != 0)
+            {
+                supportEffects.Add(new RuntimeSupportEffect(
+                    $"{FormatSignedStatValue(pierceAdd)} Pierce",
+                    attackModifier: new TowerAttackModifierData
+                    {
+                        pierceDelta = pierceAdd
+                    }));
+            }
+
+            if (!Mathf.Approximately(splashRadiusAdd, 0f))
+            {
+                supportEffects.Add(new RuntimeSupportEffect(
+                    $"{FormatSignedStatValue(splashRadiusAdd)} Splash Radius",
+                    attackModifier: new TowerAttackModifierData
+                    {
+                        splashRadiusDelta = splashRadiusAdd
+                    }));
+            }
+
+            if (onKillGainManaAdd > 0f)
+            {
+                supportEffects.Add(new RuntimeSupportEffect(
+                    $"On Kill: +{FormatMultiplierValue(onKillGainManaAdd)} Mana",
+                    triggeredEffect: new TowerTriggeredEffect
+                    {
+                        trigger = TowerTriggerType.OnKill,
+                        effectType = TowerEffectType.GainMana,
+                        amount = onKillGainManaAdd
+                    }));
+            }
+
+            tower.SetSupportState(supportEffects);
         }
 
         private void RefreshSegments(Dictionary<TowerAgent, List<SupportPath>> applicationsByTower)

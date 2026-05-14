@@ -15,6 +15,9 @@ MonoBehaviour:
   targetFilters: []
   damageType: {fileID: 11400000, guid: 519ce00809cd4260824271811b0683d6, type: 2}
   onHitStatusEffects: []
+  splashRadius: 0
+  splashMaxTargets: 3
+  splashImpactEffectPrefab: {fileID: 7816628624491259970, guid: 6be8b3a23eb1498ab3a2bc289ee8476d, type: 3}
   damageMultiplier: 1
   flatDamageBonus: 0
   projectileCount: 1

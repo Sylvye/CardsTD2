@@ -5,7 +5,6 @@ namespace Towers
         None,
         DamageTarget,
         HealTower,
-        GainMana,
-        SplashDamageFromHit
+        GainMana
     }
 }

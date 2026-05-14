@@ -1,6 +1,9 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using Cards;
 using Combat;
+using Enemies;
 using NUnit.Framework;
 using Towers;
 using UnityEngine;
@@ -8,6 +11,20 @@ using UnityEngine.UI;
 
 public class TowerInspectorTests
 {
+    private sealed class TestPlayerEffects : IPlayerEffects
+    {
+        public int ManaGained { get; private set; }
+
+        public void LoseHealth(int amount)
+        {
+        }
+
+        public void GainMana(int amount)
+        {
+            ManaGained += amount;
+        }
+    }
+
     private readonly List<Object> cleanupObjects = new();
 
     [TearDown]
@@ -133,6 +150,122 @@ public class TowerInspectorTests
         Assert.That(battleHUD.TowerInspectorRoot.gameObject.activeSelf, Is.False);
     }
 
+    [Test]
+    public void TowerAgent_SetSupportState_UnifiesInspectorEntriesAndAttackModifiers()
+    {
+        ProjectileTowerAttackDef attackDef = Track(ScriptableObject.CreateInstance<ProjectileTowerAttackDef>());
+        attackDef.projectileCount = 1;
+        attackDef.pierceCount = 0;
+        attackDef.AdjustSplashRadius(0.25f);
+
+        TowerDef towerDef = Track(ScriptableObject.CreateInstance<TowerDef>());
+        towerDef.displayName = "Support Tower";
+        towerDef.baseStats = new TowerBaseStats
+        {
+            maxHealth = 10f,
+            range = 5f,
+            fireInterval = 1f,
+            damage = 1f
+        };
+        towerDef.attacks = new List<TowerAttackDef> { attackDef };
+
+        GameObject towerObject = Track(new GameObject("Support Tower", typeof(TowerAgent)));
+        TowerAgent tower = towerObject.GetComponent<TowerAgent>();
+        tower.Initialize(towerDef, new TowerRuntimeContext(null, null, null));
+
+        tower.SetSupportState(new List<RuntimeSupportEffect>
+        {
+            new("+2 Range", rangeAdd: 2f),
+            new("Projectile Count x2", attackModifier: new TowerAttackModifierData
+            {
+                projectileCountMultiplier = 2f,
+                beamProjectileCountMultiplier = 2f
+            }),
+            new("+3 Pierce", attackModifier: new TowerAttackModifierData
+            {
+                pierceDelta = 3
+            }),
+            new("+1.25 Splash Radius", attackModifier: new TowerAttackModifierData
+            {
+                splashRadiusDelta = 1.25f
+            }),
+            new("On Kill: +2 Mana", triggeredEffect: new TowerTriggeredEffect
+            {
+                trigger = TowerTriggerType.OnKill,
+                effectType = TowerEffectType.GainMana,
+                amount = 2f
+            })
+        });
+
+        List<TowerInspectorModifierEntry> activeEntries = tower.GetActiveEffectEntries();
+        Assert.That(activeEntries.Count, Is.EqualTo(5));
+        CollectionAssert.AreEquivalent(
+            new[]
+            {
+                "+2 Range",
+                "Projectile Count x2",
+                "+3 Pierce",
+                "+1.25 Splash Radius",
+                "On Kill: +2 Mana"
+            },
+            activeEntries.ConvertAll(entry => entry.DisplayName));
+        Assert.That(activeEntries.TrueForAll(entry => entry.Source == TowerModifierSource.Support));
+        Assert.That(activeEntries.TrueForAll(entry => entry.Duration == TowerModifierDuration.Active));
+        Assert.That(tower.GetResolvedStats().Range, Is.EqualTo(7f).Within(0.001f));
+
+        ProjectileTowerAttackDef executionAttackDef = GetExecutionAttackDef(tower) as ProjectileTowerAttackDef;
+        Assert.NotNull(executionAttackDef);
+        Assert.That(executionAttackDef.projectileCount, Is.EqualTo(2));
+        Assert.That(executionAttackDef.pierceCount, Is.EqualTo(3));
+        Assert.That(executionAttackDef.SplashRadius, Is.EqualTo(1.5f).Within(0.001f));
+
+        tower.SetSupportState(null);
+
+        Assert.That(tower.GetActiveEffectEntries(), Is.Empty);
+
+        executionAttackDef = GetExecutionAttackDef(tower) as ProjectileTowerAttackDef;
+        Assert.NotNull(executionAttackDef);
+        Assert.That(executionAttackDef.projectileCount, Is.EqualTo(1));
+        Assert.That(executionAttackDef.pierceCount, Is.EqualTo(0));
+        Assert.That(executionAttackDef.SplashRadius, Is.EqualTo(0.25f).Within(0.001f));
+    }
+
+    [Test]
+    public void TowerAgent_SetSupportState_SupportTriggeredEffectsStillFire()
+    {
+        TestPlayerEffects playerEffects = new();
+        ProjectileTowerAttackDef attackDef = Track(ScriptableObject.CreateInstance<ProjectileTowerAttackDef>());
+        TowerDef towerDef = Track(ScriptableObject.CreateInstance<TowerDef>());
+        towerDef.displayName = "Trigger Tower";
+        towerDef.baseStats = new TowerBaseStats
+        {
+            maxHealth = 10f,
+            range = 5f,
+            fireInterval = 1f,
+            damage = 1f
+        };
+        towerDef.attacks = new List<TowerAttackDef> { attackDef };
+
+        GameObject towerObject = Track(new GameObject("Trigger Tower", typeof(TowerAgent)));
+        TowerAgent tower = towerObject.GetComponent<TowerAgent>();
+        tower.Initialize(towerDef, new TowerRuntimeContext(null, null, playerEffects));
+        tower.SetSupportState(new List<RuntimeSupportEffect>
+        {
+            new("On Kill: +2 Mana", triggeredEffect: new TowerTriggeredEffect
+            {
+                trigger = TowerTriggerType.OnKill,
+                effectType = TowerEffectType.GainMana,
+                amount = 2f
+            })
+        });
+
+        GameObject enemyObject = Track(new GameObject("Enemy", typeof(EnemyAgent)));
+        EnemyAgent enemy = enemyObject.GetComponent<EnemyAgent>();
+        tower.ReportKill(enemy, 3f, enemy.transform.position);
+
+        Assert.That(playerEffects.ManaGained, Is.EqualTo(2));
+    }
+
     private BattleHUD CreateBattleHud()
     {
         GameObject canvasObject = Track(new GameObject("Canvas", typeof(RectTransform), typeof(Canvas)));
@@ -168,6 +301,37 @@ public class TowerInspectorTests
         FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.NotNull(field, $"Could not find field '{fieldName}'.");
         field.SetValue(target, value);
+    }
+
+    private static TowerAttackDef GetExecutionAttackDef(TowerAgent tower)
+    {
+        IList executions = GetInheritedPrivateField<IList>(tower, "attackExecutions");
+        Assert.That(executions.Count, Is.GreaterThan(0));
+        object execution = executions[0];
+        FieldInfo field = execution.GetType().GetField("attackDef", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(field, "Missing execution attack definition field.");
+        return field.GetValue(execution) as TowerAttackDef;
+    }
+
+    private static T GetInheritedPrivateField<T>(object target, string fieldName)
+    {
+        FieldInfo field = FindField(target.GetType(), fieldName);
+        Assert.NotNull(field, $"Could not find field '{fieldName}'.");
+        return (T)field.GetValue(target);
+    }
+
+    private static FieldInfo FindField(System.Type type, string fieldName)
+    {
+        while (type != null)
+        {
+            FieldInfo field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            if (field != null)
+                return field;
+
+            type = type.BaseType;
+        }
+
+        return null;
     }
 
     private T Track<T>(T unityObject) where T : Object
