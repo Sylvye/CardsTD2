@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: PinkBeacon
   m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
   prefab: {fileID: 77660494436261291, guid: 3cf219929700b49089a36c7734441d32, type: 3}
-  effectRadius: 2
+  effectRadius: 1.5
   supportSubtype: 1
   placementRadius: 0.3
-  supportRadius: 2
-  buffType: 2
+  supportRadius: 1.5
+  buffType: 0
   baseValues:
   - 3
   - 2

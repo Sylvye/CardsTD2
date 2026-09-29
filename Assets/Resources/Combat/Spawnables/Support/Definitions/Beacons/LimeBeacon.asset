@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LimeBeacon
   m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
   prefab: {fileID: 77660494436261291, guid: b0c7d887f2f0246718664974bdd03d3c, type: 3}
-  effectRadius: 2
+  effectRadius: 1.5
   supportSubtype: 1
   placementRadius: 0.3
-  supportRadius: 2
+  supportRadius: 1.5
   buffType: 5
   baseValues:
   - 3

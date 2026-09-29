@@ -40,6 +40,7 @@ namespace Enemies
     [CreateAssetMenu(menuName = "Enemies/Enemy Definition", fileName = "New Enemy")]
     public class EnemyDef : ScriptableObject
     {
+        public string id;
         public EnemyAgent prefab;
         public float maxHealth = 10f;
         public float moveSpeed = 2f;
@@ -56,6 +57,7 @@ namespace Enemies
         public List<EnemyDamageResistance> resistances = new();
 
         public List<EnemyTriggeredEffect> triggeredEffects = new();
+        public string EnemyId => string.IsNullOrWhiteSpace(id) ? name : id;
 
         public float ApplyDamageTypeResponses(float amount, DamageTypeDef damageType)
         {

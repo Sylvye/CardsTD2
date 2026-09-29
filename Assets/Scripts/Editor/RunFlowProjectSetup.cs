@@ -395,6 +395,7 @@ public static class RunFlowProjectSetup
         {
             spawnBatches.Add(new SpawnBatch
             {
+                mode = SpawnBatchMode.FixedEnemy,
                 enemyDef = enemyA,
                 spawnCount = enemyACount,
                 spawnInterval = 0.8f,
@@ -406,6 +407,7 @@ public static class RunFlowProjectSetup
         {
             spawnBatches.Add(new SpawnBatch
             {
+                mode = SpawnBatchMode.FixedEnemy,
                 enemyDef = enemyB,
                 spawnCount = enemyBCount,
                 spawnInterval = 1f,

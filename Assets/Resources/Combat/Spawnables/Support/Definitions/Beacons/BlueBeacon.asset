@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: BlueBeacon
   m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
   prefab: {fileID: 77660494436261291, guid: 8d2b13f8132764dc3ab363c26632d116, type: 3}
-  effectRadius: 2
+  effectRadius: 1.5
   supportSubtype: 1
   placementRadius: 0.3
-  supportRadius: 2
+  supportRadius: 1.5
   buffType: 7
   baseValues:
   - 0.5

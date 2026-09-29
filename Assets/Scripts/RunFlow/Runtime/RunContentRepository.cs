@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cards;
+using Enemies;
 using Relics;
 using UnityEngine;
 
@@ -11,6 +12,9 @@ namespace RunFlow
         private readonly Dictionary<string, CardDef> cardsById = new();
         private readonly Dictionary<string, CardAugmentDef> augmentsById = new();
         private readonly Dictionary<string, RelicDef> relicsById = new();
+        private readonly Dictionary<string, EnemyDef> enemiesById = new();
+        private readonly Dictionary<string, EnemyBuffDef> enemyBuffsById = new();
+        private readonly Dictionary<string, EnemyBuffPoolDef> enemyBuffPoolsById = new();
         private readonly Dictionary<string, MapTemplateDef> mapTemplatesById = new();
         private readonly List<MapTemplateDef> mapTemplates = new();
         private readonly Dictionary<string, EncounterDef> encountersById = new();
@@ -24,12 +28,17 @@ namespace RunFlow
         public IReadOnlyCollection<CardDef> Cards => cardsById.Values;
         public IReadOnlyCollection<CardAugmentDef> Augments => augmentsById.Values;
         public IReadOnlyCollection<RelicDef> Relics => relicsById.Values;
+        public IReadOnlyCollection<EnemyDef> Enemies => enemiesById.Values;
+        public IReadOnlyCollection<EnemyBuffDef> EnemyBuffs => enemyBuffsById.Values;
 
         public void Refresh()
         {
             cardsById.Clear();
             augmentsById.Clear();
             relicsById.Clear();
+            enemiesById.Clear();
+            enemyBuffsById.Clear();
+            enemyBuffPoolsById.Clear();
             mapTemplatesById.Clear();
             mapTemplates.Clear();
             encountersById.Clear();
@@ -41,6 +50,9 @@ namespace RunFlow
             LoadCards();
             LoadAugments();
             LoadRelics();
+            LoadEnemies();
+            LoadEnemyBuffs();
+            LoadEnemyBuffPools();
             LoadMetaUnlockCatalogs();
             LoadMapTemplates();
             LoadEncounters();
@@ -65,6 +77,24 @@ namespace RunFlow
         {
             EnsureLoaded();
             return !string.IsNullOrWhiteSpace(id) && relicsById.TryGetValue(id, out RelicDef relic) ? relic : null;
+        }
+
+        public EnemyBuffDef GetEnemyBuffById(string id)
+        {
+            EnsureLoaded();
+            return !string.IsNullOrWhiteSpace(id) && enemyBuffsById.TryGetValue(id, out EnemyBuffDef buff) ? buff : null;
+        }
+
+        public EnemyDef GetEnemyById(string id)
+        {
+            EnsureLoaded();
+            return !string.IsNullOrWhiteSpace(id) && enemiesById.TryGetValue(id, out EnemyDef enemy) ? enemy : null;
+        }
+
+        public EnemyBuffPoolDef GetEnemyBuffPoolById(string id)
+        {
+            EnsureLoaded();
+            return !string.IsNullOrWhiteSpace(id) && enemyBuffPoolsById.TryGetValue(id, out EnemyBuffPoolDef pool) ? pool : null;
         }
 
         public MapTemplateDef GetMapTemplateById(string id)
@@ -137,6 +167,11 @@ namespace RunFlow
             return relic == null ? null : relic.RelicId;
         }
 
+        public string GetEnemyId(EnemyDef enemy)
+        {
+            return enemy == null ? null : string.IsNullOrWhiteSpace(enemy.EnemyId) ? enemy.name : enemy.EnemyId;
+        }
+
         public string GetEncounterId(EncounterDef encounter)
         {
             return encounter == null ? null : encounter.EncounterId;
@@ -200,6 +235,42 @@ namespace RunFlow
                 string id = GetRelicId(relic);
                 if (!string.IsNullOrWhiteSpace(id))
                     relicsById[id] = relic;
+            }
+        }
+
+        private void LoadEnemies()
+        {
+            EnemyDef[] enemies = Resources.LoadAll<EnemyDef>("Combat/Enemies/Definitions");
+            for (int i = 0; i < enemies.Length; i++)
+            {
+                EnemyDef enemy = enemies[i];
+                string id = GetEnemyId(enemy);
+                if (!string.IsNullOrWhiteSpace(id))
+                    enemiesById[id] = enemy;
+            }
+        }
+
+        private void LoadEnemyBuffs()
+        {
+            EnemyBuffDef[] buffs = Resources.LoadAll<EnemyBuffDef>("RunFlow/EnemyBuffs/Definitions");
+            for (int i = 0; i < buffs.Length; i++)
+            {
+                EnemyBuffDef buff = buffs[i];
+                string id = buff != null ? buff.BuffId : null;
+                if (!string.IsNullOrWhiteSpace(id))
+                    enemyBuffsById[id] = buff;
+            }
+        }
+
+        private void LoadEnemyBuffPools()
+        {
+            EnemyBuffPoolDef[] pools = Resources.LoadAll<EnemyBuffPoolDef>("RunFlow/EnemyBuffs/Pools");
+            for (int i = 0; i < pools.Length; i++)
+            {
+                EnemyBuffPoolDef pool = pools[i];
+                string id = pool != null ? pool.PoolId : null;
+                if (!string.IsNullOrWhiteSpace(id))
+                    enemyBuffPoolsById[id] = pool;
             }
         }
 

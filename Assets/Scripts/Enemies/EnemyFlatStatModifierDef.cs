@@ -8,6 +8,7 @@ namespace Enemies
         [Header("Additive")]
         public float moveSpeedAdd = 0f;
         public float damageTakenMultiplierAdd = 0f;
+        public float flatDamageReductionAdd = 0f;
 
         [Header("Multipliers")]
         public float moveSpeedMultiplier = 1f;
@@ -17,6 +18,7 @@ namespace Enemies
         {
             stats.MoveSpeed = (stats.MoveSpeed + moveSpeedAdd) * Mathf.Max(0f, moveSpeedMultiplier);
             stats.DamageTakenMultiplier = (stats.DamageTakenMultiplier + damageTakenMultiplierAdd) * Mathf.Max(0f, damageTakenMultiplier);
+            stats.FlatDamageReduction = Mathf.Max(0f, stats.FlatDamageReduction + flatDamageReductionAdd);
             stats.Clamp();
         }
     }

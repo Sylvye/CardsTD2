@@ -68,6 +68,7 @@ namespace RunFlow
                 {
                     nodeType = nodeType,
                     rewardPool = config.rewardPool,
+                    enemyBuffPool = config.enemyBuffPool,
                     goldReward = config.goldReward,
                     metaCurrencyReward = config.metaCurrencyReward
                 };
@@ -152,6 +153,7 @@ namespace RunFlow
     {
         public MapNodeType nodeType;
         public CardRewardPoolDef rewardPool;
+        public EnemyBuffPoolDef enemyBuffPool;
         public int goldReward;
         public int metaCurrencyReward;
     }

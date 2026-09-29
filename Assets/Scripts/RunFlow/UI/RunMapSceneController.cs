@@ -149,6 +149,7 @@ namespace RunFlow
                 $"Health: {coordinator.CurrentRun.currentHealth}/{coordinator.CurrentRun.maxHealth}\n" +
                 $"Gold: {coordinator.CurrentRun.gold}\n" +
                 $"Augments: {coordinator.GetOwnedAugments().Count}\n" +
+                $"Enemy Buffs: {GetActiveEnemyBuffCount(coordinator)}\n" +
                 $"Relics: {coordinator.GetOwnedRelics().Count}\n" +
                 $"Meta Currency: {coordinator.Profile.metaCurrency}";
 
@@ -161,6 +162,13 @@ namespace RunFlow
                 : "No map loaded.";
 
             RebuildMapGraph(coordinator);
+
+            if (coordinator.CurrentRun.pendingEnemyBuffChoice != null)
+            {
+                selectedRestAugmentUniqueId = null;
+                ShowEnemyBuffPanel(coordinator);
+                return;
+            }
 
             if (coordinator.CurrentRun.pendingReward != null)
             {
@@ -273,7 +281,7 @@ namespace RunFlow
                 }
             }
 
-            bool disableSelection = coordinator.CurrentRun.pendingReward != null;
+            bool disableSelection = coordinator.CurrentRun.pendingEnemyBuffChoice != null || coordinator.CurrentRun.pendingReward != null;
             for (int i = 0; i < nodes.Count; i++)
             {
                 RunMapNodeData node = nodes[i];
@@ -353,6 +361,35 @@ namespace RunFlow
                 coordinator.SkipPendingReward();
                 RefreshUi();
             });
+        }
+
+        private void ShowEnemyBuffPanel(RunCoordinator coordinator)
+        {
+            SimpleUiFactory.ClearChildren(detailRoot);
+            SimpleUiFactory.CreateText(detailRoot, "Enemy Buff", 28);
+            SimpleUiFactory.CreateText(detailRoot, GetEnemyBuffIntro(coordinator.GetPendingEnemyBuffNodeType()), 22);
+
+            RectTransform buffSection = SimpleUiFactory.CreateSection(detailRoot, "EnemyBuffChoices");
+            List<PendingEnemyBuffChoiceEntry> buffs = coordinator.GetPendingEnemyBuffChoices();
+            if (buffs.Count == 0)
+            {
+                SimpleUiFactory.CreateText(buffSection, "No enemy buffs are available.", 20);
+                return;
+            }
+
+            for (int i = 0; i < buffs.Count; i++)
+            {
+                PendingEnemyBuffChoiceEntry buffEntry = buffs[i];
+                if (!TryGetEnemyBuffPresentation(coordinator, buffEntry, out Sprite icon, out string title, out string subtitle, out string detail))
+                    continue;
+
+                string buffId = buffEntry.buffId;
+                SimpleUiFactory.CreateItemTile(buffSection, icon, title, subtitle, detail, () =>
+                {
+                    if (coordinator.ClaimPendingEnemyBuff(buffId))
+                        RefreshUi();
+                });
+            }
         }
 
         private void ShowRestPanel(RunCoordinator coordinator, RunMapNodeData node)
@@ -617,6 +654,30 @@ namespace RunFlow
             return false;
         }
 
+        private bool TryGetEnemyBuffPresentation(RunCoordinator coordinator, PendingEnemyBuffChoiceEntry buffEntry, out Sprite icon, out string title, out string subtitle, out string detail)
+        {
+            icon = null;
+            title = null;
+            subtitle = null;
+            detail = null;
+
+            if (buffEntry == null || GameFlowRoot.Instance == null)
+                return false;
+
+            EnemyBuffDef buff = GameFlowRoot.Instance.ContentRepository.GetEnemyBuffById(buffEntry.buffId);
+            if (buff == null)
+                return false;
+
+            icon = buff.icon;
+            title = buff.DisplayNameOrFallback;
+            subtitle = "Permanent Enemy Buff";
+            int currentStacks = coordinator != null ? coordinator.GetEnemyBuffStackCount(buff.BuffId) : 0;
+            detail = currentStacks > 0
+                ? $"Current stacks: {currentStacks}\n{buff.description}"
+                : buff.description;
+            return true;
+        }
+
         private static Sprite GetOfferIcon(ShopOfferData offer)
         {
             return offer?.offerType switch
@@ -701,6 +762,32 @@ namespace RunFlow
             }
 
             return icons;
+        }
+
+        private static int GetActiveEnemyBuffCount(RunCoordinator coordinator)
+        {
+            if (coordinator?.CurrentRun?.activeEnemyBuffs == null)
+                return 0;
+
+            int count = 0;
+            for (int i = 0; i < coordinator.CurrentRun.activeEnemyBuffs.Count; i++)
+            {
+                ActiveEnemyBuffState activeBuff = coordinator.CurrentRun.activeEnemyBuffs[i];
+                if (activeBuff != null && !string.IsNullOrWhiteSpace(activeBuff.buffId) && activeBuff.stackCount > 0)
+                    count += activeBuff.stackCount;
+            }
+
+            return count;
+        }
+
+        private static string GetEnemyBuffIntro(MapNodeType nodeType)
+        {
+            return nodeType switch
+            {
+                MapNodeType.Boss => "The battlefield escalates. Choose one permanent boss-tier enemy buff.",
+                MapNodeType.Miniboss => "The enemy adapts. Choose one permanent miniboss-tier enemy buff.",
+                _ => "The enemy regroups. Choose one permanent fight-tier enemy buff."
+            };
         }
 
         private static RectTransform CreateLayer(Transform parent, string name)

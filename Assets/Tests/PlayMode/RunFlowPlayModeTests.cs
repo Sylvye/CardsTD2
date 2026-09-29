@@ -51,6 +51,7 @@ public class RunFlowPlayModeTests
         coordinator.HandleCombatResult(new CombatSceneResult(firstFight.nodeId, true, coordinator.CurrentRun.currentHealth));
         yield return WaitForScene(SceneNames.RunMap);
 
+        Assert.NotNull(coordinator.CurrentRun.pendingEnemyBuffChoice);
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
         Assert.That(coordinator.GetPendingRewards().Count, Is.GreaterThan(0));
     }
@@ -471,9 +472,11 @@ public class RunFlowPlayModeTests
 
         Assert.NotNull(coordinator.CurrentRun);
         Assert.That(coordinator.CurrentMapTemplate.TemplateId, Is.EqualTo("act_1"));
+        Assert.NotNull(coordinator.CurrentRun.pendingEnemyBuffChoice);
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
         Assert.That(coordinator.CurrentRun.queuedNextMapTemplateId, Is.EqualTo("act_2"));
 
+        Assert.True(ClaimFirstPendingEnemyBuff(coordinator));
         coordinator.SkipPendingReward();
         yield return null;
 
@@ -515,9 +518,11 @@ public class RunFlowPlayModeTests
         yield return WaitForScene(SceneNames.RunMap);
 
         Assert.NotNull(coordinator.CurrentRun);
+        Assert.NotNull(coordinator.CurrentRun.pendingEnemyBuffChoice);
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
         Assert.That(coordinator.CurrentRun.endRunAfterPendingReward, Is.True);
 
+        Assert.True(ClaimFirstPendingEnemyBuff(coordinator));
         coordinator.SkipPendingReward();
         yield return WaitForScene(SceneNames.MainMenu);
 
@@ -583,6 +588,8 @@ public class RunFlowPlayModeTests
                     yield break;
 
                 yield return WaitForScene(SceneNames.RunMap);
+                if (coordinator.CurrentRun != null && coordinator.CurrentRun.pendingEnemyBuffChoice != null)
+                    ClaimFirstPendingEnemyBuff(coordinator);
                 if (coordinator.CurrentRun != null && coordinator.CurrentRun.pendingReward != null)
                     coordinator.SkipPendingReward();
             }
@@ -756,5 +763,11 @@ public class RunFlowPlayModeTests
             endRunAfterPendingReward = false,
             seed = 456
         };
+    }
+
+    private static bool ClaimFirstPendingEnemyBuff(RunCoordinator coordinator)
+    {
+        List<PendingEnemyBuffChoiceEntry> buffs = coordinator.GetPendingEnemyBuffChoices();
+        return buffs.Count > 0 && coordinator.ClaimPendingEnemyBuff(buffs[0].buffId);
     }
 }

@@ -11,6 +11,7 @@ namespace RunFlow
     {
         private const string FirstMinibossUnlockId = "unlock.first_miniboss_clear";
         private const string FirstRunClearUnlockId = "unlock.first_run_clear";
+        private const string StarterEliteEnemyId = "Enemy C";
 
         private readonly SaveService saveService;
         private readonly RunContentRepository contentRepository;
@@ -52,8 +53,14 @@ namespace RunFlow
             if (Profile != null && !string.IsNullOrWhiteSpace(Profile.activeRunId))
             {
                 CurrentRun = saveService.LoadRun(Profile.activeRunId);
-                if (CurrentRun != null && CurrentRun.mapState != null)
-                    CurrentMapTemplate = contentRepository.GetMapTemplateById(CurrentRun.mapState.mapTemplateId);
+                if (CurrentRun != null)
+                {
+                    if (CurrentRun.mapState != null)
+                        CurrentMapTemplate = contentRepository.GetMapTemplateById(CurrentRun.mapState.mapTemplateId);
+
+                    if (EnsureRunEliteState(CurrentRun))
+                        SaveCurrentRun();
+                }
             }
         }
 
@@ -463,6 +470,43 @@ namespace RunFlow
             return rewards;
         }
 
+        public List<PendingEnemyBuffChoiceEntry> GetPendingEnemyBuffChoices()
+        {
+            List<PendingEnemyBuffChoiceEntry> buffs = new();
+            if (CurrentRun?.pendingEnemyBuffChoice == null || CurrentRun.pendingEnemyBuffChoice.entries == null)
+                return buffs;
+
+            for (int i = 0; i < CurrentRun.pendingEnemyBuffChoice.entries.Count; i++)
+            {
+                PendingEnemyBuffChoiceEntry entry = CurrentRun.pendingEnemyBuffChoice.entries[i];
+                if (entry != null && !string.IsNullOrWhiteSpace(entry.buffId))
+                    buffs.Add(entry);
+            }
+
+            return buffs;
+        }
+
+        public int GetEnemyBuffStackCount(string buffId)
+        {
+            if (CurrentRun?.activeEnemyBuffs == null || string.IsNullOrWhiteSpace(buffId))
+                return 0;
+
+            for (int i = 0; i < CurrentRun.activeEnemyBuffs.Count; i++)
+            {
+                ActiveEnemyBuffState activeBuff = CurrentRun.activeEnemyBuffs[i];
+                if (activeBuff != null && activeBuff.buffId == buffId)
+                    return Mathf.Max(0, activeBuff.stackCount);
+            }
+
+            return 0;
+        }
+
+        public MapNodeType GetPendingEnemyBuffNodeType()
+        {
+            RunMapNodeData node = GetNode(CurrentRun?.pendingEnemyBuffChoice?.sourceNodeId);
+            return node != null ? node.nodeType : MapNodeType.Fight;
+        }
+
         public bool ClaimPendingReward(RunRewardType rewardType, string contentId)
         {
             if (CurrentRun?.pendingReward == null || string.IsNullOrWhiteSpace(contentId))
@@ -511,6 +555,74 @@ namespace RunFlow
             }
 
             CurrentRun.pendingReward = null;
+
+            if (TryResolveQueuedBossOutcome())
+                return true;
+
+            SaveAll();
+            return true;
+        }
+
+        public bool ClaimPendingEnemyBuff(string buffId)
+        {
+            if (CurrentRun?.pendingEnemyBuffChoice == null || string.IsNullOrWhiteSpace(buffId))
+                return false;
+
+            if (CurrentRun.pendingEnemyBuffChoice.entries == null)
+                return false;
+
+            PendingEnemyBuffChoiceEntry matchedEntry = null;
+            for (int i = 0; i < CurrentRun.pendingEnemyBuffChoice.entries.Count; i++)
+            {
+                PendingEnemyBuffChoiceEntry candidate = CurrentRun.pendingEnemyBuffChoice.entries[i];
+                if (candidate != null && candidate.buffId == buffId)
+                {
+                    matchedEntry = candidate;
+                    break;
+                }
+            }
+
+            if (matchedEntry == null || contentRepository.GetEnemyBuffById(buffId) == null)
+                return false;
+
+            CurrentRun.activeEnemyBuffs ??= new List<ActiveEnemyBuffState>();
+            EnemyBuffDef selectedBuff = contentRepository.GetEnemyBuffById(buffId);
+            for (int i = 0; i < CurrentRun.activeEnemyBuffs.Count; i++)
+            {
+                ActiveEnemyBuffState activeBuff = CurrentRun.activeEnemyBuffs[i];
+                if (activeBuff == null || activeBuff.buffId != buffId)
+                    continue;
+
+                activeBuff.stackCount = Mathf.Max(0, activeBuff.stackCount) + 1;
+                UnlockEliteEnemiesFromBuff(selectedBuff);
+                CurrentRun.pendingEnemyBuffChoice = null;
+
+                if (CurrentRun.pendingReward != null)
+                {
+                    SaveAll();
+                    return true;
+                }
+
+                if (TryResolveQueuedBossOutcome())
+                    return true;
+
+                SaveAll();
+                return true;
+            }
+
+            CurrentRun.activeEnemyBuffs.Add(new ActiveEnemyBuffState
+            {
+                buffId = buffId,
+                stackCount = 1
+            });
+            UnlockEliteEnemiesFromBuff(selectedBuff);
+            CurrentRun.pendingEnemyBuffChoice = null;
+
+            if (CurrentRun.pendingReward != null)
+            {
+                SaveAll();
+                return true;
+            }
 
             if (TryResolveQueuedBossOutcome())
                 return true;
@@ -768,13 +880,14 @@ namespace RunFlow
             }
 
             bool isBossVictory = node?.nodeType == MapNodeType.Boss;
+            PopulatePendingEnemyBuffChoice(rewardRule?.enemyBuffPool, result.nodeId);
             PopulatePendingRewards(rewardRule?.rewardPool, result.nodeId);
 
             if (isBossVictory)
             {
                 QueueBossOutcome(CurrentMapTemplate != null ? CurrentMapTemplate.nextActTemplate : null);
 
-                if (CurrentRun.pendingReward != null)
+                if (CurrentRun.pendingEnemyBuffChoice != null || CurrentRun.pendingReward != null)
                 {
                     SaveAll();
                     loadScene?.Invoke(SceneNames.RunMap);
@@ -807,8 +920,12 @@ namespace RunFlow
                 seed = seed,
                 deck = new List<OwnedCard>(),
                 ownedAugments = new List<OwnedAugment>(),
-                ownedRelics = new List<OwnedRelic>()
+                ownedRelics = new List<OwnedRelic>(),
+                activeEnemyBuffs = new List<ActiveEnemyBuffState>(),
+                unlockedEliteEnemyIds = new List<string>()
             };
+
+            EnsureRunEliteState(run);
 
             if (!string.IsNullOrWhiteSpace(mapState.startNodeId))
                 run.MarkNodeCompleted(mapState.startNodeId);
@@ -836,6 +953,40 @@ namespace RunFlow
             }
 
             return run;
+        }
+
+        private bool EnsureRunEliteState(RunSaveData run)
+        {
+            if (run == null)
+                return false;
+
+            bool changed = false;
+            run.unlockedEliteEnemyIds ??= new List<string>();
+
+            if (contentRepository.GetEnemyById(StarterEliteEnemyId) != null && !run.unlockedEliteEnemyIds.Contains(StarterEliteEnemyId))
+            {
+                run.unlockedEliteEnemyIds.Add(StarterEliteEnemyId);
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private void UnlockEliteEnemiesFromBuff(EnemyBuffDef buff)
+        {
+            if (CurrentRun == null || buff?.effects == null)
+                return;
+
+            CurrentRun.unlockedEliteEnemyIds ??= new List<string>();
+            for (int i = 0; i < buff.effects.Count; i++)
+            {
+                if (buff.effects[i] is not EnemyUnlockEliteEnemyBuffEffectDef unlockEffect || unlockEffect.eliteEnemyDef == null)
+                    continue;
+
+                string enemyId = contentRepository.GetEnemyId(unlockEffect.eliteEnemyDef);
+                if (!string.IsNullOrWhiteSpace(enemyId) && !CurrentRun.unlockedEliteEnemyIds.Contains(enemyId))
+                    CurrentRun.unlockedEliteEnemyIds.Add(enemyId);
+            }
         }
 
         private bool ApplyShopOffer(ShopOfferData offer, string targetCardUniqueId)
@@ -1055,6 +1206,36 @@ namespace RunFlow
                 CurrentRun.pendingReward = pendingReward;
         }
 
+        private void PopulatePendingEnemyBuffChoice(EnemyBuffPoolDef pool, string nodeId)
+        {
+            CurrentRun.pendingEnemyBuffChoice = null;
+            if (pool == null)
+                return;
+
+            int resolvedChoiceCount = RelicResolver.ModifyEnemyBuffChoiceCount(CurrentRun?.ownedRelics, pool, Mathf.Max(0, pool.choiceCount));
+            List<PendingEnemyBuffChoiceEntry> buffChoices = pool.GetRandomChoices(CurrentRun.seed, nodeId, resolvedChoiceCount);
+            PendingEnemyBuffChoiceData pendingChoice = new()
+            {
+                sourceNodeId = nodeId,
+                entries = new List<PendingEnemyBuffChoiceEntry>()
+            };
+
+            for (int i = 0; i < buffChoices.Count; i++)
+            {
+                PendingEnemyBuffChoiceEntry choice = buffChoices[i];
+                if (choice != null && !string.IsNullOrWhiteSpace(choice.buffId))
+                {
+                    pendingChoice.entries.Add(new PendingEnemyBuffChoiceEntry
+                    {
+                        buffId = choice.buffId
+                    });
+                }
+            }
+
+            if (pendingChoice.entries.Count > 0)
+                CurrentRun.pendingEnemyBuffChoice = pendingChoice;
+        }
+
         private NodeRewardRule ResolveRewardRule(RunMapNodeData node)
         {
             return node != null && CurrentMapTemplate != null
@@ -1167,6 +1348,9 @@ namespace RunFlow
             if (CurrentRun == null)
                 return false;
 
+            if (CurrentRun.pendingEnemyBuffChoice != null || CurrentRun.pendingReward != null)
+                return false;
+
             string nextTemplateId = CurrentRun.queuedNextMapTemplateId;
             bool shouldEndRun = CurrentRun.endRunAfterPendingReward;
             if (string.IsNullOrWhiteSpace(nextTemplateId) && !shouldEndRun)
@@ -1201,6 +1385,7 @@ namespace RunFlow
             CurrentMapTemplate = nextTemplate;
             CurrentCombatRequest = null;
             CurrentRun.pendingReward = null;
+            CurrentRun.pendingEnemyBuffChoice = null;
             ClearQueuedBossOutcome();
             CurrentRun.seed = nextSeed;
             CurrentRun.mapState = mapState;
@@ -1220,7 +1405,11 @@ namespace RunFlow
                 Profile.activeRunId = null;
 
             if (CurrentRun != null)
+            {
+                CurrentRun.pendingReward = null;
+                CurrentRun.pendingEnemyBuffChoice = null;
                 saveService.DeleteRun(CurrentRun.runId);
+            }
 
             saveService.SaveProfile(Profile);
             CurrentRun = null;

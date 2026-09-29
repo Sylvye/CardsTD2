@@ -28,9 +28,10 @@ namespace RunFlow
             }
 
             EnemyPath runtimePath = SpawnPath(request.pathPrefab);
+            EnemyBuffRuntimeState enemyBuffRuntimeState = BuildEnemyBuffRuntimeState(request);
             if (enemySpawner != null)
             {
-                enemySpawner.ConfigureEncounter(request.encounter, runtimePath, combatSessionDriver);
+                enemySpawner.ConfigureEncounter(request.encounter, runtimePath, combatSessionDriver, enemyBuffRuntimeState);
                 enemySpawner.Begin();
             }
 
@@ -52,6 +53,42 @@ namespace RunFlow
 
             RelicResolver.ModifyCombatSetup(request?.run?.ownedRelics, setup);
             return setup;
+        }
+
+        private EnemyBuffRuntimeState BuildEnemyBuffRuntimeState(CombatSceneRequest request)
+        {
+            EnemyBuffRuntimeState runtimeState = new();
+            if (request?.run == null || GameFlowRoot.Instance == null)
+                return runtimeState;
+
+            RunContentRepository contentRepository = GameFlowRoot.Instance.ContentRepository;
+            runtimeState.EliteSelectionSeed = request.run.seed ^ (request.nodeId != null ? request.nodeId.GetHashCode() : 0);
+
+            if (request.run.unlockedEliteEnemyIds != null)
+            {
+                for (int i = 0; i < request.run.unlockedEliteEnemyIds.Count; i++)
+                {
+                    string enemyId = request.run.unlockedEliteEnemyIds[i];
+                    EnemyDef enemy = contentRepository.GetEnemyById(enemyId);
+                    if (enemy != null)
+                        runtimeState.UnlockEliteEnemy(enemyId, enemy);
+                }
+            }
+
+            if (request.run.activeEnemyBuffs == null)
+                return runtimeState;
+
+            for (int i = 0; i < request.run.activeEnemyBuffs.Count; i++)
+            {
+                ActiveEnemyBuffState activeBuff = request.run.activeEnemyBuffs[i];
+                if (activeBuff == null || string.IsNullOrWhiteSpace(activeBuff.buffId) || activeBuff.stackCount <= 0)
+                    continue;
+
+                EnemyBuffDef buff = contentRepository.GetEnemyBuffById(activeBuff.buffId);
+                buff?.ApplyToRuntime(runtimeState, activeBuff.stackCount);
+            }
+
+            return runtimeState;
         }
 
         private CombatSceneRequest GetRequest()

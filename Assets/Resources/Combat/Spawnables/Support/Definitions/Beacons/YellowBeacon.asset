@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: YellowBeacon
   m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
   prefab: {fileID: 77660494436261291, guid: ccab6e6fe4b3d41ab98f7fe931c5b9b6, type: 3}
-  effectRadius: 2
+  effectRadius: 1.5
   supportSubtype: 1
   placementRadius: 0.3
-  supportRadius: 2
+  supportRadius: 1.5
   buffType: 1
   baseValues:
   - 1

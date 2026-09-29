@@ -22,5 +22,6 @@ MonoBehaviour:
   encounterPool: {fileID: 11400000, guid: 4dd41b9f48b5afe4a89e4e6418d8ae1e, type: 2}
   pathPool: {fileID: 11400000, guid: a258402be48a4bc9952c3c69ce1bf518, type: 2}
   rewardPool: {fileID: 11400000, guid: 6f5304e7a01c79941b946c59023f100c, type: 2}
+  enemyBuffPool: {fileID: 11400000, guid: b1000000000000000000000000000001, type: 2}
   goldReward: 12
   metaCurrencyReward: 1

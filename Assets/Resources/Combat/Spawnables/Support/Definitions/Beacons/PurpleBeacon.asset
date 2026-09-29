@@ -13,17 +13,17 @@ MonoBehaviour:
   m_Name: PurpleBeacon
   m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
   prefab: {fileID: 77660494436261291, guid: 77bc82ead108346c19a8e153fb015201, type: 3}
-  effectRadius: 2
+  effectRadius: 1.5
   supportSubtype: 1
   placementRadius: 0.3
-  supportRadius: 2
+  supportRadius: 1.5
   buffType: 4
   baseValues:
-  - 2
   - 1.5
-  - 1.2
+  - 1.3
+  - 1.1
   amplifiedValues:
-  - 2.5
   - 2
   - 1.5
+  - 1.3
   linkColor: {r: 0.7376887, g: 0.25098038, b: 1, a: 1}

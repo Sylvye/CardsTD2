@@ -98,6 +98,19 @@ public class RunFlowEditorTests
                     new() { rewardType = RunRewardType.Card, contentId = contentRepository.GetCardId(template.startingDeck[0]) }
                 }
             },
+            pendingEnemyBuffChoice = new PendingEnemyBuffChoiceData
+            {
+                sourceNodeId = "node-c1-l0",
+                entries = new List<PendingEnemyBuffChoiceEntry>
+                {
+                    new() { buffId = "test-buff" }
+                }
+            },
+            activeEnemyBuffs = new List<ActiveEnemyBuffState>
+            {
+                new() { buffId = "test-buff", stackCount = 2 }
+            },
+            unlockedEliteEnemyIds = new List<string> { "Enemy C", "Enemy E" },
             queuedNextMapTemplateId = "act_2",
             endRunAfterPendingReward = false,
             seed = 12345
@@ -127,7 +140,13 @@ public class RunFlowEditorTests
         Assert.That(loadedRun.deck[0].CurrentDefinition, Is.EqualTo(template.startingDeck[0]));
         Assert.That(loadedRun.deck[0].AppliedAugments.Count, Is.EqualTo(compatibleAugment != null ? 1 : 0));
         Assert.That(loadedRun.ownedAugments.Count, Is.EqualTo(compatibleAugment != null ? 1 : 0));
+        Assert.That(loadedRun.activeEnemyBuffs.Count, Is.EqualTo(1));
+        Assert.That(loadedRun.activeEnemyBuffs[0].buffId, Is.EqualTo("test-buff"));
+        Assert.That(loadedRun.activeEnemyBuffs[0].stackCount, Is.EqualTo(2));
+        Assert.That(loadedRun.unlockedEliteEnemyIds, Is.EquivalentTo(new[] { "Enemy C", "Enemy E" }));
         Assert.That(loadedRun.pendingReward.entries.Count, Is.EqualTo(compatibleAugment != null ? 2 : 1));
+        Assert.That(loadedRun.pendingEnemyBuffChoice.entries.Count, Is.EqualTo(1));
+        Assert.That(loadedRun.pendingEnemyBuffChoice.entries[0].buffId, Is.EqualTo("test-buff"));
         Assert.That(loadedRun.queuedNextMapTemplateId, Is.EqualTo("act_2"));
         Assert.That(loadedRun.endRunAfterPendingReward, Is.False);
     }
@@ -140,6 +159,40 @@ public class RunFlowEditorTests
         ProfileSaveData loadedProfile = saveService.LoadProfile();
 
         Assert.That(loadedProfile.debugUiEnabled, Is.False);
+    }
+
+    [Test]
+    public void EnemyBuffPool_ProducesUniqueChoices_AndRelicsCanModifyChoiceCount()
+    {
+        EnemyBuffPoolDef pool = ScriptableObject.CreateInstance<EnemyBuffPoolDef>();
+        pool.choiceCount = 3;
+        pool.buffs = new List<WeightedEnemyBuffEntry>();
+        List<Object> createdObjects = new() { pool };
+
+        for (int i = 0; i < 4; i++)
+        {
+            EnemyBuffDef buff = ScriptableObject.CreateInstance<EnemyBuffDef>();
+            buff.id = $"buff-{i}";
+            buff.displayName = $"Buff {i}";
+            pool.buffs.Add(new WeightedEnemyBuffEntry { buff = buff, weight = 1 });
+            createdObjects.Add(buff);
+        }
+
+        RelicEnemyBuffChoiceModifierDef modifier = ScriptableObject.CreateInstance<RelicEnemyBuffChoiceModifierDef>();
+        modifier.choiceCountDelta = 1;
+        RelicDef relic = ScriptableObject.CreateInstance<RelicDef>();
+        relic.effects = new List<RelicEffectDef> { modifier };
+        createdObjects.Add(modifier);
+        createdObjects.Add(relic);
+
+        int resolvedChoiceCount = RelicResolver.ModifyEnemyBuffChoiceCount(new List<OwnedRelic> { new(relic) }, pool, pool.choiceCount);
+        List<PendingEnemyBuffChoiceEntry> choices = pool.GetRandomChoices(1234, "pool-test", resolvedChoiceCount);
+
+        Assert.That(choices.Count, Is.EqualTo(4));
+        Assert.That(new HashSet<string>(choices.ConvertAll(choice => choice.buffId)).Count, Is.EqualTo(4));
+
+        for (int i = 0; i < createdObjects.Count; i++)
+            Object.DestroyImmediate(createdObjects[i]);
     }
 
     [Test]
@@ -1342,8 +1395,10 @@ public class RunFlowEditorTests
         coordinator.HandleCombatResult(new CombatSceneResult(firstFight.nodeId, true, 18));
         Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
         Assert.True(coordinator.CurrentRun.HasCompletedNode(firstFight.nodeId));
+        Assert.NotNull(coordinator.CurrentRun.pendingEnemyBuffChoice);
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
 
+        Assert.True(ClaimFirstPendingEnemyBuff(coordinator));
         coordinator.SkipPendingReward();
         RunMapNodeData secondFight = AdvanceUntilCombatNode(coordinator);
         Assert.NotNull(secondFight);
@@ -1381,10 +1436,12 @@ public class RunFlowEditorTests
         Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
         Assert.NotNull(coordinator.CurrentRun);
         Assert.That(coordinator.CurrentMapTemplate.TemplateId, Is.EqualTo("act_1"));
+        Assert.NotNull(coordinator.CurrentRun.pendingEnemyBuffChoice);
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
         Assert.That(coordinator.CurrentRun.queuedNextMapTemplateId, Is.EqualTo("act_2"));
         Assert.That(coordinator.CurrentRun.endRunAfterPendingReward, Is.False);
 
+        Assert.True(ClaimFirstPendingEnemyBuff(coordinator));
         PendingRewardEntry reward = coordinator.GetPendingRewards()[0];
         Assert.True(coordinator.ClaimPendingReward(reward.rewardType, reward.contentId));
 
@@ -1421,9 +1478,11 @@ public class RunFlowEditorTests
 
         RunCoordinator reloadedCoordinator = new(saveService, contentRepository, sceneName => loadedScene = sceneName);
         Assert.NotNull(reloadedCoordinator.CurrentRun);
+        Assert.NotNull(reloadedCoordinator.CurrentRun.pendingEnemyBuffChoice);
         Assert.NotNull(reloadedCoordinator.CurrentRun.pendingReward);
         Assert.That(reloadedCoordinator.CurrentRun.queuedNextMapTemplateId, Is.EqualTo("act_2"));
 
+        Assert.True(ClaimFirstPendingEnemyBuff(reloadedCoordinator));
         reloadedCoordinator.SkipPendingReward();
 
         Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
@@ -1452,10 +1511,12 @@ public class RunFlowEditorTests
 
         Assert.That(loadedScene, Is.EqualTo(SceneNames.RunMap));
         Assert.NotNull(coordinator.CurrentRun);
+        Assert.NotNull(coordinator.CurrentRun.pendingEnemyBuffChoice);
         Assert.NotNull(coordinator.CurrentRun.pendingReward);
         Assert.That(coordinator.CurrentRun.queuedNextMapTemplateId, Is.Null);
         Assert.That(coordinator.CurrentRun.endRunAfterPendingReward, Is.True);
 
+        Assert.True(ClaimFirstPendingEnemyBuff(coordinator));
         coordinator.SkipPendingReward();
 
         Assert.That(loadedScene, Is.EqualTo(SceneNames.MainMenu));
@@ -1463,6 +1524,65 @@ public class RunFlowEditorTests
         Assert.IsNull(saveService.LoadRun(runId));
         Assert.That(coordinator.Profile.activeRunId, Is.Null);
         Assert.True(coordinator.Profile.HasUnlock("unlock.first_run_clear"));
+    }
+
+    [Test]
+    public void RunCoordinator_ClaimPendingEnemyBuff_StacksExistingBuff_AndLeavesRewardPending()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        RunSaveData run = CreateBossRun("enemy-buff-stack", "act_1");
+        run.activeEnemyBuffs = new List<ActiveEnemyBuffState>
+        {
+            new() { buffId = "fight.enemy_speed", stackCount = 1 }
+        };
+        run.pendingEnemyBuffChoice = new PendingEnemyBuffChoiceData
+        {
+            sourceNodeId = "boss-node",
+            entries = new List<PendingEnemyBuffChoiceEntry>
+            {
+                new() { buffId = "fight.enemy_speed" }
+            }
+        };
+        run.pendingReward = new PendingRewardData
+        {
+            sourceNodeId = "boss-node",
+            entries = new List<PendingRewardEntry>
+            {
+                new() { rewardType = RunRewardType.Card, contentId = contentRepository.GetCardId(GetFirstCard()) }
+            }
+        };
+        saveService.SaveProfile(new ProfileSaveData { activeRunId = run.runId });
+        saveService.SaveRun(run);
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        Assert.True(coordinator.ClaimPendingEnemyBuff("fight.enemy_speed"));
+        Assert.That(coordinator.GetEnemyBuffStackCount("fight.enemy_speed"), Is.EqualTo(2));
+        Assert.That(coordinator.CurrentRun.pendingEnemyBuffChoice, Is.Null);
+        Assert.NotNull(coordinator.CurrentRun.pendingReward);
+    }
+
+    [Test]
+    public void RunCoordinator_ClaimPendingEnemyBuff_UnlocksEliteEnemyForFutureWaves()
+    {
+        SaveService saveService = new(contentRepository, saveDirectory);
+        RunSaveData run = CreateBossRun("enemy-buff-elite-unlock", "act_1");
+        run.pendingEnemyBuffChoice = new PendingEnemyBuffChoiceData
+        {
+            sourceNodeId = "boss-node",
+            entries = new List<PendingEnemyBuffChoiceEntry>
+            {
+                new() { buffId = "miniboss.enemy_reinforcements" }
+            }
+        };
+        saveService.SaveProfile(new ProfileSaveData { activeRunId = run.runId });
+        saveService.SaveRun(run);
+
+        RunCoordinator coordinator = new(saveService, contentRepository, _ => { });
+
+        Assert.True(coordinator.ClaimPendingEnemyBuff("miniboss.enemy_reinforcements"));
+        Assert.That(coordinator.CurrentRun.unlockedEliteEnemyIds, Does.Contain("Enemy C"));
+        Assert.That(coordinator.CurrentRun.unlockedEliteEnemyIds, Does.Contain("Enemy E"));
     }
 
     [Test]
@@ -1503,6 +1623,7 @@ public class RunFlowEditorTests
         {
             new()
             {
+                mode = SpawnBatchMode.FixedEnemy,
                 enemyDef = enemyB,
                 spawnCount = 7,
                 spawnInterval = 0.25f,
@@ -1516,6 +1637,7 @@ public class RunFlowEditorTests
         EncounterDef preservedEncounter = (EncounterDef)createEncounter.Invoke(null, args);
         Assert.NotNull(preservedEncounter);
         Assert.That(preservedEncounter.spawnBatches.Count, Is.EqualTo(1));
+        Assert.That(preservedEncounter.spawnBatches[0].mode, Is.EqualTo(SpawnBatchMode.FixedEnemy));
         Assert.That(preservedEncounter.spawnBatches[0].enemyDef, Is.EqualTo(enemyB));
         Assert.That(preservedEncounter.spawnBatches[0].spawnCount, Is.EqualTo(7));
         Assert.That(preservedEncounter.spawnBatches[0].spawnInterval, Is.EqualTo(0.25f));
@@ -1567,6 +1689,63 @@ public class RunFlowEditorTests
         Assert.That(GetPrivateField<bool>(spawner, "isWaitingBetweenBatches"), Is.True);
         Assert.That(GetPrivateField<float>(spawner, "waitTimer"), Is.EqualTo(1f).Within(0.001f));
 
+        Object.DestroyImmediate(encounter);
+        Object.DestroyImmediate(spawnerObject);
+    }
+
+    [Test]
+    public void EnemySpawner_ConfigureEncounter_AppliesSpawnCountMultiplierAndResolvesEliteWave()
+    {
+        GameObject spawnerObject = new("EnemySpawner Buff Test");
+        EnemySpawner spawner = spawnerObject.AddComponent<EnemySpawner>();
+        EncounterDef encounter = ScriptableObject.CreateInstance<EncounterDef>();
+        EnemyDef baseEnemy = ScriptableObject.CreateInstance<EnemyDef>();
+        EnemyDef eliteEnemyA = ScriptableObject.CreateInstance<EnemyDef>();
+        EnemyDef eliteEnemyB = ScriptableObject.CreateInstance<EnemyDef>();
+        encounter.spawnBatches = new List<SpawnBatch>
+        {
+            new()
+            {
+                mode = SpawnBatchMode.FixedEnemy,
+                enemyDef = baseEnemy,
+                spawnCount = 2,
+                spawnInterval = 0.1f,
+                waitTime = 0.25f
+            },
+            new()
+            {
+                mode = SpawnBatchMode.ElitePoolEnemy,
+                spawnCount = 2,
+                spawnInterval = 0.5f,
+                waitTime = 0.75f
+            }
+        };
+
+        EnemyBuffRuntimeState runtimeState = new()
+        {
+            SpawnCountMultiplier = 1.5f,
+            EliteSelectionSeed = 0
+        };
+        runtimeState.UnlockEliteEnemy("elite-a", eliteEnemyA);
+        runtimeState.UnlockEliteEnemy("elite-b", eliteEnemyB);
+
+        spawner.ConfigureEncounter(encounter, null, null, runtimeState);
+        List<SpawnBatch> spawnQueue = GetPrivateField<List<SpawnBatch>>(spawner, "spawnQueue");
+
+        Assert.That(spawnQueue.Count, Is.EqualTo(2));
+        Assert.That(spawnQueue[0].enemyDef, Is.EqualTo(baseEnemy));
+        Assert.That(spawnQueue[0].spawnCount, Is.EqualTo(3));
+        Assert.That(spawnQueue[1].mode, Is.EqualTo(SpawnBatchMode.ElitePoolEnemy));
+        Assert.That(spawnQueue[1].spawnCount, Is.EqualTo(3));
+
+        MethodInfo startBatch = typeof(EnemySpawner).GetMethod("StartBatch", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(startBatch);
+        startBatch.Invoke(spawner, new object[] { 1 });
+        Assert.That(GetPrivateField<EnemyDef>(spawner, "currentBatchEnemyDef"), Is.EqualTo(eliteEnemyB));
+
+        Object.DestroyImmediate(baseEnemy);
+        Object.DestroyImmediate(eliteEnemyA);
+        Object.DestroyImmediate(eliteEnemyB);
         Object.DestroyImmediate(encounter);
         Object.DestroyImmediate(spawnerObject);
     }
@@ -1807,6 +1986,7 @@ public class RunFlowEditorTests
             combatMapPool.paths.Add(new WeightedEnemyPathEntry { pathPrefab = paths[i], weight = 1 });
 
         CardRewardPoolDef rewardPool = AssetDatabase.LoadAssetAtPath<CardRewardPoolDef>("Assets/Resources/RunFlow/Rewards/Act 1 Rewards.asset");
+        EnemyBuffPoolDef enemyBuffPool = AssetDatabase.LoadAssetAtPath<EnemyBuffPoolDef>("Assets/Resources/RunFlow/EnemyBuffs/Pools/Act 1 Fight Enemy Buffs.asset");
         template.nodeConfigs = new List<MapNodeConfigDef>
         {
             CreateCombatNodeConfig<FightNodeConfigDef>(
@@ -1816,6 +1996,7 @@ public class RunFlowEditorTests
                 fightPool,
                 combatMapPool,
                 rewardPool,
+                enemyBuffPool,
                 10,
                 1),
             CreateShopNodeConfig(
@@ -1834,6 +2015,7 @@ public class RunFlowEditorTests
                 minibossPool,
                 combatMapPool,
                 rewardPool,
+                enemyBuffPool,
                 20,
                 2),
             CreateCombatNodeConfig<BossNodeConfigDef>(
@@ -1843,6 +2025,7 @@ public class RunFlowEditorTests
                 bossPool,
                 combatMapPool,
                 rewardPool,
+                enemyBuffPool,
                 32,
                 4)
         };
@@ -1857,6 +2040,7 @@ public class RunFlowEditorTests
         EncounterPoolDef encounterPool,
         CombatMapPoolDef pathPool,
         CardRewardPoolDef rewardPool,
+        EnemyBuffPoolDef enemyBuffPool,
         int goldReward,
         int metaCurrencyReward) where T : CombatNodeConfigDef
     {
@@ -1867,6 +2051,7 @@ public class RunFlowEditorTests
         config.encounterPool = encounterPool;
         config.pathPool = pathPool;
         config.rewardPool = rewardPool;
+        config.enemyBuffPool = enemyBuffPool;
         config.goldReward = goldReward;
         config.metaCurrencyReward = metaCurrencyReward;
         return config;
@@ -2171,6 +2356,12 @@ public class RunFlowEditorTests
         }
 
         return false;
+    }
+
+    private static bool ClaimFirstPendingEnemyBuff(RunCoordinator coordinator)
+    {
+        List<PendingEnemyBuffChoiceEntry> choices = coordinator.GetPendingEnemyBuffChoices();
+        return choices.Count > 0 && coordinator.ClaimPendingEnemyBuff(choices[0].buffId);
     }
 
     private static int CountRewards(List<PendingRewardEntry> rewards, RunRewardType rewardType, string contentId)

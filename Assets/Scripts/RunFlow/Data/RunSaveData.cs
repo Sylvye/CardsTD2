@@ -15,10 +15,13 @@ namespace RunFlow
         public List<OwnedCard> deck = new();
         public List<OwnedAugment> ownedAugments = new();
         public List<OwnedRelic> ownedRelics = new();
+        public List<ActiveEnemyBuffState> activeEnemyBuffs = new();
+        public List<string> unlockedEliteEnemyIds = new();
         public string currentNodeId;
         public List<string> completedNodeIds = new();
         public RunMapStateData mapState = new();
         public PendingRewardData pendingReward;
+        public PendingEnemyBuffChoiceData pendingEnemyBuffChoice;
         public string queuedNextMapTemplateId;
         public bool endRunAfterPendingReward;
         public int seed;
@@ -147,6 +150,26 @@ namespace RunFlow
     {
         public string sourceNodeId;
         public List<PendingRewardEntry> entries = new();
+    }
+
+    [Serializable]
+    public class ActiveEnemyBuffState
+    {
+        public string buffId;
+        public int stackCount = 1;
+    }
+
+    [Serializable]
+    public class PendingEnemyBuffChoiceData
+    {
+        public string sourceNodeId;
+        public List<PendingEnemyBuffChoiceEntry> entries = new();
+    }
+
+    [Serializable]
+    public class PendingEnemyBuffChoiceEntry
+    {
+        public string buffId;
     }
 
     [Serializable]

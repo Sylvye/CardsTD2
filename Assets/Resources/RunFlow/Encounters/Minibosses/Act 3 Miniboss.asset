@@ -20,7 +20,8 @@ MonoBehaviour:
     spawnCount: 12
     spawnInterval: 0.5
     waitTime: 3
-  - enemyDef: {fileID: 11400000, guid: ef2726eebcc4d2045b4d906b5b3b6e25, type: 2}
-    spawnCount: 24
-    spawnInterval: 0.2
+  - mode: 1
+    enemyDef: {fileID: 0}
+    spawnCount: 3
+    spawnInterval: 1
     waitTime: 1.25

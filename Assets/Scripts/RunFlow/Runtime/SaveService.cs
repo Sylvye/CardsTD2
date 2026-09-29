@@ -99,10 +99,13 @@ namespace RunFlow
                 completedNodeIds = run.completedNodeIds ?? new List<string>(),
                 mapState = run.mapState ?? new RunMapStateData(),
                 pendingReward = run.pendingReward,
+                pendingEnemyBuffChoice = run.pendingEnemyBuffChoice,
+                unlockedEliteEnemyIds = run.unlockedEliteEnemyIds ?? new List<string>(),
                 queuedNextMapTemplateId = run.queuedNextMapTemplateId,
                 endRunAfterPendingReward = run.endRunAfterPendingReward,
                 seed = run.seed
             };
+            fileData.activeEnemyBuffs = run.activeEnemyBuffs ?? new List<ActiveEnemyBuffState>();
 
             fileData.deck = new List<OwnedCardFileData>();
             fileData.ownedAugments = new List<OwnedAugmentFileData>();
@@ -184,12 +187,15 @@ namespace RunFlow
                 completedNodeIds = fileData.completedNodeIds ?? new List<string>(),
                 mapState = fileData.mapState ?? new RunMapStateData(),
                 pendingReward = fileData.pendingReward,
+                pendingEnemyBuffChoice = fileData.pendingEnemyBuffChoice,
+                unlockedEliteEnemyIds = fileData.unlockedEliteEnemyIds ?? new List<string>(),
                 queuedNextMapTemplateId = fileData.queuedNextMapTemplateId,
                 endRunAfterPendingReward = fileData.endRunAfterPendingReward,
                 seed = fileData.seed,
                 deck = new List<OwnedCard>(),
                 ownedAugments = new List<OwnedAugment>(),
-                ownedRelics = new List<OwnedRelic>()
+                ownedRelics = new List<OwnedRelic>(),
+                activeEnemyBuffs = fileData.activeEnemyBuffs ?? new List<ActiveEnemyBuffState>()
             };
 
             if (fileData.deck != null)
@@ -272,10 +278,13 @@ namespace RunFlow
             public List<OwnedCardFileData> deck = new();
             public List<OwnedAugmentFileData> ownedAugments = new();
             public List<string> ownedRelicIds = new();
+            public List<ActiveEnemyBuffState> activeEnemyBuffs = new();
             public string currentNodeId;
             public List<string> completedNodeIds = new();
             public RunMapStateData mapState = new();
             public PendingRewardData pendingReward;
+            public PendingEnemyBuffChoiceData pendingEnemyBuffChoice;
+            public List<string> unlockedEliteEnemyIds = new();
             public string queuedNextMapTemplateId;
             public bool endRunAfterPendingReward;
             public int seed;

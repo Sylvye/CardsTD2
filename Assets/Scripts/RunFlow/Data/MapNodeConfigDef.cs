@@ -26,6 +26,7 @@ namespace RunFlow
         public EncounterPoolDef encounterPool;
         public CombatMapPoolDef pathPool;
         public CardRewardPoolDef rewardPool;
+        public EnemyBuffPoolDef enemyBuffPool;
         public int goldReward;
         public int metaCurrencyReward;
 

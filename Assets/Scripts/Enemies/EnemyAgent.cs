@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Combat;
+using RunFlow;
 using UnityEngine;
 
 namespace Enemies
@@ -16,6 +17,7 @@ namespace Enemies
         private EnemySpawner enemySpawner;
         private IPlayerEffects playerEffects;
         private EnemyDef enemyDef;
+        private EnemyBuffRuntimeState enemyBuffRuntimeState;
         private EnemyEffectResolver effectResolver;
 
         private float maxHealth;
@@ -51,7 +53,8 @@ namespace Enemies
             IPlayerEffects effects,
             EnemyPath path,
             EnemyDef def,
-            float startingTrackDistance = 0f)
+            float startingTrackDistance = 0f,
+            EnemyBuffRuntimeState buffRuntimeState = null)
         {
             EnsureRuntimeDependencies();
 
@@ -59,13 +62,14 @@ namespace Enemies
             enemySpawner = spawner;
             playerEffects = effects;
             enemyDef = def;
+            enemyBuffRuntimeState = buffRuntimeState;
 
             isDeadOrEscaped = false;
             isInitialized = true;
 
-            maxHealth = def.maxHealth;
+            maxHealth = enemyBuffRuntimeState != null ? enemyBuffRuntimeState.ResolveMaxHealth(def.maxHealth) : def.maxHealth;
             currentHealth = maxHealth;
-            lifeDamage = def.lifeDamage;
+            lifeDamage = enemyBuffRuntimeState != null ? enemyBuffRuntimeState.ResolveLifeDamage(def.lifeDamage) : def.lifeDamage;
             damageFlashColor = def.damageFlashColor;
             resistedDamageFlashColor = def.resistedDamageFlashColor;
             weaknessDamageFlashColor = def.weaknessDamageFlashColor;
@@ -117,6 +121,7 @@ namespace Enemies
                 : new EnemyDamageResponse(amount, EnemyDamageResponseType.Normal);
             float damageAmount = damageResponse.Amount;
             damageAmount *= stats.DamageTakenMultiplier;
+            damageAmount = Mathf.Max(0f, damageAmount - stats.FlatDamageReduction);
             if (damageAmount <= 0f)
             {
                 if (damageResponse.ResponseType == EnemyDamageResponseType.Resistance)
@@ -403,7 +408,13 @@ namespace Enemies
 
         private EnemyResolvedStats GetResolvedStats()
         {
-            EnemyResolvedStats stats = new(enemyDef != null ? enemyDef.moveSpeed : 0f, 1f);
+            EnemyResolvedStats stats = new(enemyDef != null ? enemyDef.moveSpeed : 0f, 1f, 0f);
+            if (enemyBuffRuntimeState != null)
+            {
+                stats.MoveSpeed *= Mathf.Max(0f, enemyBuffRuntimeState.MoveSpeedMultiplier);
+                stats.FlatDamageReduction += Mathf.Max(0f, enemyBuffRuntimeState.FlatDamageReduction);
+            }
+
             for (int i = 0; i < runtimeModifiers.Count; i++)
                 runtimeModifiers[i].ModifyStats(this, ref stats);
 

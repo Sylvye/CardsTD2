@@ -26,6 +26,8 @@ namespace Enemies
         private bool isWaitingBetweenBatches = false;
         private bool isRunning = false;
         private IPlayerEffects playerEffects;
+        private EnemyBuffRuntimeState enemyBuffRuntimeState;
+        private EnemyDef currentBatchEnemyDef;
 
         public bool IsRunning => isRunning;
         public bool IsFinished => isRunning && currentBatchIndex >= spawnQueue.Count;
@@ -66,7 +68,15 @@ namespace Enemies
 
             SpawnBatch currentBatch = spawnQueue[currentBatchIndex];
 
-            if (currentBatch == null || currentBatch.enemyDef == null || currentBatch.enemyDef.prefab == null)
+            if (currentBatch == null)
+            {
+                Debug.LogWarning($"EnemySpawner: invalid batch at index {currentBatchIndex}, skipping.");
+                AdvanceToNextBatch();
+                return;
+            }
+
+            EnemyDef enemyDef = currentBatchEnemyDef;
+            if (enemyDef == null || enemyDef.prefab == null)
             {
                 Debug.LogWarning($"EnemySpawner: invalid batch at index {currentBatchIndex}, skipping.");
                 AdvanceToNextBatch();
@@ -77,7 +87,7 @@ namespace Enemies
 
             if (spawnedInCurrentBatch < currentBatch.spawnCount && spawnTimer <= 0f)
             {
-                SpawnEnemy(currentBatch.enemyDef);
+                SpawnEnemy(enemyDef);
                 spawnedInCurrentBatch++;
 
                 if (spawnedInCurrentBatch >= currentBatch.spawnCount)
@@ -106,9 +116,10 @@ namespace Enemies
             StartBatch(currentBatchIndex);
         }
 
-        public void ConfigureEncounter(EncounterDef encounter, EnemyPath pathOverride, IPlayerEffects effectsOverride = null)
+        public void ConfigureEncounter(EncounterDef encounter, EnemyPath pathOverride, IPlayerEffects effectsOverride = null, EnemyBuffRuntimeState buffRuntimeState = null)
         {
-            spawnQueue = CloneSpawnQueue(encounter != null ? encounter.spawnBatches : null);
+            enemyBuffRuntimeState = buffRuntimeState;
+            spawnQueue = BuildSpawnQueue(encounter != null ? encounter.spawnBatches : null, enemyBuffRuntimeState);
             enemyPath = pathOverride;
             if (effectsOverride != null)
                 playerEffects = effectsOverride;
@@ -129,6 +140,7 @@ namespace Enemies
             spawnTimer = 0f;
             waitTimer = 0f;
             isWaitingBetweenBatches = false;
+            currentBatchEnemyDef = null;
         }
 
         private void StartBatch(int batchIndex)
@@ -141,6 +153,7 @@ namespace Enemies
             spawnTimer = 0f;
             waitTimer = batch != null ? Mathf.Max(0f, batch.waitTime) : 0f;
             isWaitingBetweenBatches = waitTimer > 0f;
+            currentBatchEnemyDef = ResolveBatchEnemyDef(batchIndex, batch);
         }
 
         private void AdvanceToNextBatch()
@@ -170,7 +183,7 @@ namespace Enemies
                 enemyParent
             );
 
-            enemy.Initialize(enemyManager, this, playerEffects, enemyPath, enemyDef, trackDistance);
+            enemy.Initialize(enemyManager, this, playerEffects, enemyPath, enemyDef, trackDistance, enemyBuffRuntimeState);
         }
 
         private void ResolvePlayerEffects()
@@ -186,11 +199,18 @@ namespace Enemies
             }
         }
 
-        private static List<SpawnBatch> CloneSpawnQueue(IReadOnlyList<SpawnBatch> source)
+        private static List<SpawnBatch> BuildSpawnQueue(IReadOnlyList<SpawnBatch> source, EnemyBuffRuntimeState buffRuntimeState)
         {
             List<SpawnBatch> batches = new();
-            if (source == null)
-                return batches;
+            AppendBatches(batches, source, buffRuntimeState);
+
+            return batches;
+        }
+
+        private static void AppendBatches(List<SpawnBatch> destination, IReadOnlyList<SpawnBatch> source, EnemyBuffRuntimeState buffRuntimeState)
+        {
+            if (destination == null || source == null)
+                return;
 
             for (int i = 0; i < source.Count; i++)
             {
@@ -198,16 +218,39 @@ namespace Enemies
                 if (batch == null)
                     continue;
 
-                batches.Add(new SpawnBatch
+                destination.Add(new SpawnBatch
                 {
+                    mode = batch.mode,
                     enemyDef = batch.enemyDef,
-                    spawnCount = batch.spawnCount,
+                    spawnCount = buffRuntimeState != null
+                        ? buffRuntimeState.ResolveSpawnCount(batch.spawnCount)
+                        : Mathf.Max(1, batch.spawnCount),
                     spawnInterval = batch.spawnInterval,
                     waitTime = batch.waitTime
                 });
             }
+        }
 
-            return batches;
+        private EnemyDef ResolveBatchEnemyDef(int batchIndex, SpawnBatch batch)
+        {
+            if (batch == null)
+                return null;
+
+            if (batch.mode == SpawnBatchMode.ElitePoolEnemy)
+                return ResolveEliteEnemyDef(batchIndex);
+
+            return batch.enemyDef;
+        }
+
+        private EnemyDef ResolveEliteEnemyDef(int batchIndex)
+        {
+            IReadOnlyList<EnemyDef> unlockedEliteEnemies = enemyBuffRuntimeState?.UnlockedEliteEnemies;
+            if (unlockedEliteEnemies == null || unlockedEliteEnemies.Count == 0)
+                return null;
+
+            int seed = enemyBuffRuntimeState != null ? enemyBuffRuntimeState.EliteSelectionSeed : 0;
+            int selectedIndex = Mathf.Abs(seed + batchIndex) % unlockedEliteEnemies.Count;
+            return unlockedEliteEnemies[selectedIndex];
         }
     }
 }

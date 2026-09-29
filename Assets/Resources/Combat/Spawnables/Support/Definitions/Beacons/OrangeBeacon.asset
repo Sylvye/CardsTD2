@@ -13,17 +13,17 @@ MonoBehaviour:
   m_Name: OrangeBeacon
   m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
   prefab: {fileID: 77660494436261291, guid: 5dbbba862a1324440a9c56ec6d93e41a, type: 3}
-  effectRadius: 2
+  effectRadius: 1.5
   supportSubtype: 1
   placementRadius: 0.3
-  supportRadius: 2
+  supportRadius: 1.5
   buffType: 2
   baseValues:
-  - 3
   - 2
+  - 1.5
   - 1
   amplifiedValues:
-  - 5
   - 3
+  - 2
   - 1
   linkColor: {r: 1, g: 0.52944344, b: 0.25098038, a: 1}

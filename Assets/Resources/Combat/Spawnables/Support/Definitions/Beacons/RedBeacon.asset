@@ -13,17 +13,17 @@ MonoBehaviour:
   m_Name: RedBeacon
   m_EditorClassIdentifier: CardsTD2::Cards.BeaconSupportDef
   prefab: {fileID: 77660494436261291, guid: 2fccf4055be884e1cab7d65762d1e2ae, type: 3}
-  effectRadius: 2
+  effectRadius: 1.5
   supportSubtype: 1
   placementRadius: 0.3
-  supportRadius: 2
+  supportRadius: 1.5
   buffType: 6
   baseValues:
   - 1
   - 0.5
   - 0.25
   amplifiedValues:
-  - 2
+  - 1.5
   - 1
   - 0.5
   linkColor: {r: 1, g: 0.25, b: 0.25, a: 1}

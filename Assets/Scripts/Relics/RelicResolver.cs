@@ -30,6 +30,13 @@ namespace Relics
             return price;
         }
 
+        public static int ModifyEnemyBuffChoiceCount(IReadOnlyList<OwnedRelic> relics, EnemyBuffPoolDef pool, int baseChoiceCount)
+        {
+            int choiceCount = Mathf.Max(0, baseChoiceCount);
+            ForEachEffect(relics, effect => choiceCount = Mathf.Max(0, effect.ModifyEnemyBuffChoiceCount(pool, choiceCount)));
+            return choiceCount;
+        }
+
         private static void ForEachEffect(IReadOnlyList<OwnedRelic> relics, System.Action<RelicEffectDef> apply)
         {
             if (relics == null || apply == null)

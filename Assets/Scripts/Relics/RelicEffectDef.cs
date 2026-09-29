@@ -18,5 +18,10 @@ namespace Relics
         {
             return currentPrice;
         }
+
+        public virtual int ModifyEnemyBuffChoiceCount(EnemyBuffPoolDef pool, int currentChoiceCount)
+        {
+            return currentChoiceCount;
+        }
     }
 }

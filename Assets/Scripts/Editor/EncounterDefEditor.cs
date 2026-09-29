@@ -43,7 +43,7 @@ namespace RunFlow.Editor
             }
 
             EditorGUILayout.HelpBox(
-                $"Wave summary: {encounter.spawnBatches.Count} batches, {encounter.TotalSpawnCount} total enemies, ~{encounter.EstimatedDurationSeconds:0.##} seconds until all batches have spawned.",
+                $"Wave summary: {encounter.spawnBatches.Count} batches, {encounter.TotalSpawnCount} total enemies, {CountEliteBatches(encounter)} elite-pool waves, ~{encounter.EstimatedDurationSeconds:0.##} seconds until all batches have spawned.",
                 MessageType.None
             );
 
@@ -56,9 +56,14 @@ namespace RunFlow.Editor
                     continue;
                 }
 
-                if (batch.enemyDef == null)
+                if (batch.mode == SpawnBatchMode.FixedEnemy && batch.enemyDef == null)
                 {
                     EditorGUILayout.HelpBox($"Batch {i + 1} has no enemy definition assigned.", MessageType.Warning);
+                }
+
+                if (batch.mode == SpawnBatchMode.ElitePoolEnemy)
+                {
+                    EditorGUILayout.HelpBox($"Batch {i + 1} pulls one elite enemy type from the unlocked elite pool for the whole wave.", MessageType.Info);
                 }
 
                 if (batch.spawnCount <= 0)
@@ -71,6 +76,22 @@ namespace RunFlow.Editor
                     EditorGUILayout.HelpBox($"Batch {i + 1} has a negative timing value and will be clamped to 0.", MessageType.Warning);
                 }
             }
+        }
+
+        private static int CountEliteBatches(EncounterDef encounter)
+        {
+            if (encounter?.spawnBatches == null)
+                return 0;
+
+            int count = 0;
+            for (int i = 0; i < encounter.spawnBatches.Count; i++)
+            {
+                SpawnBatch batch = encounter.spawnBatches[i];
+                if (batch != null && batch.mode == SpawnBatchMode.ElitePoolEnemy)
+                    count++;
+            }
+
+            return count;
         }
     }
 }

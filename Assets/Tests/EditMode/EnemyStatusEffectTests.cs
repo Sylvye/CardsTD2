@@ -3,6 +3,7 @@ using System.Reflection;
 using Combat;
 using Enemies;
 using NUnit.Framework;
+using RunFlow;
 using Towers;
 using UnityEngine;
 
@@ -127,6 +128,39 @@ public class EnemyStatusEffectTests
         Object.DestroyImmediate(enemyObject);
         Object.DestroyImmediate(slow);
         Object.DestroyImmediate(kinetic);
+    }
+
+    [Test]
+    public void EnemyBuffRuntimeState_ModifiesHealthSpeedLifeDamageAndDamageReduction()
+    {
+        EnemyDef enemyDef = ScriptableObject.CreateInstance<EnemyDef>();
+        enemyDef.moveSpeed = 10f;
+        enemyDef.maxHealth = 20f;
+        enemyDef.lifeDamage = 2;
+
+        EnemyBuffRuntimeState runtimeState = new()
+        {
+            MoveSpeedMultiplier = 0.5f,
+            MaxHealthMultiplier = 1.5f,
+            LifeDamageAdd = 3,
+            FlatDamageReduction = 2f
+        };
+
+        GameObject enemyObject = new("Buffed Enemy");
+        EnemyAgent enemy = enemyObject.AddComponent<EnemyAgent>();
+        enemy.Initialize(null, null, null, null, enemyDef, 0f, runtimeState);
+
+        Assert.That(enemy.MaxHealth, Is.EqualTo(30f).Within(0.001f));
+        Assert.That(enemy.CurrentHealth, Is.EqualTo(30f).Within(0.001f));
+        Assert.That(enemy.LifeDamage, Is.EqualTo(5));
+        Assert.That(enemyObject.GetComponent<PathFollower>().Speed, Is.EqualTo(5f).Within(0.001f));
+
+        EnemyDamageResult result = enemy.TakeDamage(3f);
+        Assert.That(result.AppliedAmount, Is.EqualTo(1f).Within(0.001f));
+        Assert.That(enemy.CurrentHealth, Is.EqualTo(29f).Within(0.001f));
+
+        Object.DestroyImmediate(enemyObject);
+        Object.DestroyImmediate(enemyDef);
     }
 
     private static EnemyAgent CreateEnemy(out GameObject enemyObject, float moveSpeed, float health)
